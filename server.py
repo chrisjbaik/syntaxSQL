@@ -85,7 +85,7 @@ def main():
 
     address = ('localhost', args.port)     # family is deduced to be 'AF_INET'
     listener = Listener(address, authkey='adversql')
-    print('Listening on port {}...'.format(port))
+    print('Listening on port {}...'.format(args.port))
 
     while True:
         conn = listener.accept()
