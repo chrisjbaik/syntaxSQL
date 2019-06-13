@@ -81,7 +81,7 @@ def main():
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
-    model = load_model(args.models_path)
+    model = load_model(args.models_path, args.glove_path)
 
     address = ('localhost', args.port)     # family is deduced to be 'AF_INET'
     listener = Listener(address, authkey='adversql')
