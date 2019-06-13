@@ -26,7 +26,7 @@ def load_model(models_path):
 
     print("Loading GloVE word embeddings...")
     word_emb = load_word_emb('glove/glove.%dB.%dd.txt'%(B_word,N_word), \
-            load_used=args.train_emb, use_small=False)
+            load_used=False, use_small=False)
 
     model = SuperModel(word_emb, N_word=N_word, gpu=GPU, trainable_emb=False,
         table_type='std', use_hs=True)
