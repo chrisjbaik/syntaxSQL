@@ -93,11 +93,13 @@ def main():
         print('Connection accepted from:', listener.last_accepted)
         while True:
             msg = conn.recv()
-            db_name, nlq = msg.split('\t')
-            conn.send(translate(model, schemas, db_name, nlq))
+
             if msg == 'close':
                 conn.close()
                 break
+            
+            db_name, nlq = msg.split('\t')
+            conn.send(translate(model, schemas, db_name, nlq))
         listener.close()
 
 if __name__ == '__main__':
