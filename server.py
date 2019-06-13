@@ -14,7 +14,7 @@ def load_schemas(schemas_path):
         schemas[item['db_id']] = item
     return schemas
 
-def load_model(models_path):
+def load_model(models_path, glove_path):
     ### CONFIGURABLE
     GPU = True           # GPU activated
     USE_SMALL = False    # use toy word embedding file
@@ -25,8 +25,8 @@ def load_model(models_path):
     N_depth = 2          # num LSTM layers
 
     print("Loading GloVE word embeddings...")
-    word_emb = load_word_emb('glove/glove.%dB.%dd.txt'%(B_word,N_word), \
-            load_used=False, use_small=False)
+    word_emb = load_word_emb('{}/glove.{}B.{}d.txt'.format(glove_path,
+        B_word, N_word), load_used=False, use_small=False)
 
     model = SuperModel(word_emb, N_word=N_word, gpu=GPU, trainable_emb=False,
         table_type='std', use_hs=True)
@@ -75,7 +75,9 @@ def main():
     parser.add_argument('--port', default=6000)
     parser.add_argument('--schemas_path',
         default='../../data/spider/tables.json')
-    parser.add_argument('--models_path', default='generated_data/saved_models')
+    parser.add_argument('--models_path',
+        default='generated_data_augment/saved_models')
+    parser.add_argument('--glove_path', default='glove')
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
@@ -83,16 +85,19 @@ def main():
 
     address = ('localhost', args.port)     # family is deduced to be 'AF_INET'
     listener = Listener(address, authkey='adversql')
-    conn = listener.accept()
-    print('Connection accepted from:', listener.last_accepted)
+    print('Listening on port {}...'.format(port))
+
     while True:
-        msg = conn.recv()
-        db_name, nlq = msg.split('\t')
-        conn.send(translate(model, schemas, db_name, nlq))
-        if msg == 'close':
-            conn.close()
-            break
-    listener.close()
+        conn = listener.accept()
+        print('Connection accepted from:', listener.last_accepted)
+        while True:
+            msg = conn.recv()
+            db_name, nlq = msg.split('\t')
+            conn.send(translate(model, schemas, db_name, nlq))
+            if msg == 'close':
+                conn.close()
+                break
+        listener.close()
 
 if __name__ == '__main__':
     main()
