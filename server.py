@@ -73,6 +73,7 @@ def translate(model, schemas, db_name, nlq):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=6000)
+    parser.add_argument('--authkey', default='adversql')
     parser.add_argument('--schemas_path',
         default='../../data/spider/tables.json')
     parser.add_argument('--models_path',
@@ -84,7 +85,7 @@ def main():
     model = load_model(args.models_path, args.glove_path)
 
     address = ('localhost', args.port)     # family is deduced to be 'AF_INET'
-    listener = Listener(address, authkey='adversql')
+    listener = Listener(address, authkey=args.authkey)
     print('Listening on port {}...'.format(args.port))
 
     while True:
