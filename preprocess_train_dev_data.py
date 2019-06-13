@@ -9,8 +9,8 @@ from collections import defaultdict
 ###TODO: change dirs
 train_data_path = "./data/train.json"
 table_data_path = "./data/tables.json"
-if train_dev == "dev":
-    train_data_path = "./data/dev.json"
+# if train_dev == "dev":
+#     train_data_path = "./data/dev.json"
 
 train_dev = "train"
 if len(sys.argv) > 1:
