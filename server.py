@@ -5,6 +5,7 @@ import torch
 
 from process_sql import tokenize
 from supermodel import SuperModel
+from utils import load_word_emb
 
 def load_schemas(schemas_path):
     data = json.load(open(schemas_path))
@@ -71,6 +72,7 @@ def translate(model, schemas, db_name, nlq):
 # TODO: response in error case?
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--port', default=6000)
     parser.add_argument('--schemas_path',
         default='../../data/spider/tables.json')
     parser.add_argument('--models_path', default='generated_data/saved_models')
@@ -79,7 +81,7 @@ def main():
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path)
 
-    address = ('localhost', 6000)     # family is deduced to be 'AF_INET'
+    address = ('localhost', args.port)     # family is deduced to be 'AF_INET'
     listener = Listener(address, authkey='adversql')
     conn = listener.accept()
     print('Connection accepted from:', listener.last_accepted)
