@@ -52,7 +52,7 @@ def load_model(models_path, glove_path):
 
 def translate(model, schemas, db_name, nlq):
     if db_name not in schemas:
-        raise Exception("Error: %s not in schemas" % db_id)
+        raise Exception("Error: %s not in schemas" % db_name)
 
     schema = schemas[db_name]
 
@@ -62,7 +62,7 @@ def translate(model, schemas, db_name, nlq):
     sql = model.forward([tokens] * 2, [], schema)
 
     if sql is not None:
-        sql = model.gen_sql(sql, schemas[db_id])
+        sql = model.gen_sql(sql, schemas[db_name])
     else:
         sql = None
     return sql
