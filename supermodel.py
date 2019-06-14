@@ -463,11 +463,11 @@ class SuperModel(nn.Module):
 
         # 06/14/2019: cjbaik
         # perform the geometric mean of confs before returning
-        conf = geo_mean(confs)
+        conf = self.geo_mean(confs)
 
         return current_sql, conf
 
-    def geo_mean(iterable):
+    def geo_mean(self, iterable):
         a = np.array(iterable)
         return a.prod()**(1.0/len(a))
 
