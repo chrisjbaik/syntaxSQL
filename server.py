@@ -57,10 +57,7 @@ def translate(model, schemas, db_name, nlq):
     tokens = tokenize(nlq)
 
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
-    sql = model.forward([tokens] * 2, [], schema)
-
-    # TODO: get confidence score from model.forward as well
-    conf = 0
+    sql, conf = model.forward([tokens] * 2, [], schema)
 
     if sql is not None:
         sql = model.gen_sql(sql, schemas[db_name])
