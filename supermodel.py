@@ -464,6 +464,7 @@ class SuperModel(nn.Module):
         # 06/14/2019: cjbaik
         # perform the geometric mean of confs before returning
         conf = self.geo_mean(confs)
+        print('Debug confs: {}; Geometric mean: {}'.format(confs, conf))
 
         return current_sql, conf
 
