@@ -94,7 +94,7 @@ def main():
         conn = listener.accept()
         print('Connection accepted from:', listener.last_accepted)
         while True:
-            msg = conn.recv()
+            msg = conn.recv_bytes()
 
             if msg == 'close':
                 conn.close()
@@ -102,7 +102,7 @@ def main():
 
             db_name, nlq = msg.split('\t')
             sql, conf = translate(model, schemas, db_name, nlq)
-            conn.send('{}\t{}'.format(sql, conf))
+            conn.send_bytes('{}\t{}'.format(sql, conf))
         listener.close()
 
 if __name__ == '__main__':
