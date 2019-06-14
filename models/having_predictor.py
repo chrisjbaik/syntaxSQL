@@ -75,6 +75,9 @@ class HavingPredictor(nn.Module):
         # hv_score: (B, 2)
         hv_score = self.hv_out(self.hv_out_q(q_weighted) + int(self.use_hs)* self.hv_out_hs(hs_weighted) + self.hv_out_c(col_emb))
 
+        # 06/14/2019: add softmax layer
+        hv_score = F.softmax(hv_score)
+
         return hv_score
 
 

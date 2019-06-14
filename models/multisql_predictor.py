@@ -86,6 +86,9 @@ class MultiSqlPredictor(nn.Module):
         # self.multi_out.squeeze(): (B, 4, 1) -> (B, 4)
         mulit_score = self.multi_out(self.multi_out_q(q_weighted) + int(self.use_hs)* self.multi_out_hs(hs_weighted) + self.multi_out_c(mkw_enc)).view(B,-1)
 
+        # 06/14/2019: add softmax layer
+        mulit_score = F.softmax(mulit_score)
+
         return mulit_score
 
 

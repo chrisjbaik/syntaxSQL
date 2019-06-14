@@ -101,6 +101,10 @@ class AggPredictor(nn.Module):
         # agg_score: (B, 5)
         agg_score = self.agg_out(self.agg_out_q(q_weighted) + int(self.use_hs)* self.agg_out_hs(hs_weighted) + self.agg_out_c(col_emb))
 
+        # 06/14/2019: add softmax layer
+        agg_num_score = F.softmax(agg_num_score)
+        agg_score = F.softmax(agg_score)
+
         score = (agg_num_score, agg_score)
 
         return score

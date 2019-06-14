@@ -66,6 +66,9 @@ class AndOrPredictor(nn.Module):
         # ao_score: (B, 2)
         ao_score = self.ao_out(self.ao_out_q(q_weighted) + int(self.use_hs)* self.ao_out_hs(hs_weighted))
 
+        # 06/14/2019: add softmax layer
+        ao_score = F.softmax(ao_score)
+
         return ao_score
 
 

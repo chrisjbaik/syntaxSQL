@@ -99,6 +99,10 @@ class KeyWordPredictor(nn.Module):
         # self.kw_out.squeeze(): (B, 3)
         kw_score = self.kw_out(self.kw_out_q(q_weighted) + int(self.use_hs)* self.kw_out_hs(hs_weighted) + self.kw_out_kw(kw_enc)).view(B,-1)
 
+        # 06/14/2019: add softmax layer
+        kw_num_score = F.softmax(kw_num_score)
+        kw_score = F.softmax(kw_score)
+
         score = (kw_num_score, kw_score)
 
         return score

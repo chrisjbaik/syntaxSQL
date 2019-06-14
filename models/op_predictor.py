@@ -113,6 +113,10 @@ class OpPredictor(nn.Module):
         # op_score: (B, 10)
         op_score = self.op_out(self.op_out_q(q_weighted) + int(self.use_hs)* self.op_out_hs(hs_weighted) + self.op_out_c(col_emb))
 
+        # 06/14/2019: add softmax layer
+        op_num_score = F.softmax(op_num_score)
+        op_score = F.softmax(op_score)
+
         score = (op_num_score, op_score)
 
         return score
