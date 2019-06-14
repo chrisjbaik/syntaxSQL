@@ -61,15 +61,18 @@ def translate(model, schemas, db_name, nlq):
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
     sql = model.forward([tokens] * 2, [], schema)
 
+    # TODO: get confidence score from model.forward as well
+    conf = 0
+
     if sql is not None:
         sql = model.gen_sql(sql, schemas[db_name])
     else:
         sql = None
-    return sql
+
+    return sql, conf
 
 # listens for `{db_name}\t{NLQ}' in plaintext on port 6000
-# responds with SQL
-# TODO: response in error case?
+# responds with `{SQL}\t{confidence score}`
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=6000)
@@ -97,9 +100,10 @@ def main():
             if msg == 'close':
                 conn.close()
                 break
-            
+
             db_name, nlq = msg.split('\t')
-            conn.send(translate(model, schemas, db_name, nlq))
+            sql, conf = translate(model, schemas, db_name, nlq)
+            conn.send('{}\t{}'.format(sql, conf))
         listener.close()
 
 if __name__ == '__main__':
