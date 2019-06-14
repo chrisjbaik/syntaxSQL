@@ -231,7 +231,7 @@ class SuperModel(nn.Module):
                 # history[0].append("root")
             elif vet == "none":
                 score = self.key_word.forward(q_emb_var,q_len,hs_emb_var,hs_len,kw_emb_var,kw_len)
-                kw_num_score, kw_score = [x.data.cpu().numpy() for x in score]
+                kw_num_score, raw_kw_score = [x.data.cpu().numpy() for x in score]
                 # print("kw_num_score:{}".format(kw_num_score))
                 # print("kw_score:{}".format(kw_score))
                 num_kw = np.argmax(kw_num_score[0])
@@ -239,14 +239,14 @@ class SuperModel(nn.Module):
                 # 06/14/2019: cjbaik
                 confs.append(kw_num_score[0].max())
 
-                kw_score = list(np.argsort(-kw_score[0])[:num_kw])
+                kw_score = list(np.argsort(-raw_kw_score[0])[:num_kw])
                 kw_score.sort(reverse=True)
                 # print("num_kw:{}".format(num_kw))
                 for kw in kw_score:
                     stack.push(KW_OPS[kw])
 
                     # 06/14/2019: cjbaik
-                    confs.append(kw_score[0][kw])
+                    confs.append(raw_kw_score[0][kw])
                 stack.push("select")
             elif vet in ("select","orderBy","where","groupBy","having"):
                 kw = vet
