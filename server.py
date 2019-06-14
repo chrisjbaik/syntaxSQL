@@ -86,11 +86,10 @@ def main():
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
 
-    address = ('localhost', args.port)     # family is deduced to be 'AF_INET'
-    listener = Listener(address, authkey=args.authkey)
-    print('Listening on port {}...'.format(args.port))
-
     while True:
+        address = ('localhost', args.port)  # family is deduced to be 'AF_INET'
+        listener = Listener(address, authkey=args.authkey)
+        print('Listening on port {}...'.format(args.port))
         conn = listener.accept()
         print('Connection accepted from:', listener.last_accepted)
         while True:
