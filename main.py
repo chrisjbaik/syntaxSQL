@@ -57,21 +57,20 @@ def translate(model, schemas, db_name, nlq):
     tokens = tokenize(nlq)
 
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
-    sql, conf = model.forward([tokens] * 2, [], schema)
+    sqls = model.forward([tokens] * 2, [], schema)
 
-    if sql is not None:
-        sql = model.gen_sql(sql, schemas[db_name])
-    else:
-        sql = None
+    results = []
+    for sql in sqls:
+        results.append(model.gen_sql(sql, schemas[db_name]))
 
-    return sql, conf
+    return results
 
-# listens for `{db_name}\t{NLQ}' in plaintext on port 6000
-# responds with `{SQL}\t{confidence score}`
+# Listens for: `{db_name}\t{NLQ}' (plaintext) on port 6000
+# Response: `{SQL}\t{SQL}\t{SQL}...`
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=6000)
-    parser.add_argument('--authkey', default='adversql')
+    parser.add_argument('--authkey', default='mixtape')
     parser.add_argument('--schemas_path',
         default='../../data/spider/tables.json')
     parser.add_argument('--models_path',
@@ -97,8 +96,8 @@ def main():
                 break
 
             db_name, nlq = msg.split('\t')
-            sql, conf = translate(model, schemas, db_name, nlq)
-            conn.send_bytes('{}\t{}'.format(sql, conf))
+            sqls = translate(model, schemas, db_name, nlq)
+            conn.send_bytes('\t'.join(sqls))
         listener.close()
 
 if __name__ == '__main__':
