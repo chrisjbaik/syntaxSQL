@@ -412,10 +412,6 @@ class SuperModel(nn.Module):
 
         return current_sql
 
-    def geo_mean(self, iterable):
-        a = np.array(iterable)
-        return a.prod()**(1.0/len(a))
-
     def gen_col(self,col,table,table_alias_dict):
         colname = table["column_names_original"][col[2]][1]
         table_idx = table["column_names_original"][col[2]][0]
