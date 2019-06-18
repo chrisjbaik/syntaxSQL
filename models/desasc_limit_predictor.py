@@ -77,9 +77,6 @@ class DesAscLimitPredictor(nn.Module):
         # dat_score: (B, 4)
         dat_score = self.dat_out(self.dat_out_q(q_weighted) + int(self.use_hs)* self.dat_out_hs(hs_weighted) + self.dat_out_c(col_emb))
 
-        # 06/14/2019: add softmax layer
-        dat_score = F.softmax(dat_score)
-
         return dat_score
 
 

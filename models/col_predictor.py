@@ -110,10 +110,6 @@ class ColPredictor(nn.Module):
             if num < max_col_len:
                 col_score[idx, num:] = -100
 
-        # 06/14/2019: add softmax layer
-        col_num_score = F.softmax(col_num_score)
-        col_score = F.softmax(col_score)
-
         score = (col_num_score, col_score)
 
         return score

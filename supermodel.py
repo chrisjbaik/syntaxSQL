@@ -165,11 +165,6 @@ class SuperModel(nn.Module):
         nested_label = ""
         has_having = False
 
-        # 06/14/2019 cjbaik
-        # store cumulative probabilities, calculate mean later
-        # for sequence-to-set, add probability of all selected items
-        confs = []
-
         timeout = time.time() + 2 # set timer to prevent infinite recursion in SQL generation
         failed = False
         while not stack.isEmpty():
@@ -214,10 +209,6 @@ class SuperModel(nn.Module):
                 else:
                     score = self.multi_sql.forward(q_emb_var,q_len,hs_emb_var,hs_len,mkw_emb_var,mkw_len)
                     np_scores = score[0].data.cpu().numpy()
-
-                    # 06/14/2019: cjbaik
-                    confs.append(np_scores.max())
-
                     label = np.argmax(np_scores)
                     label = SQL_OPS[label]
                     history[0].append(label)
@@ -236,17 +227,12 @@ class SuperModel(nn.Module):
                 # print("kw_score:{}".format(kw_score))
                 num_kw = np.argmax(kw_num_score[0])
 
-                # 06/14/2019: cjbaik
-                confs.append(kw_num_score[0].max())
-
                 kw_score = list(np.argsort(-raw_kw_score[0])[:num_kw])
                 kw_score.sort(reverse=True)
                 # print("num_kw:{}".format(num_kw))
                 for kw in kw_score:
                     stack.push(KW_OPS[kw])
 
-                    # 06/14/2019: cjbaik
-                    confs.append(raw_kw_score[0][kw])
                 stack.push("select")
             elif vet in ("select","orderBy","where","groupBy","having"):
                 kw = vet
@@ -264,18 +250,11 @@ class SuperModel(nn.Module):
                 score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
                 col_num_score, col_score = [x.data.cpu().numpy() for x in score]
                 col_num = np.argmax(col_num_score[0]) + 1  # double check
-
-                # 06/14/2019: cjbaik
-                confs.append(col_num_score[0].max())
-
                 cols = np.argsort(-col_score[0])[:col_num]
                 # print(col_num)
                 # print("col_num_score:{}".format(col_num_score))
                 # print("col_score:{}".format(col_score))
                 for col in cols:
-                    # 06/14/2019: cjbaik
-                    confs.append(col_score[0][col])
-
                     if vet[1] == "where":
                         stack.push(("op","where",col))
                     elif vet[1] != "groupBy":
@@ -288,20 +267,12 @@ class SuperModel(nn.Module):
                     score = self.andor.forward(q_emb_var,q_len,hs_emb_var,hs_len)
                     np_score = score[0].data.cpu().numpy()
                     label = np.argmax(np_score)
-
-                    # 06/14/2019: cjbaik
-                    confs.append(np_score.max())
-
                     andor_cond = COND_OPS[label]
                     current_sql[kw].append(andor_cond)
                 if vet[1] == "groupBy" and col_num > 0:
                     score = self.having.forward(q_emb_var, q_len, hs_emb_var, hs_len, col_emb_var, col_len, col_name_len, np.full(B, cols[0],dtype=np.int64))
                     np_score = score[0].data.cpu().numpy()
                     label = np.argmax(np_score)
-
-                    # 06/14/2019: cjbaik
-                    confs.append(np_score.max())
-
                     if label == 1:
                         has_having = (label == 1)
                         # stack.insert(-col_num,"having")
@@ -323,17 +294,9 @@ class SuperModel(nn.Module):
 
                 score = self.agg.forward(q_emb_var, q_len, hs_emb_var, hs_len, col_emb_var, col_len, col_name_len, np.full(B, vet[2],dtype=np.int64))
                 agg_num_score, agg_score = [x.data.cpu().numpy() for x in score]
-
-                # 06/14/2019: cjbaik
-                confs.append(agg_num_score[0].max())
                 agg_num = np.argmax(agg_num_score[0])  # double check
 
                 agg_idxs = np.argsort(-agg_score[0])[:agg_num]
-
-
-                # 06/14/2019: cjbaik
-                for agg_idx in agg_idxs:
-                    confs.append(agg_score[0][agg_idx])
 
                 # print("agg:{}".format([AGG_OPS[agg] for agg in agg_idxs]))
                 if len(agg_idxs) > 0:
@@ -378,16 +341,9 @@ class SuperModel(nn.Module):
 
                 op_num_score, op_score = [x.data.cpu().numpy() for x in score]
 
-                # 06/14/2019: cjbaik
-                confs.append(op_num_score[0].max())
-
                 op_num = np.argmax(op_num_score[0]) + 1  # num_score 0 maps to 1 in truth, must have at least one op
 
                 ops = np.argsort(-op_score[0])[:op_num]
-
-                # 06/14/2019: cjbaik
-                for op in ops:
-                    confs.append(op_score[0][op])
 
                 # current_sql[kw].append([NEW_WHERE_OPS[op] for op in ops])
                 if op_num > 0:
@@ -411,10 +367,6 @@ class SuperModel(nn.Module):
                 score = self.root_teminal.forward(q_emb_var, q_len, hs_emb_var, hs_len, col_emb_var, col_len, col_name_len, np.full(B, vet[1],dtype=np.int64))
                 np_score = score[0].data.cpu().numpy()
                 label = np.argmax(np_score)
-
-                # 06/14/2019: cjbaik
-                confs.append(np_score.max())
-
                 label = ROOT_TERM_OPS[label]
                 if len(vet) == 4:
                     current_sql[kw].append(index_to_column_name(vet[1], tables))
@@ -446,9 +398,6 @@ class SuperModel(nn.Module):
                 np_score = score[0].data.cpu().numpy()
                 label = np.argmax(np_score)
 
-                # 06/14/2019: cjbaik
-                confs.append(np_score.max())
-
                 dec_asc,has_limit = DEC_ASC_OPS[label]
                 history[0].append(dec_asc)
                 current_sql[kw].append(dec_asc)
@@ -461,12 +410,7 @@ class SuperModel(nn.Module):
             current_sql = sql_stack[0]
         # print("{}".format(current_sql))
 
-        # 06/14/2019: cjbaik
-        # perform the geometric mean of confs before returning
-        conf = self.geo_mean(confs)
-        print('Debug confs: {}; Geometric mean: {}'.format(confs, conf))
-
-        return current_sql, conf
+        return current_sql
 
     def geo_mean(self, iterable):
         a = np.array(iterable)

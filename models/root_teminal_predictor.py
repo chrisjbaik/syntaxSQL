@@ -75,9 +75,6 @@ class RootTeminalPredictor(nn.Module):
         # rt_score: (B, 2)
         rt_score = self.rt_out(self.rt_out_q(q_weighted) + int(self.use_hs)* self.rt_out_hs(hs_weighted) + self.rt_out_c(col_emb))
 
-        # 06/14/2019: add softmax layer
-        rt_score = F.softmax(rt_score)
-
         return rt_score
 
 
