@@ -141,12 +141,7 @@ class SuperModel(nn.Module):
 
         old = self.full_forward(q_seq, history, tables)
         print('old results: {}'.format(old))
-        new = self.dfs_beam_search(q_seq, history, tables, n, b)
-        print('new results: ')
-        for i, cq in enumerate(new):
-            print("{}) history: {}".format(i, history[0]))
-            print("{}) result: {}".format(i, cq.as_dict()))
-        return new
+        return self.dfs_beam_search(q_seq, history, tables, n, b)
 
     def dfs_beam_search(self, q_seq, history, tables, n, b):
         B = len(q_seq)
@@ -635,6 +630,10 @@ class SuperModel(nn.Module):
                 stack.append(cur)
             elif cur.next[-1] == 'finish':
                 results.append(cur_query)
+                print("{}) history: {}".format(len(results), cur.history[0]))
+                print("{}) result: {}".format(len(results),
+                    cur_query.as_dict()))
+                print()
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
