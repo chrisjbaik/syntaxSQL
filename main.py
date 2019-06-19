@@ -113,12 +113,12 @@ def test(model, schemas, n, b):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
-            db_name = 'singer'
+            db_name = 'pets_1'
         print('Database: {}'.format(db_name))
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = 'List the name of singers that do not have any song.'
+            nlq = 'Find the id of students who do not have a cat pet.'
         print('NLQ: {}'.format(nlq))
 
         sqls = translate(model, schemas, db_name, nlq, n, b)
