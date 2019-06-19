@@ -143,8 +143,9 @@ class SuperModel(nn.Module):
         print('old results: {}'.format(old))
         new = self.dfs_beam_search(q_seq, history, tables, n, b)
         print('new results: ')
-        for cq in new:
-            print(cq.as_dict())
+        for i, cq in enumerate(new):
+            print("{}) history: {}".format(i, history[0]))
+            print("{}) result: {}".format(i, cq.as_dict()))
         return new
 
     def dfs_beam_search(self, q_seq, history, tables, n, b):
@@ -286,7 +287,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'group_by'
                     stack.append(cur)
                     continue
-                cur.history.append('where')
+                cur.history[0].append('where')
                 cur_query.where = []
 
                 # TODO: make this beam searchable
@@ -372,7 +373,10 @@ class SuperModel(nn.Module):
                     cur_query.where.append(Query(set_op='none'))
                     sub_next = list(cur.next)
                     sub_next.append('keyword')
-                    sub_state = SearchState(sub_next, parent=cur)
+                    # TODO: this state needs to use a copy of
+                    #       cur and cur.history
+                    sub_state = SearchState(sub_next, parent=cur,
+                        history=cur.history)
                     stack.append(sub_state)
                 else:
                     cur_query.where.append('terminal')
@@ -382,7 +386,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'order_by'
                     stack.append(cur)
                     continue
-                cur.history.append('group_by')
+                cur.history[0].append('group_by')
                 cur_query.group_by = []
 
                 # TODO: make this beam searchable, sequence-to-set
@@ -412,7 +416,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'order_by'
                     stack.append(cur)
                     continue
-                cur.history.append('having')
+                cur.history[0].append('having')
                 cur_query.having = []
 
                 # TODO: make this beam searchable, sequence-to-set
@@ -529,7 +533,10 @@ class SuperModel(nn.Module):
                     cur_query.having.append(Query(set_op='none'))
                     sub_next = list(cur.next)
                     sub_next.append('keyword')
-                    sub_state = SearchState(sub_next, parent=cur)
+                    # TODO: this state needs to use a copy of
+                    #       cur and cur.history
+                    sub_state = SearchState(sub_next, parent=cur,
+                        history=cur.history)
                     stack.append(sub_state)
                 else:
                     cur_query.having.append('terminal')
@@ -539,7 +546,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'finish'
                     stack.append(cur)
                     continue
-                cur.history.append('order_by')
+                cur.history[0].append('order_by')
                 cur_query.order_by = []
 
                 # TODO: beam search-ify this sequence-to-set structure
@@ -904,7 +911,7 @@ class SuperModel(nn.Module):
         # print("{}".format(current_sql))
 
         if failed: return None
-        print("history:{}".format(history[0]))
+        print("old history: {}".format(history[0]))
         if len(sql_stack) > 0:
             current_sql = sql_stack[0]
         # print("{}".format(current_sql))
