@@ -81,10 +81,15 @@ def main():
         help='Max number of final queries to output')
     parser.add_argument('--b', default=5, type=int,
         help='Beam search parameter')
+    parser.add_argument('--test', action='store_true', help='For sanity check')
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
+
+    if args.test:
+        test(model, schemas, n, b)
+        exit()
 
     while True:
         address = ('localhost', args.port)  # family is deduced to be 'AF_INET'
@@ -103,6 +108,14 @@ def main():
             sqls = translate(model, schemas, db_name, nlq, args.n, args.b)
             conn.send_bytes('\t'.join(sqls))
         listener.close()
+
+def test(model, schemas, n, b):
+    db_name = 'concert_singer'
+    nlq = 'How many singers do we have?'
+
+    sqls = translate(model, schemas, db_name, nlq, n, b)
+    for sql in sqls:
+        print(sql)
 
 if __name__ == '__main__':
     main()
