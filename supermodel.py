@@ -176,7 +176,7 @@ class SuperModel(nn.Module):
                 cur.history[0].append('root')
 
                 # only do this on first level
-                if len(cur.next) == 1
+                if len(cur.next) == 1:
                     score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
                         hs_len, mkw_emb_var, mkw_len)
                     label = np.argmax(score[0].data.cpu().numpy())
