@@ -139,7 +139,7 @@ class SuperModel(nn.Module):
         #     return self.part_forward(q_seq,history,tables)
         # else:
         # return self.full_forward(q_seq, history, tables)
-        return self.dfs_beam_search(q_seq, history, tables, n, b)[0].as_dict()
+        return self.dfs_beam_search(q_seq, history, tables, n, b)
 
     def dfs_beam_search(self, q_seq, history, tables, n, b):
         B = len(q_seq)

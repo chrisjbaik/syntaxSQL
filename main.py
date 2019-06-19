@@ -57,11 +57,11 @@ def translate(model, schemas, db_name, nlq, n, b):
     tokens = tokenize(nlq)
 
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
-    sqls = model.forward([tokens] * 2, [], schema, n, b)
+    cqs = model.forward([tokens] * 2, [], schema, n, b)
 
     results = []
-    for sql in sqls:
-        results.append(model.gen_sql(sql, schemas[db_name]))
+    for cq in cqs:
+        results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
 
     return results
 
