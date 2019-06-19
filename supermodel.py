@@ -653,7 +653,7 @@ class SuperModel(nn.Module):
                 results.append(cur.query)
                 print("{}) history: {}".format(len(results), cur.history[0]))
                 print("{}) result: {}\n".format(len(results),
-                    cur_query.as_dict()))
+                    cur.query.as_dict()))
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
