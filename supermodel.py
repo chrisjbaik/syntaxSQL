@@ -219,7 +219,7 @@ class SuperModel(nn.Module):
                 col_num = np.argmax(col_num_score[0]) + 1
                 cols = np.argsort(-col_score[0])[:col_num]
 
-                cur.iter_cols = cols.reverse()
+                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'select_col'
                 cur.next_col_idx = 0
                 stack.append(cur)
@@ -251,7 +251,7 @@ class SuperModel(nn.Module):
                 else:
                     aggs = agg_idxs
 
-                cur.iter_aggs = aggs.reverse()
+                cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'select_agg'
                 cur.next_agg_idx = 0
                 stack.append(cur)
@@ -304,7 +304,7 @@ class SuperModel(nn.Module):
                     andor_cond = COND_OPS[label]
                     cur_query.where.append(andor_cond)
 
-                cur.iter_cols = cols.reverse()
+                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'where_col'
                 cur.next_col_idx = 0
                 stack.append(cur)
@@ -338,7 +338,7 @@ class SuperModel(nn.Module):
                         cur.history[0].append(col_name)
                     cur.history[0].append(NEW_WHERE_OPS[op])
 
-                cur.iter_ops = ops.reverse()
+                cur.iter_ops = ops[::-1]
                 cur.next[-1] = 'where_op'
                 cur.next_op_idx = 0
                 stack.append(cur)
@@ -427,7 +427,7 @@ class SuperModel(nn.Module):
                 col_num = np.argmax(col_num_score[0]) + 1
                 cols = np.argsort(-col_score[0])[:col_num]
 
-                cur.iter_cols = cols.reverse()
+                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'having_col'
                 cur.next_col_idx = 0
                 stack.append(cur)
@@ -458,7 +458,7 @@ class SuperModel(nn.Module):
                 else:
                     aggs = agg_idxs
 
-                cur.iter_aggs = aggs.reverse()
+                cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'having_agg'
                 cur.next_agg_idx = 0
                 stack.append(cur)
@@ -495,7 +495,7 @@ class SuperModel(nn.Module):
                         cur.history[0].append(col_name)
                     cur.history[0].append(NEW_WHERE_OPS[op])
 
-                cur.iter_ops = ops.reverse()
+                cur.iter_ops = ops[::-1]
                 cur.next[-1] = 'having_op'
                 cur.next_op_idx = 0
                 stack.append(cur)
@@ -558,7 +558,7 @@ class SuperModel(nn.Module):
                 col_num = np.argmax(col_num_score[0]) + 1
                 cols = np.argsort(-col_score[0])[:col_num]
 
-                cur.iter_cols = cols.reverse()
+                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'order_by_col'
                 cur.next_col_idx = 0
                 stack.append(cur)
@@ -593,7 +593,7 @@ class SuperModel(nn.Module):
                 else:
                     aggs = agg_idxs
 
-                cur.iter_aggs = aggs.reverse()
+                cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'order_by_agg'
                 cur.next_agg_idx = 0
                 stack.append(cur)
