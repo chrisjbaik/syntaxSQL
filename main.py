@@ -81,14 +81,16 @@ def main():
         help='Max number of final queries to output')
     parser.add_argument('--b', default=5, type=int,
         help='Beam search parameter')
-    parser.add_argument('--test', action='store_true', help='For sanity check')
+    parser.add_argument('--test',
+        default='concert_singer\tHow many singers do we have?',
+        help='For sanity check')
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
 
     if args.test:
-        test(model, schemas, args.n, args.b)
+        test(args.test, model, schemas, args.n, args.b)
         exit()
 
     while True:
@@ -109,10 +111,8 @@ def main():
             conn.send_bytes('\t'.join(sqls))
         listener.close()
 
-def test(model, schemas, n, b):
-    db_name = 'concert_singer'
-    nlq = 'How many singers do we have?'
-
+def test(input, model, schemas, n, b):
+    db_name, nlq = input.split('\t')
     sqls = translate(model, schemas, db_name, nlq, n, b)
     for sql in sqls:
         print(sql)
