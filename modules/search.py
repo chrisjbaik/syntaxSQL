@@ -26,18 +26,20 @@ class Query(object):
             sql['nested_label'] = self.set_op
         else:
             new_where = []
-            for item in self.where:
-                if instanceof(item, Query):
-                    new_where.append(item.as_dict())
-                else:
-                    new_where.append(item)
+            if isinstance(self.where, list):
+                for item in self.where:
+                    if instanceof(item, Query):
+                        new_where.append(item.as_dict())
+                    else:
+                        new_where.append(item)
 
             new_having = []
-            for item in self.having:
-                if instanceof(item, Query):
-                    new_having.append(item.as_dict())
-                else:
-                    new_having.append(item)
+            if isinstance(self.where, list):
+                for item in self.having:
+                    if instanceof(item, Query):
+                        new_having.append(item.as_dict())
+                    else:
+                        new_having.append(item)
 
             sql = {
                 'select': self.select,
