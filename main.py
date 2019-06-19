@@ -48,7 +48,7 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, schemas, db_name, nlq, n, b):
+def translate(model, schemas, db_name, nlq, n, b, _old=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -57,11 +57,15 @@ def translate(model, schemas, db_name, nlq, n, b):
     tokens = tokenize(nlq)
 
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
-    cqs = model.forward([tokens] * 2, [], schema, n, b)
-
     results = []
-    for cq in cqs:
-        results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
+    if _old:
+        cq = model.full_forward([tokens] * 2, [], schema)
+        results.append(model.gen_sql(cq, schemas[db_name]))
+    else:
+        cqs = model.dfs_beam_search([tokens] * 2, [], schema, n, b)
+
+        for cq in cqs:
+            results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
 
     return results
 
@@ -81,14 +85,22 @@ def main():
         help='Max number of final queries to output')
     parser.add_argument('--b', default=5, type=int,
         help='Beam search parameter')
-    parser.add_argument('--test', action='store_true', help='For sanity check')
+
+    parser.add_argument('--test_manual', action='store_true',
+        help='For manual command line testing')
+    parser.add_argument('--test_path', help='Path for dataset to test')
+
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
 
-    if args.test:
+    if args.test_manual:
         test(model, schemas, args.n, args.b)
+        exit()
+    elif args.test_path:
+        data = json.load(args.test_path)
+        test_old_and_new(data, model, schemas, args.n, args.b)
         exit()
 
     while True:
@@ -108,6 +120,16 @@ def main():
             sqls = translate(model, schemas, db_name, nlq, args.n, args.b)
             conn.send_bytes('\t'.join(sqls))
         listener.close()
+
+def test_old_and_new(data, model, schemas, n, b):
+    for task in data:
+        new = translate(model, schemas, task['db_id'], task['question'], n, b)
+        old = translate(model, schemas, task['db_id'], task['question'], n, b,
+            _old=True)
+        if new[0] != old[0]:
+            print(new)
+            print(old)
+            raise Exception('New version does not match old version.')
 
 def test(model, schemas, n, b):
     while True:
