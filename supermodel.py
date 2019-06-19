@@ -650,7 +650,7 @@ class SuperModel(nn.Module):
                     stack.append(cur)
                     continue
 
-                results.append(cur_query)
+                results.append(cur.query)
                 print("{}) history: {}".format(len(results), cur.history[0]))
                 print("{}) result: {}\n".format(len(results),
                     cur_query.as_dict()))
