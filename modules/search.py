@@ -82,7 +82,7 @@ class SearchState(object):
         self.next = next
 
         # parent SearchState if in subquery
-        self.parent = None
+        self.parent = parent
 
         # next col index, e.g. for where column predicates
         self.next_col_idx = None
