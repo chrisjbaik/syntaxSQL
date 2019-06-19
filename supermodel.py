@@ -360,7 +360,7 @@ class SuperModel(nn.Module):
 
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
-                    col_name_len, np.full(B, vet[1],dtype=np.int64))
+                    col_name_len, np.full(B, col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
@@ -516,7 +516,7 @@ class SuperModel(nn.Module):
 
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
-                    col_name_len, np.full(B, vet[1],dtype=np.int64))
+                    col_name_len, np.full(B, col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
@@ -622,7 +622,7 @@ class SuperModel(nn.Module):
 
                 score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, vet[1],dtype=np.int64))
+                    np.full(B, col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
 
                 dec_asc, has_limit = DEC_ASC_OPS[label]

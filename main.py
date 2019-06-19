@@ -114,7 +114,7 @@ def test(model, schemas, n, b):
         msg = raw_input('Test (hit enter for default) > ')
         if not msg:
             db_name = 'concert_singer'
-            nlq = 'How many singers do we have?'
+            nlq = 'Show countries where a singer above age 40 and a singer below 30 are from.'
         else:
             db_name, nlq = msg.split('\t')
         print('Database: {}'.format(db_name))
