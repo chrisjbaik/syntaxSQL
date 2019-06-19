@@ -637,9 +637,8 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'finish':
                 results.append(cur_query)
                 print("{}) history: {}".format(len(results), cur.history[0]))
-                print("{}) result: {}".format(len(results),
+                print("{}) result: {}\n".format(len(results),
                     cur_query.as_dict()))
-                print()
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
