@@ -111,7 +111,7 @@ def main():
 
 def test(model, schemas, n, b):
     while True:
-        msg = input('Test (hit enter for default) > ')
+        msg = raw_input('Test (hit enter for default) > ')
         if not msg:
             db_name = 'concert_singer'
             nlq = 'How many singers do we have?'
