@@ -21,9 +21,11 @@ class Query(object):
     # in format expected by SyntaxSQLNet
     def as_dict(self):
         if self.set_op != 'none':
-            sql = self.left.as_dict()
-            sql['nested_sql'] = self.right.as_dict()
-            sql['nested_label'] = self.set_op
+            sql = {
+                'sql': self.left.as_dict(),
+                'nested_sql': self.right.as_dict(),
+                'nested_label': self.set_op
+            }
         else:
             sql = {
                 'select': self.select
@@ -53,10 +55,10 @@ class Query(object):
             if self.order_by:
                 sql['orderBy'] = self.order_by
 
-        # add another 'sql' layer as prescribed
-        sql = {
-            'sql': sql
-        }
+            # add another 'sql' layer as prescribed
+            sql = {
+                'sql': sql
+            }
 
         return sql
 
