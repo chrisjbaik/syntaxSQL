@@ -173,8 +173,6 @@ class SuperModel(nn.Module):
 
             # Only one level of set ops permitted, so 'root' is once only
             if cur.next[-1] == 'root':
-                cur.history[0].append('root')
-
                 # only do this on first level
                 if len(cur.next) == 1:
                     score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
@@ -182,6 +180,8 @@ class SuperModel(nn.Module):
                     label = np.argmax(score[0].data.cpu().numpy())
                     label = SQL_OPS[label]
                     cur_query.set_op = label
+                else:
+                    cur.history[0].append('root')
 
                 cur.history[0].append(cur_query.set_op)
                 if cur_query.set_op == 'none':
