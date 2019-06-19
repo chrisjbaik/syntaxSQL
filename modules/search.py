@@ -19,11 +19,11 @@ class Query(object):
         self.limit = None
 
     # in format expected by SyntaxSQLNet
-    def as_dict(self):
+    def as_dict(self, sql_key=True):
         if self.set_op != 'none':
             sql = {
-                'sql': self.left.as_dict(),
-                'nested_sql': self.right.as_dict(),
+                'sql': self.left.as_dict(sql_key=False),
+                'nested_sql': self.right.as_dict(sql_key=False),
                 'nested_label': self.set_op
             }
         else:
@@ -55,10 +55,11 @@ class Query(object):
             if self.order_by:
                 sql['orderBy'] = self.order_by
 
-            # add another 'sql' layer as prescribed
-            sql = {
-                'sql': sql
-            }
+            # add another 'sql' layer in outermost layer
+            if sql_key:
+                sql = {
+                    'sql': sql
+                }
 
         return sql
 
