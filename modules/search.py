@@ -25,29 +25,33 @@ class Query(object):
             sql['nested_sql'] = self.right.as_dict()
             sql['nested_label'] = self.set_op
         else:
-            new_where = []
+            sql = {
+                'select': self.select
+            }
+
             if isinstance(self.where, list):
+                where = []
                 for item in self.where:
                     if instanceof(item, Query):
-                        new_where.append(item.as_dict())
+                        where.append(item.as_dict())
                     else:
-                        new_where.append(item)
+                        where.append(item)
+                sql['where'] = where
 
-            new_having = []
-            if isinstance(self.where, list):
+            if self.group_by:
+                sql['groupBy'] = self.group_by
+
+            if isinstance(self.having, list):
+                having = []
                 for item in self.having:
                     if instanceof(item, Query):
-                        new_having.append(item.as_dict())
+                        having.append(item.as_dict())
                     else:
-                        new_having.append(item)
+                        having.append(item)
+                sql['having'] = having
 
-            sql = {
-                'select': self.select,
-                'where': new_where,
-                'groupBy': self.group_by if self.group_by else [],
-                'having': new_having,
-                'orderBy': self.order_by if self.order_by else [],
-            }
+            if self.order_by:
+                sql['orderBy'] = self.order_by
 
         # add another 'sql' layer as prescribed
         sql = {
