@@ -142,7 +142,9 @@ class SuperModel(nn.Module):
         old = self.full_forward(q_seq, history, tables)
         print('old results: {}'.format(old))
         new = self.dfs_beam_search(q_seq, history, tables, n, b)
-        print('new results: {}'.format(new))
+        print('new results: ')
+        for cq in new:
+            print(cq.as_dict())
         return new
 
     def dfs_beam_search(self, q_seq, history, tables, n, b):
