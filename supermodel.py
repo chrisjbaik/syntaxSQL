@@ -19,8 +19,10 @@ from models.multisql_predictor import MultiSqlPredictor
 from models.root_teminal_predictor import RootTeminalPredictor
 from models.andor_predictor import AndOrPredictor
 from models.op_predictor import OpPredictor
-from preprocess_train_dev_data import index_to_column_name
 
+from modules.search import Query, SearchState
+
+from preprocess_train_dev_data import index_to_column_name
 
 SQL_OPS = ('none','intersect', 'union', 'except')
 KW_OPS = ('where','groupBy','orderBy')
@@ -132,11 +134,499 @@ class SuperModel(nn.Module):
             self.cuda()
         self.path_not_found = 0
 
-    def forward(self,q_seq,history,tables):
+    def forward(self,q_seq,history,tables, n, b):
         # if self.part:
         #     return self.part_forward(q_seq,history,tables)
         # else:
-        return self.full_forward(q_seq, history, tables)
+        # return self.full_forward(q_seq, history, tables)
+        return self.dfs_beam_search(q_seq, history, tables, n, b)[0].as_dict()
+
+    def dfs_beam_search(self, q_seq, history, tables, n, b):
+        B = len(q_seq)
+        q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
+        col_seq = to_batch_tables(tables, B, self.table_type)
+        col_emb_var, col_name_len, col_len = self.embed_layer.gen_col_batch(col_seq)
+
+        mkw_emb_var = self.embed_layer.gen_word_list_embedding(["none","except","intersect","union"],(B))
+        mkw_len = np.full(q_len.shape, 4,dtype=np.int64)
+        kw_emb_var = self.embed_layer.gen_word_list_embedding(["where", "group by", "order by"], (B))
+        kw_len = np.full(q_len.shape, 3, dtype=np.int64)
+
+        # stack to store DFS beam search states
+        stack = []
+        stack.append(SearchState(['root']))
+
+        # completed queries
+        results = []
+
+        while stack:
+            if len(results) >= n:
+                break
+
+            cur = stack.pop()
+            cur_query = cur.query.find_subquery(cur.next)
+
+            hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                cur.history)
+
+            # Only one level of set ops permitted, so 'root' is once only
+            if cur.next[-1] == 'root':
+                score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, mkw_emb_var, mkw_len)
+                label = np.argmax(score[0].data.cpu().numpy())
+                label = SQL_OPS[label]
+                cur_query.set_op = label
+                cur.history[0].append(label)
+                if label == 'none':
+                    cur.next[-1] = 'keyword'
+                    stack.append(cur)
+                else:
+                    cur_query.left = Query(set_op='none')
+                    cur_query.right = Query(set_op='none')
+                    cur.next = ['left', 'keyword']
+                    stack.append(cur)
+            elif cur.next[-1] == 'keyword':
+                score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, kw_emb_var, kw_len)
+                kw_num_score, kw_score = [x.data.cpu().numpy() for x in score]
+                num_kw = np.argmax(kw_num_score[0])
+
+                kw_score = list(np.argsort(-kw_score[0])[:num_kw])
+
+                keywords = []
+                for kw in kw_score:
+                    keywords.append(KW_OPS[kw])
+
+                cur_query.where = 'where' in keywords
+                cur_query.group_by = 'groupBy' in keywords
+                cur_query.order_by = 'orderBy' in keywords
+
+                cur.next[-1] = 'select'
+                stack.append(cur)
+            elif cur.next[-1] == 'select':
+                cur.history[0].append('select')
+                cur_query.select = []
+
+                # TODO: beam search-ify this sequence-to-set structure
+                #       will also need to copy states for each combination
+                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+                    col_emb_var, col_len, col_name_len)
+                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
+                col_num = np.argmax(col_num_score[0]) + 1
+                cols = np.argsort(-col_score[0])[:col_num]
+
+                cur.iter_cols = cols
+                cur.next[-1] = 'select_col'
+                cur.next_col_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'select_col':
+                if cur.next_col_idx >= len(cur.iter_cols):
+                    cur.next[-1] = 'where'
+                    cur.next_col_idx = None
+                    cur.iter_cols = None
+                    stack.append(cur)
+                    continue
+
+                col = cur.iter_cols[cur.next_col_idx]
+                col_name = index_to_column_name(col, tables)
+                cur.history[0].append(col_name)
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
+                cur_query.select.append(col_name)
+
+                score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, vet[2],dtype=np.int64))
+                agg_num_score, agg_score = \
+                    [x.data.cpu().numpy() for x in score]
+                agg_num = np.argmax(agg_num_score[0])
+                agg_idxs = np.argsort(-agg_score[0])[:agg_num]
+
+                if not agg_idxs:
+                    aggs = ['none_agg']
+                else:
+                    aggs = agg_idxs
+
+                cur.iter_aggs = aggs
+                cur.next[-1] = 'select_agg'
+                cur.next_agg_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'select_agg':
+                if cur.next_agg_idx >= len(cur.iter_aggs):
+                    cur.next[-1] = 'select_col'
+                    cur.next_col_idx += 1
+                    cur.next_agg_idx = None
+                    cur.iter_aggs = None
+                    stack.append(cur)
+                    continue
+
+                agg = cur.iter_aggs[cur.next_agg_idx]
+
+                if agg == 'none_agg':
+                    cur_query.select.append('none_agg')
+                else:
+                    col = cur.iter_cols[cur.next_col_idx]
+                    col_name = index_to_column_name(col, tables)
+                    if cur.next_agg_idx != 0:
+                        cur.history[0].append(col_name)
+                        cur_query.select.append(col_name)
+                    cur.history[0].append(AGG_OPS[agg])
+                    cur_query.select.append(AGG_OPS[agg])
+
+                cur.next_agg_idx += 1
+                stack.append(cur)
+            elif cur.next[-1] == 'where':
+                if not cur_query.where:
+                    cur.next[-1] = 'group_by'
+                    stack.append(cur)
+                    continue
+                cur.history.append('where')
+                cur_query.where = []
+
+                # TODO: make this beam searchable
+                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+                    col_emb_var, col_len, col_name_len)
+                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
+                col_num = np.argmax(col_num_score[0]) + 1
+                cols = np.argsort(-col_score[0])[:col_num]
+
+                # compute and/or if more than one column
+                if col_num > 1:
+                    score = self.andor.forward(q_emb_var, q_len, hs_emb_var,
+                        hs_len)
+                    label = np.argmax(score[0].data.cpu().numpy())
+                    andor_cond = COND_OPS[label]
+                    cur_query.where.append(andor_cond)
+
+                cur.iter_cols = cols
+                cur.next[-1] = 'where_col'
+                cur.next_col_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'where_col':
+                if cur.next_col_idx >= len(cur.iter_cols):
+                    cur.next[-1] = 'group_by'
+                    cur.next_col_idx = None
+                    cur.iter_cols = None
+                    stack.append(cur)
+                    continue
+
+                col = cur.iter_cols[cur.next_col_idx]
+
+                col_name = index_to_column_name(col, tables)
+                cur.history[0].append(col_name)
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
+
+                # TODO: make this beam searchable. perhaps separate
+                #       b_num, b_col, and b_op?
+                score = self.op.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, vet[2],dtype=np.int64))
+                op_num_score, op_score = \
+                    [x.data.cpu().numpy() for x in score]
+                op_num = np.argmax(op_num_score[0]) + 1
+                ops = np.argsort(-op_score[0])[:op_num]
+
+                cur.iter_ops = ops
+                cur.next[-1] = 'where_op'
+                cur.next_op_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'where_op':
+                if cur.next_op_idx >= len(cur.iter_ops):
+                    cur.next[-1] = 'where_col'
+                    cur.next_col_idx += 1
+                    cur.next_op_idx = None
+                    cur.iter_ops = None
+                    stack.append(cur)
+                    continue
+
+                col = cur.iter_cols[cur.next_col_idx]
+                col_name = index_to_column_name(col, tables)
+                op = cur.iter_ops[cur.next_op_idx]
+
+                if cur.next_op_idx != 0:
+                    cur.history[0].append(col_name)
+                cur.history[0].append(NEW_WHERE_OPS[op])
+
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
+
+                score = self.root_teminal.forward(q_emb_var, q_len,
+                    hs_emb_var, hs_len, col_emb_var, col_len,
+                    col_name_len, np.full(B, vet[1],dtype=np.int64))
+                label = np.argmax(score[0].data.cpu().numpy())
+                label = ROOT_TERM_OPS[label]
+
+                cur_query.where.append(col_name)
+                cur_query.where.append(NEW_WHERE_OPS[op])
+
+                cur.next_op_idx += 1
+                if label == 'root':
+                    cur.history[0].append('root')
+                    cur_query.where.append(Query(set_op='none'))
+                    sub_next = list(cur.next)
+                    sub_next.append('keyword')
+                    sub_state = SearchState(sub_next, parent=cur)
+                    stack.append(sub_state)
+                else:
+                    cur_query.where.append('terminal')
+                    stack.append(cur)
+            elif cur.next[-1] == 'group_by':
+                if not cur_query.group_by:
+                    cur.next[-1] = 'order_by'
+                    stack.append(cur)
+                    continue
+                cur.history.append('group_by')
+                cur_query.group_by = []
+
+                # TODO: make this beam searchable, sequence-to-set
+                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+                    col_emb_var, col_len, col_name_len)
+                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
+                col_num = np.argmax(col_num_score[0]) + 1
+                cols = np.argsort(-col_score[0])[:col_num]
+
+                for col in cols:
+                    col_name = index_to_column_name(col, tables)
+                    cur.history[0].append(col_name)
+                    cur_query.group_by.append(col_name)
+
+                score = self.having.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, cols[0],dtype=np.int64))
+                label = np.argmax(score[0].data.cpu().numpy())
+                if label == 1:
+                    cur.next[-1] = 'having'
+                    stack.append(cur)
+                else:
+                    cur.next[-1] = 'order_by'
+                    stack.append(cur)
+            elif cur.next[-1] == 'having':
+                if not cur_query.having:
+                    cur.next[-1] = 'order_by'
+                    stack.append(cur)
+                    continue
+                cur.history.append('having')
+                cur_query.having = []
+
+                # TODO: make this beam searchable, sequence-to-set
+                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+                    col_emb_var, col_len, col_name_len)
+                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
+                col_num = np.argmax(col_num_score[0]) + 1
+                cols = np.argsort(-col_score[0])[:col_num]
+
+                cur.iter_cols = cols
+                cur.next[-1] = 'having_col'
+                cur.next_col_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'having_col':
+                if cur.next_col_idx >= len(cur.iter_cols):
+                    cur.next[-1] = 'order_by'
+                    cur.next_col_idx = None
+                    cur.iter_cols = None
+                    stack.append(cur)
+                    continue
+
+                col = cur.iter_cols[cur.next_col_idx]
+                col_name = index_to_column_name(col, tables)
+                cur.history[0].append(col_name)
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
+
+                score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, vet[2],dtype=np.int64))
+                agg_num_score, agg_score = \
+                    [x.data.cpu().numpy() for x in score]
+                agg_num = np.argmax(agg_num_score[0])
+                agg_idxs = np.argsort(-agg_score[0])[:agg_num]
+
+                if not agg_idxs:
+                    aggs = ['none_agg']
+                else:
+                    aggs = agg_idxs
+
+                cur.iter_aggs = aggs
+                cur.next[-1] = 'having_agg'
+                cur.next_agg_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'having_agg':
+                if cur.next_agg_idx >= len(cur.iter_aggs):
+                    cur.next[-1] = 'having_col'
+                    cur.next_col_idx += 1
+                    cur.next_agg_idx = None
+                    cur.iter_aggs = None
+                    stack.append(cur)
+                    continue
+
+                agg = cur.iter_aggs[cur.next_agg_idx]
+
+                if agg != 'none_agg':
+                    col = cur.iter_cols[cur.next_col_idx]
+                    col_name = index_to_column_name(col, tables)
+                    if cur.next_agg_idx != 0:
+                        cur.history[0].append(col_name)
+                    cur.history[0].append(AGG_OPS[agg])
+
+                # TODO: make this beam searchable. perhaps separate
+                #       b_num, b_col, and b_op?
+                score = self.op.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, vet[2],dtype=np.int64))
+                op_num_score, op_score = \
+                    [x.data.cpu().numpy() for x in score]
+                op_num = np.argmax(op_num_score[0]) + 1
+                ops = np.argsort(-op_score[0])[:op_num]
+
+                cur.iter_ops = ops
+                cur.next[-1] = 'having_op'
+                cur.next_op_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'having_op':
+                if cur.next_op_idx >= len(cur.iter_ops):
+                    cur.next[-1] = 'having_agg'
+                    cur.next_agg_idx += 1
+                    cur.next_op_idx = None
+                    cur.iter_ops = None
+                    stack.append(cur)
+                    continue
+
+                col = cur.iter_cols[cur.next_col_idx]
+                col_name = index_to_column_name(col, tables)
+                agg = cur.iter_aggs[cur.next_agg_idx]
+                op = cur.iter_ops[cur.next_op_idx]
+
+                if cur.next_op_idx != 0:
+                    cur.history[0].append(col_name)
+                cur.history[0].append(NEW_WHERE_OPS[op])
+
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
+
+                score = self.root_teminal.forward(q_emb_var, q_len,
+                    hs_emb_var, hs_len, col_emb_var, col_len,
+                    col_name_len, np.full(B, vet[1],dtype=np.int64))
+                label = np.argmax(score[0].data.cpu().numpy())
+                label = ROOT_TERM_OPS[label]
+
+                cur_query.having.append(col_name)
+                if agg == 'none_agg':
+                    cur_query.having.append('none_agg')
+                else:
+                    cur_query.having.append(AGG_OPS[agg])
+                cur_query.having.append(NEW_WHERE_OPS[op])
+
+                cur.next_op_idx += 1
+                if label == 'root':
+                    cur.history[0].append('root')
+                    cur_query.having.append(Query(set_op='none'))
+                    sub_next = list(cur.next)
+                    sub_next.append('keyword')
+                    sub_state = SearchState(sub_next, parent=cur)
+                    stack.append(sub_state)
+                else:
+                    cur_query.having.append('terminal')
+                    stack.append(cur)
+            elif cur.next[-1] == 'order_by':
+                if not cur_query.order_by:
+                    cur.next[-1] = 'finish'
+                    stack.append(cur)
+                    continue
+                cur.history.append('order_by')
+                cur_query.order_by = []
+
+                # TODO: beam search-ify this sequence-to-set structure
+                #       will also need to copy states for each combination
+                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+                    col_emb_var, col_len, col_name_len)
+                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
+                col_num = np.argmax(col_num_score[0]) + 1
+                cols = np.argsort(-col_score[0])[:col_num]
+
+                cur.iter_cols = cols
+                cur.next[-1] = 'order_by_col'
+                cur.next_col_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'order_by_col':
+                if cur.next_col_idx >= len(cur.iter_cols):
+                    # redirect to parent if subquery
+                    if cur.parent:
+                        stack.append(cur.parent)
+                    else:
+                        cur.next[-1] = 'finish'
+                        cur.next_col_idx = None
+                        cur.iter_cols = None
+                        stack.append(cur)
+                    continue
+
+                col = cur.iter_cols[cur.next_col_idx]
+                col_name = index_to_column_name(col, tables)
+                cur.history[0].append(col_name)
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
+
+                score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, vet[2],dtype=np.int64))
+                agg_num_score, agg_score = \
+                    [x.data.cpu().numpy() for x in score]
+                agg_num = np.argmax(agg_num_score[0])
+                agg_idxs = np.argsort(-agg_score[0])[:agg_num]
+
+                if not agg_idxs:
+                    aggs = ['none_agg']
+                else:
+                    aggs = agg_idxs
+
+                cur.iter_aggs = aggs
+                cur.next[-1] = 'order_by_agg'
+                cur.next_agg_idx = 0
+                stack.append(cur)
+            elif cur.next[-1] == 'order_by_agg':
+                if cur.next_agg_idx >= len(cur.iter_aggs):
+                    cur.next[-1] = 'order_by_col'
+                    cur.next_col_idx += 1
+                    cur.next_agg_idx = None
+                    cur.iter_aggs = None
+                    stack.append(cur)
+                    continue
+
+                agg = cur.iter_aggs[cur.next_agg_idx]
+                col = cur.iter_cols[cur.next_col_idx]
+                col_name = index_to_column_name(col, tables)
+
+                if cur.next_agg_idx != 0:
+                    cur.history[0].append(col_name)
+                    cur_query.order_by.append(col_name)
+
+                if agg == 'none_agg':
+                    cur.history[0].append('none_agg')
+                    cur_query.order_by.append('none_agg')
+                else:
+                    cur.history[0].append(AGG_OPS[agg])
+                    cur_query.order_by.append(AGG_OPS[agg])
+
+                score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len, col_emb_var, col_len, col_name_len,
+                    np.full(B, vet[1],dtype=np.int64))
+                label = np.argmax(score[0].data.cpu().numpy())
+
+                dec_asc, has_limit = DEC_ASC_OPS[label]
+                cur.history[0].append(dec_asc)
+                cur_query.order_by.append(dec_asc)
+                cur_query.order_by.append(has_limit)
+                cur_query.limit = has_limit
+
+                cur.next_agg_idx += 1
+                stack.append(cur)
+            elif cur.next[-1] == 'finish':
+                results.append(cur_query)
+            else:
+                raise Exception('Undefined `next`: {}'.format(cur.next))
+
+        return results
+
 
     def full_forward(self, q_seq, history, tables):
         B = len(q_seq)
@@ -172,12 +662,15 @@ class SuperModel(nn.Module):
             vet = stack.pop()
             # print(vet)
             hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(history)
+
+            # TODO: what is this? idx_stack has something with nested queries
             if len(idx_stack) > 0 and stack.size() < idx_stack[-1]:
                 # print("pop!!!!!!!!!!!!!!!!!!!!!!")
                 idx_stack.pop()
                 current_sql = sql_stack.pop()
                 kw = kw_stack.pop()
                 # current_sql = current_sql["sql"]
+
             # history.append(vet)
             # print("hs_emb:{} hs_len:{}".format(hs_emb_var.size(),hs_len.size()))
             if isinstance(vet,tuple) and vet[0] == "root":

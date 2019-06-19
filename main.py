@@ -48,7 +48,7 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, schemas, db_name, nlq):
+def translate(model, schemas, db_name, nlq, n, b):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -57,7 +57,7 @@ def translate(model, schemas, db_name, nlq):
     tokens = tokenize(nlq)
 
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
-    sqls = model.forward([tokens] * 2, [], schema)
+    sqls = model.forward([tokens] * 2, [], schema, n, b)
 
     results = []
     for sql in sqls:
@@ -77,6 +77,10 @@ def main():
         default='generated_data_augment/saved_models')
     parser.add_argument('--glove_path', default='glove')
     parser.add_argument('--toy', action='store_true')
+    parser.add_argument('--n', default=10, type=int,
+        help='Max number of final queries to output')
+    parser.add_argument('--b', default=5, type=int,
+        help='Beam search parameter')
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
@@ -96,7 +100,7 @@ def main():
                 break
 
             db_name, nlq = msg.split('\t')
-            sqls = translate(model, schemas, db_name, nlq)
+            sqls = translate(model, schemas, db_name, nlq, args.n, args.b)
             conn.send_bytes('\t'.join(sqls))
         listener.close()
 
