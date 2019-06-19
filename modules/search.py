@@ -44,9 +44,9 @@ class Query(object):
             sql = {
                 'select': self.select,
                 'where': new_where,
-                'groupBy': self.group_by,
+                'groupBy': self.group_by if self.group_by else [],
                 'having': new_having,
-                'orderBy': self.order_by,
+                'orderBy': self.order_by if self.order_by else [],
             }
 
         # add another 'sql' layer as prescribed
