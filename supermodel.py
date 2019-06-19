@@ -329,6 +329,11 @@ class SuperModel(nn.Module):
                 op_num = np.argmax(op_num_score[0]) + 1
                 ops = np.argsort(-op_score[0])[:op_num]
 
+                for i, op in enumerate(ops):
+                    if i != 0:
+                        cur.history[0].append(col_name)
+                    cur.history[0].append(NEW_WHERE_OPS[op])
+
                 cur.iter_ops = ops
                 cur.next[-1] = 'where_op'
                 cur.next_op_idx = 0
@@ -345,13 +350,6 @@ class SuperModel(nn.Module):
                 col = cur.iter_cols[cur.next_col_idx]
                 col_name = index_to_column_name(col, tables)
                 op = cur.iter_ops[cur.next_op_idx]
-
-                if cur.next_op_idx != 0:
-                    cur.history[0].append(col_name)
-                cur.history[0].append(NEW_WHERE_OPS[op])
-
-                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
-                    cur.history)
 
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
@@ -484,6 +482,11 @@ class SuperModel(nn.Module):
                 op_num = np.argmax(op_num_score[0]) + 1
                 ops = np.argsort(-op_score[0])[:op_num]
 
+                for i, op in enumerate(ops):
+                    if i != 0:
+                        cur.history[0].append(col_name)
+                    cur.history[0].append(NEW_WHERE_OPS[op])
+
                 cur.iter_ops = ops
                 cur.next[-1] = 'having_op'
                 cur.next_op_idx = 0
@@ -501,14 +504,7 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(col, tables)
                 agg = cur.iter_aggs[cur.next_agg_idx]
                 op = cur.iter_ops[cur.next_op_idx]
-
-                if cur.next_op_idx != 0:
-                    cur.history[0].append(col_name)
-                cur.history[0].append(NEW_WHERE_OPS[op])
-
-                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
-                    cur.history)
-
+                
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
                     col_name_len, np.full(B, col, dtype=np.int64))
