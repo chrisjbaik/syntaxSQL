@@ -367,6 +367,7 @@ class SuperModel(nn.Module):
                 cur.next_op_idx += 1
                 if label == 'root':
                     cur.history[0].append('root')
+                    cur.history[0].append('none')
                     cur_query.where.append(Query(set_op='none'))
                     sub_next = list(cur.next)
                     sub_next.append('keyword')
@@ -529,6 +530,7 @@ class SuperModel(nn.Module):
                 cur.next_op_idx += 1
                 if label == 'root':
                     cur.history[0].append('root')
+                    cur.history[0].append('none')
                     cur_query.having.append(Query(set_op='none'))
                     sub_next = list(cur.next)
                     sub_next.append('keyword')
