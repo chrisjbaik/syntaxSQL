@@ -81,16 +81,17 @@ def main():
         help='Max number of final queries to output')
     parser.add_argument('--b', default=5, type=int,
         help='Beam search parameter')
-    parser.add_argument('--test',
+    parser.add_argument('--test', action='store_true', help='For sanity check')
+    parser.add_argument('--test_in',
         default='concert_singer\tHow many singers do we have?',
-        help='For sanity check')
+        help='Input for test')
     args = parser.parse_args()
 
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
 
     if args.test:
-        test(args.test, model, schemas, args.n, args.b)
+        test(args.test_in, model, schemas, args.n, args.b)
         exit()
 
     while True:
