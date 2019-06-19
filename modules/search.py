@@ -32,7 +32,7 @@ class Query(object):
             if isinstance(self.where, list):
                 where = []
                 for item in self.where:
-                    if instanceof(item, Query):
+                    if isinstance(item, Query):
                         where.append(item.as_dict())
                     else:
                         where.append(item)
@@ -44,7 +44,7 @@ class Query(object):
             if isinstance(self.having, list):
                 having = []
                 for item in self.having:
-                    if instanceof(item, Query):
+                    if isinstance(item, Query):
                         having.append(item.as_dict())
                     else:
                         having.append(item)
