@@ -111,15 +111,15 @@ def main():
 
 def test(model, schemas, n, b):
     while True:
-        input = input('Test (hit enter for default) > ')
-        if not input:
+        msg = input('Test (hit enter for default) > ')
+        if not msg:
             db_name = 'concert_singer'
             nlq = 'How many singers do we have?'
         else:
-            db_name, nlq = input.split('\t')
+            db_name, nlq = msg.split('\t')
         print('Database: {}'.format(db_name))
         print('NLQ: {}'.format(nlq))
-        
+
         sqls = translate(model, schemas, db_name, nlq, n, b)
         for sql in sqls:
             print(sql)
