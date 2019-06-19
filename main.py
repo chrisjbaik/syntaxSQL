@@ -88,7 +88,7 @@ def main():
     model = load_model(args.models_path, args.glove_path, args.toy)
 
     if args.test:
-        test(model, schemas, n, b)
+        test(model, schemas, args.n, args.b)
         exit()
 
     while True:
