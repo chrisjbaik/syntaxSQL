@@ -368,13 +368,14 @@ class SuperModel(nn.Module):
                 if label == 'root':
                     cur.history[0].append('root')
                     cur.history[0].append('none')
-                    cur_query.where.append(Query(set_op='none'))
+                    subquery = Query(set_op='none')
+                    cur_query.where.append(subquery)
                     sub_next = list(cur.next)
                     sub_next.append('keyword')
                     # TODO: this state needs to use a copy of
                     #       cur and cur.history
                     sub_state = SearchState(sub_next, parent=cur,
-                        history=cur.history)
+                        history=cur.history, query=subquery)
                     stack.append(sub_state)
                 else:
                     cur_query.where.append('terminal')
@@ -531,13 +532,14 @@ class SuperModel(nn.Module):
                 if label == 'root':
                     cur.history[0].append('root')
                     cur.history[0].append('none')
-                    cur_query.having.append(Query(set_op='none'))
+                    subquery = Query(set_op='none')
+                    cur_query.having.append(subquery)
                     sub_next = list(cur.next)
                     sub_next.append('keyword')
                     # TODO: this state needs to use a copy of
                     #       cur and cur.history
                     sub_state = SearchState(sub_next, parent=cur,
-                        history=cur.history)
+                        history=cur.history, query=subquery)
                     stack.append(sub_state)
                 else:
                     cur_query.having.append('terminal')
