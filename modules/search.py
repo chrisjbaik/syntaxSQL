@@ -61,9 +61,9 @@ class Query(object):
             return self.left.find_subquery(next[1:])
         elif next[0] == 'right':
             return self.right.find_subquery(next[1:])
-        elif next[0] == 'where':
+        elif next[0] == 'where' and isinstance(self.where, list):
             return self.where[-1].find_subquery(next[1:])
-        elif next[0] == 'having':
+        elif next[0] == 'having' and isinstance(self.having, list):
             return self.having[-1].find_subquery(next[1:])
         else:
             return self
