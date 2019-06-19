@@ -208,6 +208,8 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
                 cur_query.select = []
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
 
                 # TODO: beam search-ify this sequence-to-set structure
                 #       will also need to copy states for each combination
@@ -284,6 +286,8 @@ class SuperModel(nn.Module):
                     continue
                 cur.history[0].append('where')
                 cur_query.where = []
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
 
                 # TODO: make this beam searchable
                 score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
@@ -381,6 +385,8 @@ class SuperModel(nn.Module):
                     continue
                 cur.history[0].append('group_by')
                 cur_query.group_by = []
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
 
                 # TODO: make this beam searchable, sequence-to-set
                 score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
@@ -411,6 +417,8 @@ class SuperModel(nn.Module):
                     continue
                 cur.history[0].append('having')
                 cur_query.having = []
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
 
                 # TODO: make this beam searchable, sequence-to-set
                 score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
@@ -504,7 +512,7 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(col, tables)
                 agg = cur.iter_aggs[cur.next_agg_idx]
                 op = cur.iter_ops[cur.next_op_idx]
-                
+
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
                     col_name_len, np.full(B, col, dtype=np.int64))
@@ -539,6 +547,8 @@ class SuperModel(nn.Module):
                     continue
                 cur.history[0].append('order_by')
                 cur_query.order_by = []
+                hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                    cur.history)
 
                 # TODO: beam search-ify this sequence-to-set structure
                 #       will also need to copy states for each combination
