@@ -111,13 +111,14 @@ def main():
 
 def test(model, schemas, n, b):
     while True:
-        msg = raw_input('Test (hit enter for default) > ')
-        if not msg:
-            db_name = 'concert_singer'
-            nlq = 'Show countries where a singer above age 40 and a singer below 30 are from.'
-        else:
-            db_name, nlq = msg.split('\t')
+        db_name = raw_input('Database (hit enter for default) > ')
+        if not db_name:
+            db_name = 'singer'
         print('Database: {}'.format(db_name))
+
+        nlq = raw_input('NLQ (hit enter for default) > ')
+        if not nlq:
+            nlq = 'List the name of singers that do not have any song.'
         print('NLQ: {}'.format(nlq))
 
         sqls = translate(model, schemas, db_name, nlq, n, b)
