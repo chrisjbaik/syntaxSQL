@@ -99,7 +99,7 @@ def main():
         test(model, schemas, args.n, args.b)
         exit()
     elif args.test_path:
-        data = json.load(args.test_path)
+        data = json.load(open(args.test_path))
         test_old_and_new(data, model, schemas, args.n, args.b)
         exit()
 
@@ -122,14 +122,19 @@ def main():
         listener.close()
 
 def test_old_and_new(data, model, schemas, n, b):
+    correct = 0
     for task in data:
         new = translate(model, schemas, task['db_id'], task['question'], n, b)
         old = translate(model, schemas, task['db_id'], task['question'], n, b,
             _old=True)
-        if new[0] != old[0]:
+        if new[0] == old[0]:
+            correct += 1
+        else:
             print(new)
             print(old)
             raise Exception('New version does not match old version.')
+    print('Correct: {}/{}'.format(correct, len(data)))
+
 
 def test(model, schemas, n, b):
     while True:
