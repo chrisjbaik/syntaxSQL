@@ -236,7 +236,7 @@ class SuperModel(nn.Module):
 
                 score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, vet[2],dtype=np.int64))
+                    np.full(B, col, dtype=np.int64))
                 agg_num_score, agg_score = \
                     [x.data.cpu().numpy() for x in score]
                 agg_num = np.argmax(agg_num_score[0])
@@ -321,7 +321,7 @@ class SuperModel(nn.Module):
                 #       b_num, b_col, and b_op?
                 score = self.op.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, vet[2],dtype=np.int64))
+                    np.full(B, col, dtype=np.int64))
                 op_num_score, op_score = \
                     [x.data.cpu().numpy() for x in score]
                 op_num = np.argmax(op_num_score[0]) + 1
@@ -436,7 +436,7 @@ class SuperModel(nn.Module):
 
                 score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, vet[2],dtype=np.int64))
+                    np.full(B, col, dtype=np.int64))
                 agg_num_score, agg_score = \
                     [x.data.cpu().numpy() for x in score]
                 agg_num = np.argmax(agg_num_score[0])
@@ -473,7 +473,7 @@ class SuperModel(nn.Module):
                 #       b_num, b_col, and b_op?
                 score = self.op.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, vet[2],dtype=np.int64))
+                    np.full(B, col, dtype=np.int64))
                 op_num_score, op_score = \
                     [x.data.cpu().numpy() for x in score]
                 op_num = np.argmax(op_num_score[0]) + 1
@@ -568,7 +568,7 @@ class SuperModel(nn.Module):
 
                 score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, vet[2],dtype=np.int64))
+                    np.full(B, col, dtype=np.int64))
                 agg_num_score, agg_score = \
                     [x.data.cpu().numpy() for x in score]
                 agg_num = np.argmax(agg_num_score[0])
