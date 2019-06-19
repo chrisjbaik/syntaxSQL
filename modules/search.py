@@ -99,7 +99,7 @@ class SearchState(object):
         self.iter_aggs = None
 
         if not history:
-            history = [["root"]]*2
+            history = [[]]*2
         self.history = history
 
         if not query:

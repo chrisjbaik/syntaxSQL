@@ -173,19 +173,24 @@ class SuperModel(nn.Module):
 
             # Only one level of set ops permitted, so 'root' is once only
             if cur.next[-1] == 'root':
-                score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, mkw_emb_var, mkw_len)
-                label = np.argmax(score[0].data.cpu().numpy())
-                label = SQL_OPS[label]
-                cur_query.set_op = label
-                cur.history[0].append(label)
-                if label == 'none':
+                cur.history[0].append('root')
+
+                # only do this on first level
+                if len(cur.next) == 1
+                    score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
+                        hs_len, mkw_emb_var, mkw_len)
+                    label = np.argmax(score[0].data.cpu().numpy())
+                    label = SQL_OPS[label]
+                    cur_query.set_op = label
+
+                cur.history[0].append(cur_query.set_op)
+                if cur_query.set_op == 'none':
                     cur.next[-1] = 'keyword'
                     stack.append(cur)
                 else:
                     cur_query.left = Query(set_op='none')
                     cur_query.right = Query(set_op='none')
-                    cur.next = ['left', 'keyword']
+                    cur.next = ['left', 'root']
                     stack.append(cur)
             elif cur.next[-1] == 'keyword':
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
@@ -638,6 +643,11 @@ class SuperModel(nn.Module):
                 # redirect to parent if subquery
                 if cur.parent:
                     stack.append(cur.parent)
+                    continue
+                elif cur.next[0] == 'left':
+                    # redirect to other child if set op
+                    cur.next = ['right', 'root']
+                    stack.append(cur)
                     continue
 
                 results.append(cur_query)
