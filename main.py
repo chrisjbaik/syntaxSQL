@@ -88,7 +88,7 @@ def main():
     model = load_model(args.models_path, args.glove_path, args.toy)
 
     if args.test:
-        test(args.test_in, model, schemas, args.n, args.b)
+        test(model, schemas, args.n, args.b)
         exit()
 
     while True:
@@ -109,7 +109,7 @@ def main():
             conn.send_bytes('\t'.join(sqls))
         listener.close()
 
-def test(input, model, schemas, n, b):
+def test(model, schemas, n, b):
     while True:
         input = input('Test (hit enter for default) > ')
         if not input:
@@ -117,6 +117,9 @@ def test(input, model, schemas, n, b):
             nlq = 'How many singers do we have?'
         else:
             db_name, nlq = input.split('\t')
+        print('Database: {}'.format(db_name))
+        print('NLQ: {}'.format(nlq))
+        
         sqls = translate(model, schemas, db_name, nlq, n, b)
         for sql in sqls:
             print(sql)
