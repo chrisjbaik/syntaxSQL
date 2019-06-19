@@ -568,14 +568,10 @@ class SuperModel(nn.Module):
                 stack.append(cur)
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col_idx >= len(cur.iter_cols):
-                    # redirect to parent if subquery
-                    if cur.parent:
-                        stack.append(cur.parent)
-                    else:
-                        cur.next[-1] = 'finish'
-                        cur.next_col_idx = None
-                        cur.iter_cols = None
-                        stack.append(cur)
+                    cur.next[-1] = 'finish'
+                    cur.next_col_idx = None
+                    cur.iter_cols = None
+                    stack.append(cur)
                     continue
 
                 col = cur.iter_cols[cur.next_col_idx]
@@ -639,6 +635,11 @@ class SuperModel(nn.Module):
                 cur.next_agg_idx += 1
                 stack.append(cur)
             elif cur.next[-1] == 'finish':
+                # redirect to parent if subquery
+                if cur.parent:
+                    stack.append(cur.parent)
+                    continue
+
                 results.append(cur_query)
                 print("{}) history: {}".format(len(results), cur.history[0]))
                 print("{}) result: {}\n".format(len(results),
