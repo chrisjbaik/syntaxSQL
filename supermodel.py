@@ -410,6 +410,7 @@ class SuperModel(nn.Module):
                 label = np.argmax(score[0].data.cpu().numpy())
                 if label == 1:
                     cur.next[-1] = 'having'
+                    cur_query.having = True
                     stack.append(cur)
                 else:
                     cur.next[-1] = 'order_by'
