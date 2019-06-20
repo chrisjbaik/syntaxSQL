@@ -154,7 +154,7 @@ def test(model, schemas, n, b, debug):
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = [u'What', u'is', u'the', u'average', u',', u'minimum', u',', u'and', u'maximum', u'age', u'for', u'all', u'French', u'singers', u'?']
+            nlq = [u'Show', u'countries', u'where', u'a', u'singer', u'above', u'age', u'40', u'and', u'a', u'singer', u'below', u'30', u'are', u'from', u'.']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, schemas, db_name, nlq, n, b, _old=True,
