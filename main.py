@@ -124,10 +124,10 @@ def main():
 def test_old_and_new(data, model, schemas, n, b):
     correct = 0
     for task in data:
-        new = translate(model, schemas, task['db_id'], task['question'], n, b)
+        print('{}, {}'.format(task['db_id'], task['question']))
         old = translate(model, schemas, task['db_id'], task['question'], n, b,
             _old=True)
-        print('{}, {}'.format(task['db_id'], task['question']))
+        new = translate(model, schemas, task['db_id'], task['question'], n, b)
         if new[0] == old[0]:
             correct += 1
             print('Correct!\n')
