@@ -173,7 +173,7 @@ class SearchState(object):
     def copy(self):
         history_copy = [list(self.history[0])] * 2
 
-        copied = SearchState(self.next, history=history_copy,
+        copied = SearchState(list(self.next), history=history_copy,
             query=self.query.copy())
 
         if self.parent:
