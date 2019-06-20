@@ -616,10 +616,9 @@ class SuperModel(nn.Module):
 
                 if cur.next_agg_idx != 0:
                     cur.history[0].append(col_name)
-                    cur_query.order_by.append(col_name)
+                cur_query.order_by.append(col_name)
 
                 if agg == 'none_agg':
-                    cur.history[0].append('none_agg')
                     cur_query.order_by.append('none_agg')
                 else:
                     cur.history[0].append(AGG_OPS[agg])
