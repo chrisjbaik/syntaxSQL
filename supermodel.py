@@ -489,7 +489,7 @@ class SuperModel(nn.Module):
                     cur.num_aggs = 1
                     stack.append(cur)
                 else:
-                    cur.agg_cands = agg_idxs
+                    cur.agg_cands = agg_cands
                     cur.num_aggs = agg_num
                     cur.used_aggs = set()
                     for state in reversed(cur.next_agg_states()):
@@ -596,7 +596,7 @@ class SuperModel(nn.Module):
                     cur.num_aggs = 1
                     stack.append(cur)
                 else:
-                    cur.agg_cands = agg_idxs
+                    cur.agg_cands = agg_cands
                     cur.num_aggs = agg_num
                     cur.used_aggs = set()
                     for state in reversed(cur.next_agg_states()):
