@@ -48,7 +48,7 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, schemas, db_name, nlq, n, b, _old=False):
+def translate(model, schemas, db_name, nlq, n, b, _old=False, debug=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -65,7 +65,7 @@ def translate(model, schemas, db_name, nlq, n, b, _old=False):
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.dfs_beam_search([tokens] * 2, [], schema, n, b)
+        cqs = model.dfs_beam_search([tokens] * 2, [], schema, n, b, debug=debug)
 
         for cq in cqs:
             results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
@@ -92,6 +92,7 @@ def main():
     parser.add_argument('--test_manual', action='store_true',
         help='For manual command line testing')
     parser.add_argument('--test_path', help='Path for dataset to test')
+    parser.add_argument('--debug', help='Enable debug output for test_manual')
 
     args = parser.parse_args()
 
@@ -101,7 +102,7 @@ def main():
     model = load_model(args.models_path, args.glove_path, args.toy)
 
     if args.test_manual:
-        test(model, schemas, args.n, args.b)
+        test(model, schemas, args.n, args.b, args.debug)
         exit()
     elif args.test_path:
         data = json.load(open(args.test_path))
@@ -143,7 +144,7 @@ def test_old_and_new(data, model, schemas, n, b):
             print('Incorrect!\n')
     print('Correct: {}/{}'.format(correct, len(data)))
 
-def test(model, schemas, n, b):
+def test(model, schemas, n, b, debug):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
@@ -152,16 +153,17 @@ def test(model, schemas, n, b):
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = [u'Show', u'name', u',', u'country', u',', u'age', u'for', u'all', u'singers', u'ordered', u'by', u'age', u'from', u'the', u'oldest', u'to', u'the', u'youngest',    u'.']
+            nlq = [u'What', u'is', u'the', u'average', u',', u'minimum', u',', u'and', u'maximum', u'age', u'of', u'all', u'singers', u'from', u'France', u'?']
         print('NLQ: {}'.format(nlq))
 
-        old = translate(model, schemas, db_name, nlq, n, b, _old=True)
+        old = translate(model, schemas, db_name, nlq, n, b, _old=True,
+            debug=debug)
         print('--- OLD ---')
         for cq in old:
             print(' - {}'.format(cq))
         print
 
-        new = translate(model, schemas, db_name, nlq, n, b)
+        new = translate(model, schemas, db_name, nlq, n, b, debug=debug)
         print('--- NEW ---')
         for cq in new:
             print(' - {}'.format(cq))

@@ -181,7 +181,7 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def dfs_beam_search(self, q_seq, history, tables, n, b):
+    def dfs_beam_search(self, q_seq, history, tables, n, b, debug=False):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
         col_seq = to_batch_tables(tables, B, self.table_type)
@@ -205,8 +205,8 @@ class SuperModel(nn.Module):
             if len(results) >= n:
                 break
 
-            # for debugging
-            # self.print_stack(stack)
+            if debug:
+                self.print_stack(stack)
 
             cur = stack.pop()
             cur_query = cur.query.find_subquery(cur.next)
