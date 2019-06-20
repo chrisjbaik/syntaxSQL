@@ -130,10 +130,11 @@ def test_old_and_new(data, model, schemas, n, b):
         print('{}, {}'.format(task['db_id'], task['question']))
         if new[0] == old[0]:
             correct += 1
+            print('Correct!\n')
         else:
             print(new)
             print(old)
-            raise Exception('New version does not match old version.')
+            print('Incorrect!\n')
     print('Correct: {}/{}'.format(correct, len(data)))
 
 def test(model, schemas, n, b):
