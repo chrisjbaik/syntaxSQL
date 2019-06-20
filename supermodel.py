@@ -374,11 +374,9 @@ class SuperModel(nn.Module):
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
                     cur_query.where.append(subquery)
-                    sub_next = list(cur.next)
-                    sub_next.append('keyword')
                     # TODO: this state needs to use a copy of
                     #       cur and cur.history
-                    sub_state = SearchState(sub_next, parent=cur,
+                    sub_state = SearchState(['keyword'], parent=cur,
                         history=cur.history, query=subquery)
                     stack.append(sub_state)
                 else:
@@ -538,11 +536,9 @@ class SuperModel(nn.Module):
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
                     cur_query.having.append(subquery)
-                    sub_next = list(cur.next)
-                    sub_next.append('keyword')
                     # TODO: this state needs to use a copy of
                     #       cur and cur.history
-                    sub_state = SearchState(sub_next, parent=cur,
+                    sub_state = SearchState(['keyword'], parent=cur,
                         history=cur.history, query=subquery)
                     stack.append(sub_state)
                 else:
