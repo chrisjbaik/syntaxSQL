@@ -205,7 +205,8 @@ class SuperModel(nn.Module):
             if len(results) >= n:
                 break
 
-            self.print_stack(stack)
+            # for debugging
+            # self.print_stack(stack)
 
             cur = stack.pop()
             cur_query = cur.query.find_subquery(cur.next)
