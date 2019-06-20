@@ -145,12 +145,12 @@ def test(model, schemas, n, b):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
-            db_name = 'bike_1'
+            db_name = 'allergy_1'
         print('Database: {}'.format(db_name))
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = [u'For', u'each', u'city', u',', u'return', u'the', u'highest', u'latitude', u'among', u'its', u'stations', u'.']
+            nlq = [u'Find', u'the', u'last', u'name', u'and', u'age', u'of', u'the', u'student', u'who', u'has', u'allergy', u'to', u'both', u'milk', u'and', u'cat', u'.']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, schemas, db_name, nlq, n, b, _old=True)
