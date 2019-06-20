@@ -25,9 +25,9 @@ class Query(object):
     def copy(self):
         copied = Query()
         copied.set_op = self.set_op
-        if copied.left:
+        if self.left:
             copied.left = self.left.copy()
-        if copied.right:
+        if self.right:
             copied.right = self.right.copy()
 
         if isinstance(self.select, list):
