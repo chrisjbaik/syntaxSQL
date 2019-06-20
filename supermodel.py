@@ -589,7 +589,7 @@ class SuperModel(nn.Module):
                 agg_num = np.argmax(agg_num_score[0])
                 agg_idxs = np.argsort(-agg_score[0])[:agg_num]
 
-                if not agg_idxs:
+                if agg_num == 0:
                     aggs = ['none_agg']
                 else:
                     aggs = agg_idxs
