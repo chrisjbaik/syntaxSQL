@@ -142,15 +142,51 @@ class SuperModel(nn.Module):
         # old = self.full_forward(q_seq, history, tables)
         # return self.dfs_beam_search(q_seq, history, tables, n, b)
 
+    def get_col_cands(self, b, q_emb_var, q_len, hs_emb_var, hs_len,
+        col_emb_var, col_len, col_name_len):
+        score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+            col_emb_var, col_len, col_name_len)
+        col_num_score, col_score = [x.data.cpu().numpy() for x in score]
+        col_num = np.argmax(col_num_score[0]) + 1
+
+        # return col_num + b - 1, so as to perform beam search on EACH col slot
+        return list(np.argsort(-col_score[0])[:col_num + b - 1]), col_num
+
+    def get_agg_cands(self, b, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
+        col_emb_var, col_len, col_name_len):
+        score = self.agg.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+            col_emb_var, col_len, col_name_len,
+            np.full(B, col, dtype=np.int64))
+        agg_num_score, agg_score = \
+            [x.data.cpu().numpy() for x in score]
+        agg_num = np.argmax(agg_num_score[0])
+
+        # return agg_num + b - 1, so as to perform beam search on EACH agg slot
+        return list(np.argsort(-agg_score[0])[:agg_num + b - 1]), agg_num
+
+    def get_op_cands(self, b, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
+        col_emb_var, col_len, col_name_len):
+        score = self.op.forward(q_emb_var, q_len, hs_emb_var, hs_len,
+            col_emb_var, col_len, col_name_len,
+            np.full(B, col, dtype=np.int64))
+        op_num_score, op_score = \
+            [x.data.cpu().numpy() for x in score]
+        op_num = np.argmax(op_num_score[0])
+
+        # return op_num + b - 1, so as to perform beam search on EACH op slot
+        return list(np.argsort(-op_score[0])[:op_num + b - 1]), op_num
+
     def dfs_beam_search(self, q_seq, history, tables, n, b):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
         col_seq = to_batch_tables(tables, B, self.table_type)
         col_emb_var, col_name_len, col_len = self.embed_layer.gen_col_batch(col_seq)
 
-        mkw_emb_var = self.embed_layer.gen_word_list_embedding(["none","except","intersect","union"],(B))
+        mkw_emb_var = self.embed_layer.gen_word_list_embedding(["none",
+            "except", "intersect", "union"],(B))
         mkw_len = np.full(q_len.shape, 4,dtype=np.int64)
-        kw_emb_var = self.embed_layer.gen_word_list_embedding(["where", "group by", "order by"], (B))
+        kw_emb_var = self.embed_layer.gen_word_list_embedding(["where",
+            "group by", "order by"], (B))
         kw_len = np.full(q_len.shape, 3, dtype=np.int64)
 
         # stack to store DFS beam search states
@@ -172,6 +208,8 @@ class SuperModel(nn.Module):
 
             # Only one level of set ops permitted, so 'root' is once only
             if cur.next[-1] == 'root':
+                # TODO: beam searchify root state
+
                 # only do this on first level
                 if len(cur.next) == 1:
                     score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
@@ -185,15 +223,15 @@ class SuperModel(nn.Module):
                 cur.history[0].append(cur_query.set_op)
                 if cur_query.set_op == 'none':
                     cur.next[-1] = 'keyword'
-                    # TODO: consider copy on stack append
                     stack.append(cur)
                 else:
                     cur_query.left = Query(set_op='none')
                     cur_query.right = Query(set_op='none')
                     cur.next = ['left', 'root']
-                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'keyword':
+                # TODO: beam searchify keyword state
+
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, kw_emb_var, kw_len)
                 kw_num_score, kw_score = [x.data.cpu().numpy() for x in score]
@@ -210,7 +248,6 @@ class SuperModel(nn.Module):
                 cur_query.order_by = 'orderBy' in keywords
 
                 cur.next[-1] = 'select'
-                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
@@ -218,83 +255,67 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # TODO: beam search-ify this sequence-to-set structure
-                #       will also need to copy states for each combination
-                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
-                    col_emb_var, col_len, col_name_len)
-                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
-                col_num = np.argmax(col_num_score[0]) + 1
-                cols = np.argsort(-col_score[0])[:col_num]
+                cur.col_cands, cur.num_cols = \
+                    self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
+                        col_emb_var, col_len, col_name_len)
 
-                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'select_col'
-                cur.next_col_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                cur.used_cols = set()
+
+                for state in cur.next_col_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'select_col':
-                if cur.next_col_idx >= len(cur.iter_cols):
+                if len(cur.used_cols) >= len(cur.num_cols):
                     cur.next[-1] = 'where'
-                    cur.next_col_idx = None
-                    cur.iter_cols = None
-                    # TODO: consider copy on stack append
+                    cur.clear_col_info()
                     stack.append(cur)
                     continue
 
-                col = cur.iter_cols[cur.next_col_idx]
-                col_name = index_to_column_name(col, tables)
+                col_name = index_to_column_name(cur.next_col, tables)
                 cur.history[0].append(col_name)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
                 cur_query.select.append(col_name)
 
-                score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, col, dtype=np.int64))
-                agg_num_score, agg_score = \
-                    [x.data.cpu().numpy() for x in score]
-                agg_num = np.argmax(agg_num_score[0])
-                agg_idxs = np.argsort(-agg_score[0])[:agg_num]
+                cur.used_cols.add(cur.next_col)
+
+                agg_cands, agg_num = \
+                    self.get_agg_cands(b, B, cur.next_col, q_emb_var, q_len,
+                        hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 if agg_num == 0:
-                    aggs = ['none_agg']
-                else:
-                    aggs = agg_idxs
-
-                cur.iter_aggs = aggs
-                cur.next[-1] = 'select_agg'
-                cur.next_agg_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
-            elif cur.next[-1] == 'select_agg':
-                if cur.next_agg_idx >= len(cur.iter_aggs):
-                    cur.next[-1] = 'select_col'
-                    cur.next_col_idx += 1
-                    cur.next_agg_idx = None
-                    cur.iter_aggs = None
-                    # TODO: consider copy on stack append
+                    cur_query.select.append('none_agg')
                     stack.append(cur)
+                else:
+                    cur.next[-1] = 'select_agg'
+                    cur.agg_cands = agg_cands
+                    cur.num_aggs = agg_num
+                    cur.used_aggs = set()
+
+                    for state in cur.next_agg_states().reverse():
+                        stack.append(state)
+            elif cur.next[-1] == 'select_agg':
+                if len(cur.used_aggs) >= len(cur.num_aggs):
+                    cur.next[-1] = 'select_col'
+                    cur.clear_agg_info()
+                    for state in cur.next_col_states().reverse():
+                        stack.append(state)
                     continue
 
-                agg = cur.iter_aggs[cur.next_agg_idx]
+                col_name = index_to_column_name(cur.next_col, tables)
+                if len(cur.used_aggs) > 0:
+                    cur.history[0].append(col_name)
+                    cur_query.select.append(col_name)
+                cur.history[0].append(AGG_OPS[cur.next_agg])
+                cur_query.select.append(AGG_OPS[cur.next_agg])
 
-                if agg == 'none_agg':
-                    cur_query.select.append('none_agg')
-                else:
-                    col = cur.iter_cols[cur.next_col_idx]
-                    col_name = index_to_column_name(col, tables)
-                    if cur.next_agg_idx != 0:
-                        cur.history[0].append(col_name)
-                        cur_query.select.append(col_name)
-                    cur.history[0].append(AGG_OPS[agg])
-                    cur_query.select.append(AGG_OPS[agg])
+                cur.used_aggs.add(cur.next_agg)
 
-                cur.next_agg_idx += 1
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                for state in cur.next_agg_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'where':
                 if not cur_query.where:
                     cur.next[-1] = 'group_by'
-                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('where')
@@ -302,79 +323,58 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # TODO: make this beam searchable
-                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
-                    col_emb_var, col_len, col_name_len)
-                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
-                col_num = np.argmax(col_num_score[0]) + 1
-                cols = np.argsort(-col_score[0])[:col_num]
+                cur.col_cands, cur.num_cols = \
+                    self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
+                        col_emb_var, col_len, col_name_len)
 
                 # compute and/or if more than one column
-                if col_num > 1:
+                if cur.num_cols > 1:
                     score = self.andor.forward(q_emb_var, q_len, hs_emb_var,
                         hs_len)
                     label = np.argmax(score[0].data.cpu().numpy())
                     andor_cond = COND_OPS[label]
                     cur_query.where.append(andor_cond)
 
-                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'where_col'
-                cur.next_col_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                cur.used_cols = set()
+
+                for state in cur.next_col_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'where_col':
-                if cur.next_col_idx >= len(cur.iter_cols):
+                if len(cur.used_cols) >= len(cur.num_cols):
                     cur.next[-1] = 'group_by'
-                    cur.next_col_idx = None
-                    cur.iter_cols = None
-                    # TODO: consider copy on stack append
+                    cur.clear_col_info()
                     stack.append(cur)
                     continue
 
-                col = cur.iter_cols[cur.next_col_idx]
-
-                col_name = index_to_column_name(col, tables)
+                col_name = index_to_column_name(cur.next_col, tables)
                 cur.history[0].append(col_name)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # TODO: make this beam searchable. perhaps separate
-                #       b_num, b_col, and b_op?
-                score = self.op.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, col, dtype=np.int64))
-                op_num_score, op_score = \
-                    [x.data.cpu().numpy() for x in score]
-                op_num = np.argmax(op_num_score[0]) + 1
-                ops = np.argsort(-op_score[0])[:op_num]
+                cur.used_cols.add(cur.next_col)
 
-                for i, op in enumerate(ops):
-                    if i != 0:
-                        cur.history[0].append(col_name)
-                    cur.history[0].append(NEW_WHERE_OPS[op])
+                op_cands, op_num = \
+                    self.get_op_cands(b, B, cur.next_col, q_emb_var, q_len,
+                        hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                cur.iter_ops = ops[::-1]
-                cur.next[-1] = 'where_op'
-                cur.next_op_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                for state in cur.next_op_states('where_op', op_num, op_cands,
+                    col_name).reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
-                    cur.next_col_idx += 1
-                    cur.next_op_idx = None
-                    cur.iter_ops = None
-                    # TODO: consider copy on stack append
-                    stack.append(cur)
+                    cur.clear_op_info()
+                    for state in cur.next_col_states().reverse():
+                        stack.append(state)
                     continue
 
-                col = cur.iter_cols[cur.next_col_idx]
-                col_name = index_to_column_name(col, tables)
+                col_name = index_to_column_name(cur.next_col, tables)
                 op = cur.iter_ops[cur.next_op_idx]
 
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
-                    col_name_len, np.full(B, col, dtype=np.int64))
+                    col_name_len, np.full(B, cur.next_col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
@@ -387,20 +387,15 @@ class SuperModel(nn.Module):
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
                     cur_query.where.append(subquery)
-                    # TODO: this state needs to use a copy of
-                    #       cur and cur.history
                     sub_state = SearchState(['keyword'], parent=cur,
                         history=cur.history, query=subquery)
-                    # TODO: consider copy on stack append
                     stack.append(sub_state)
                 else:
                     cur_query.where.append('terminal')
-                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'group_by':
                 if not cur_query.group_by:
                     cur.next[-1] = 'order_by'
-                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('groupBy')
@@ -408,35 +403,44 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # TODO: make this beam searchable, sequence-to-set
-                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
-                    col_emb_var, col_len, col_name_len)
-                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
-                col_num = np.argmax(col_num_score[0]) + 1
-                cols = np.argsort(-col_score[0])[:col_num]
+                cur.col_cands, cur.num_cols = \
+                    self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
+                        col_emb_var, col_len, col_name_len)
 
-                for col in cols:
-                    col_name = index_to_column_name(col, tables)
-                    cur.history[0].append(col_name)
-                    cur_query.group_by.append(col_name)
+                cur.next[-1] = 'group_by_col'
+                cur.used_cols = set()
 
-                score = self.having.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, cols[0],dtype=np.int64))
-                label = np.argmax(score[0].data.cpu().numpy())
-                if label == 1:
+                for state in cur.next_col_states().reverse():
+                    stack.append(state)
+            elif cur.next[-1] == 'group_by_col':
+                if len(cur.used_cols) >= len(cur.num_cols):
                     cur.next[-1] = 'having'
-                    cur_query.having = True
-                    # TODO: consider copy on stack append
+                    cur.clear_col_info()
                     stack.append(cur)
-                else:
-                    cur.next[-1] = 'order_by'
-                    # TODO: consider copy on stack append
-                    stack.append(cur)
+                    continue
+
+                col_name = index_to_column_name(cur.next_col, tables)
+                cur.history[0].append(col_name)
+                cur_query.group_by.append(col_name)
+
+                cur.used_cols.add(cur.next_col)
+
+                if len(cur.used_cols) == 0:
+                    score = self.having.forward(q_emb_var, q_len, hs_emb_var,
+                        hs_len, col_emb_var, col_len, col_name_len,
+                        np.full(B, cur.next_col, dtype=np.int64))
+                    label = np.argmax(score[0].data.cpu().numpy())
+
+                    if label == 1:
+                        cur_query.having = True
+                    else:
+                        cur_query.having = False
+
+                for state in cur.next_col_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'having':
                 if not cur_query.having:
                     cur.next[-1] = 'order_by'
-                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('having')
@@ -444,116 +448,89 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # TODO: make this beam searchable, sequence-to-set
-                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
-                    col_emb_var, col_len, col_name_len)
-                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
-                col_num = np.argmax(col_num_score[0]) + 1
-                cols = np.argsort(-col_score[0])[:col_num]
+                cur.col_cands, cur.num_cols = \
+                    self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
+                        col_emb_var, col_len, col_name_len)
 
-                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'having_col'
-                cur.next_col_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                cur.used_cols = set()
+
+                for state in cur.next_col_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'having_col':
-                if cur.next_col_idx >= len(cur.iter_cols):
+                if len(cur.used_cols) >= len(cur.num_cols):
                     cur.next[-1] = 'order_by'
-                    cur.next_col_idx = None
-                    cur.iter_cols = None
-                    # TODO: consider copy on stack append
+                    cur.clear_col_info()
                     stack.append(cur)
                     continue
 
-                col = cur.iter_cols[cur.next_col_idx]
-                col_name = index_to_column_name(col, tables)
+                col_name = index_to_column_name(cur.next_col, tables)
                 cur.history[0].append(col_name)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, col, dtype=np.int64))
-                agg_num_score, agg_score = \
-                    [x.data.cpu().numpy() for x in score]
-                agg_num = np.argmax(agg_num_score[0])
-                agg_idxs = np.argsort(-agg_score[0])[:agg_num]
+                cur.used_cols.add(cur.next_col)
 
-                if agg_num == 0:
-                    aggs = ['none_agg']
-                else:
-                    aggs = agg_idxs
+                agg_cands, agg_num = \
+                    self.get_agg_cands(b, B, cur.next_col, q_emb_var, q_len,
+                        hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'having_agg'
-                cur.next_agg_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
-            elif cur.next[-1] == 'having_agg':
-                if cur.next_agg_idx >= len(cur.iter_aggs):
-                    cur.next[-1] = 'having_col'
-                    cur.next_col_idx += 1
-                    cur.next_agg_idx = None
-                    cur.iter_aggs = None
-                    # TODO: consider copy on stack append
+                if agg_num == 0:
+                    cur.agg_cands = ['none_agg']
+                    cur.num_aggs = 1
                     stack.append(cur)
+                else:
+                    cur.agg_cands = agg_idxs
+                    cur.num_aggs = agg_num
+                    cur.used_aggs = set()
+                    for state in cur.next_agg_states().reverse():
+                        stack.append(state)
+            elif cur.next[-1] == 'having_agg':
+                if len(cur.used_aggs) >= len(cur.num_aggs):
+                    cur.next[-1] = 'having_col'
+                    cur.clear_agg_info()
+                    for state in cur.next_col_states().reverse():
+                        stack.append(state)
                     continue
 
-                agg = cur.iter_aggs[cur.next_agg_idx]
-
-                if agg != 'none_agg':
-                    col = cur.iter_cols[cur.next_col_idx]
-                    col_name = index_to_column_name(col, tables)
-                    if cur.next_agg_idx != 0:
+                if cur.next_agg != 'none_agg':
+                    col_name = index_to_column_name(cur.next_col, tables)
+                    if len(cur.used_aggs) > 0:
                         cur.history[0].append(col_name)
-                    cur.history[0].append(AGG_OPS[agg])
+                    cur.history[0].append(AGG_OPS[cur.next_agg])
 
-                # TODO: make this beam searchable. perhaps separate
-                #       b_num, b_col, and b_op?
-                score = self.op.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, col, dtype=np.int64))
-                op_num_score, op_score = \
-                    [x.data.cpu().numpy() for x in score]
-                op_num = np.argmax(op_num_score[0]) + 1
-                ops = np.argsort(-op_score[0])[:op_num]
+                cur.used_aggs.add(cur.next_agg)
 
-                for i, op in enumerate(ops):
-                    if i != 0:
-                        cur.history[0].append(col_name)
-                    cur.history[0].append(NEW_WHERE_OPS[op])
+                op_cands, op_num = \
+                    self.get_op_cands(b, B, cur.next_col, q_emb_var, q_len,
+                        hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                cur.iter_ops = ops[::-1]
-                cur.next[-1] = 'having_op'
-                cur.next_op_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                for state in cur.next_op_states('having_op', op_num, op_cands,
+                    col_name).reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'having_agg'
-                    cur.next_agg_idx += 1
-                    cur.next_op_idx = None
-                    cur.iter_ops = None
-                    # TODO: consider copy on stack append
-                    stack.append(cur)
+                    cur.clear_op_info()
+                    for state in cur.next_agg_states().reverse():
+                        stack.append(state)
                     continue
 
-                col = cur.iter_cols[cur.next_col_idx]
-                col_name = index_to_column_name(col, tables)
-                agg = cur.iter_aggs[cur.next_agg_idx]
+                col_name = index_to_column_name(cur.next_col, tables)
                 op = cur.iter_ops[cur.next_op_idx]
 
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
-                    col_name_len, np.full(B, col, dtype=np.int64))
+                    col_name_len, np.full(B, cur.next_col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
                 cur_query.having.append(col_name)
-                if agg == 'none_agg':
+                if cur.next_agg == 'none_agg':
                     cur_query.having.append('none_agg')
                 else:
-                    cur_query.having.append(AGG_OPS[agg])
+                    cur_query.having.append(AGG_OPS[cur.next_agg])
                 cur_query.having.append(NEW_WHERE_OPS[op])
 
                 cur.next_op_idx += 1
@@ -562,20 +539,15 @@ class SuperModel(nn.Module):
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
                     cur_query.having.append(subquery)
-                    # TODO: this state needs to use a copy of
-                    #       cur and cur.history
                     sub_state = SearchState(['keyword'], parent=cur,
                         history=cur.history, query=subquery)
-                    # TODO: consider copy on stack append
                     stack.append(sub_state)
                 else:
                     cur_query.having.append('terminal')
-                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'order_by':
                 if not cur_query.order_by:
                     cur.next[-1] = 'finish'
-                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('orderBy')
@@ -583,79 +555,69 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # TODO: beam search-ify this sequence-to-set structure
-                #       will also need to copy states for each combination
-                score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
-                    col_emb_var, col_len, col_name_len)
-                col_num_score, col_score = [x.data.cpu().numpy() for x in score]
-                col_num = np.argmax(col_num_score[0]) + 1
-                cols = np.argsort(-col_score[0])[:col_num]
+                cur.col_cands, cur.num_cols = \
+                    self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
+                        col_emb_var, col_len, col_name_len)
 
-                cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'order_by_col'
-                cur.next_col_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                cur.used_cols = set()
+
+                for state in cur.next_col_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'order_by_col':
-                if cur.next_col_idx >= len(cur.iter_cols):
+                if len(cur.used_cols) >= len(cur.num_cols):
                     cur.next[-1] = 'finish'
-                    cur.next_col_idx = None
-                    cur.iter_cols = None
-                    # TODO: consider copy on stack append
+                    cur.clear_col_info()
                     stack.append(cur)
                     continue
 
-                col = cur.iter_cols[cur.next_col_idx]
-                col_name = index_to_column_name(col, tables)
+                col_name = index_to_column_name(cur.next_col, tables)
                 cur.history[0].append(col_name)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                score = self.agg.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, col, dtype=np.int64))
-                agg_num_score, agg_score = \
-                    [x.data.cpu().numpy() for x in score]
-                agg_num = np.argmax(agg_num_score[0])
-                agg_idxs = np.argsort(-agg_score[0])[:agg_num]
+                cur.used_cols.add(cur.next_col)
 
-                if agg_num == 0:
-                    aggs = ['none_agg']
-                else:
-                    aggs = agg_idxs
+                agg_cands, agg_num = \
+                    self.get_agg_cands(b, B, cur.next_col, q_emb_var, q_len,
+                        hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'order_by_agg'
-                cur.next_agg_idx = 0
-                # TODO: consider copy on stack append
-                stack.append(cur)
-            elif cur.next[-1] == 'order_by_agg':
-                if cur.next_agg_idx >= len(cur.iter_aggs):
-                    cur.next[-1] = 'order_by_col'
-                    cur.next_col_idx += 1
-                    cur.next_agg_idx = None
-                    cur.iter_aggs = None
-                    # TODO: consider copy on stack append
+                if agg_num == 0:
+                    cur.agg_cands = ['none_agg']
+                    cur.num_aggs = 1
                     stack.append(cur)
+                else:
+                    cur.agg_cands = agg_idxs
+                    cur.num_aggs = agg_num
+                    cur.used_aggs = set()
+                    for state in cur.next_agg_states().reverse():
+                        stack.append(state)
+            elif cur.next[-1] == 'order_by_agg':
+                if len(cur.used_aggs) >= len(cur.num_aggs):
+                    cur.next[-1] = 'order_by_col'
+                    cur.clear_agg_info()
+                    for state in cur.next_col_states().reverse():
+                        stack.append(state)
                     continue
 
-                agg = cur.iter_aggs[cur.next_agg_idx]
-                col = cur.iter_cols[cur.next_col_idx]
-                col_name = index_to_column_name(col, tables)
+                col_name = index_to_column_name(cur.next_col, tables)
 
-                if cur.next_agg_idx != 0:
+                if len(cur.used_aggs) > 0:
                     cur.history[0].append(col_name)
                 cur_query.order_by.append(col_name)
 
-                if agg == 'none_agg':
+                if cur.next_agg == 'none_agg':
                     cur_query.order_by.append('none_agg')
                 else:
-                    cur.history[0].append(AGG_OPS[agg])
-                    cur_query.order_by.append(AGG_OPS[agg])
+                    cur.history[0].append(AGG_OPS[cur.next_agg])
+                    cur_query.order_by.append(AGG_OPS[cur.next_agg])
+
+                cur.used_aggs.add(cur.next_agg)
 
                 score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
-                    np.full(B, col, dtype=np.int64))
+                    np.full(B, cur.next_col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
 
                 dec_asc, has_limit = DEC_ASC_OPS[label]
@@ -664,19 +626,16 @@ class SuperModel(nn.Module):
                 cur_query.order_by.append(has_limit)
                 cur_query.limit = has_limit
 
-                cur.next_agg_idx += 1
-                # TODO: consider copy on stack append
-                stack.append(cur)
+                for state in cur.next_agg_states().reverse():
+                    stack.append(state)
             elif cur.next[-1] == 'finish':
                 # redirect to parent if subquery
                 if cur.parent:
-                    # TODO: consider copy on stack append
                     stack.append(cur.parent)
                     continue
                 elif cur.next[0] == 'left':
                     # redirect to other child if set op
                     cur.next = ['right', 'root']
-                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
