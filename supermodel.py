@@ -171,7 +171,7 @@ class SuperModel(nn.Module):
             np.full(B, col, dtype=np.int64))
         op_num_score, op_score = \
             [x.data.cpu().numpy() for x in score]
-        op_num = np.argmax(op_num_score[0])
+        op_num = np.argmax(op_num_score[0]) + 1
 
         # return op_num + b - 1, so as to perform beam search on EACH op slot
         return list(np.argsort(-op_score[0])[:op_num + b - 1]), op_num
