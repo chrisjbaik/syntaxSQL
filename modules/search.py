@@ -204,7 +204,13 @@ class SearchState(object):
             new = self.copy()
             new.next_agg = agg
             states.append(new)
-        return states
+
+        # if no candidate states, next_agg to None
+        if not states:
+            self.next_agg = None
+            return [self]
+        else:
+            return states
 
     def next_col_states(self):
         states = []
@@ -214,7 +220,13 @@ class SearchState(object):
             new = self.copy()
             new.next_col = col
             states.append(new)
-        return states
+
+        # if no candidate states, next_col to None
+        if not states:
+            self.next_col = None
+            return [self]
+        else:
+            return states
 
     def next_op_states(self, next, num_ops, op_cands, col_name):
         states = []
