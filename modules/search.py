@@ -18,6 +18,54 @@ class Query(object):
         self.order_by = None
         self.limit = None
 
+    def copy(self):
+        copied = Query()
+        copied.set_op = self.set_op
+        if copied.left:
+            copied.left = self.left.copy()
+        if copied.right:
+            copied.right = self.right.copy()
+
+        if isinstance(self.select, list):
+            copied.select = list(self.select)
+        else:
+            copied.select = self.select
+
+        if isinstance(self.where, list):
+            where = []
+            for item in self.where:
+                if isinstance(item, Query):
+                    where.append(item.copy())
+                else:
+                    where.append(item)
+            copied.where = where
+        else:
+            copied.where = self.where
+
+        if isinstance(self.group_by, list):
+            copied.group_by = list(self.group_by)
+        else:
+            copied.group_by = self.group_by
+
+        if isinstance(self.having, list):
+            having = []
+            for item in self.having:
+                if isinstance(item, Query):
+                    having.append(item.copy())
+                else:
+                    having.append(item)
+            copied.having = having
+        else:
+            copied.having = self.having
+
+        if isinstance(self.order_by, list):
+            copied.order_by = list(self.order_by)
+        else:
+            copied.order_by = self.order_by
+
+        copied.limit = self.limit
+        return copied
+
     # in format expected by SyntaxSQLNet
     def as_dict(self, sql_key=True):
         if self.set_op != 'none':
@@ -108,3 +156,16 @@ class SearchState(object):
         if not query:
             query = Query()
         self.query = query
+
+    def copy(self):
+        history_copy = [list(self.history[0])] * 2
+        copied = SearchState(self.next, parent=self.parent.copy(),
+            history=history_copy, query=self.query.copy())
+
+        copied.next_col_idx = self.next_col_idx
+        copied.iter_cols = self.iter_cols
+        copied.next_op_idx = self.next_op_idx
+        copied.iter_ops = self.iter_ops
+        copied.next_agg_idx = self.next_agg_idx
+        copied.iter_aggs = self.iter_aggs
+        return copied
