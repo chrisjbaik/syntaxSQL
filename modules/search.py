@@ -181,13 +181,13 @@ class SearchState(object):
 
         copied.next_col = self.next_col
         copied.col_cands = self.col_cands       # will not be modified
-        if self.used_cols:
+        if self.used_cols is not None:
             copied.used_cols = set(self.used_cols)
         copied.num_cols = self.num_cols
 
         copied.next_agg = self.next_agg
         copied.agg_cands = self.agg_cands       # will not be modified
-        if self.used_aggs:
+        if self.used_aggs is not None:
             copied.used_aggs = set(self.used_aggs)
         copied.num_aggs = self.num_aggs
 
