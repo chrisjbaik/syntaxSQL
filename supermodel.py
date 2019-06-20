@@ -389,7 +389,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'order_by'
                     stack.append(cur)
                     continue
-                cur.history[0].append('group_by')
+                cur.history[0].append('groupBy')
                 cur_query.group_by = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
@@ -553,7 +553,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'finish'
                     stack.append(cur)
                     continue
-                cur.history[0].append('order_by')
+                cur.history[0].append('orderBy')
                 cur_query.order_by = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
@@ -650,9 +650,9 @@ class SuperModel(nn.Module):
                     continue
 
                 results.append(cur.query)
-                # print("{}) history: {}".format(len(results), cur.history[0]))
-                # print("{}) result: {}\n".format(len(results),
-                #     cur.query.as_dict()))
+                print("{}) history: {}".format(len(results), cur.history[0]))
+                print("{}) result: {}\n".format(len(results),
+                    cur.query.as_dict()))
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
@@ -929,10 +929,11 @@ class SuperModel(nn.Module):
         # print("{}".format(current_sql))
 
         if failed: return None
-        # print("old history: {}".format(history[0]))
+        print("old history: {}".format(history[0]))
         if len(sql_stack) > 0:
             current_sql = sql_stack[0]
         # print("{}".format(current_sql))
+        print("old query: {}".format(current_sql))
 
         return current_sql
 
