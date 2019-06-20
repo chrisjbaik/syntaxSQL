@@ -134,14 +134,13 @@ class SuperModel(nn.Module):
             self.cuda()
         self.path_not_found = 0
 
-    def forward(self,q_seq,history,tables, n, b):
+    # def forward(self,q_seq,history,tables, n, b):
         # if self.part:
         #     return self.part_forward(q_seq,history,tables)
         # else:
 
-        old = self.full_forward(q_seq, history, tables)
-        print('old results: {}'.format(old))
-        return self.dfs_beam_search(q_seq, history, tables, n, b)
+        # old = self.full_forward(q_seq, history, tables)
+        # return self.dfs_beam_search(q_seq, history, tables, n, b)
 
     def dfs_beam_search(self, q_seq, history, tables, n, b):
         B = len(q_seq)
@@ -651,9 +650,9 @@ class SuperModel(nn.Module):
                     continue
 
                 results.append(cur.query)
-                print("{}) history: {}".format(len(results), cur.history[0]))
-                print("{}) result: {}\n".format(len(results),
-                    cur.query.as_dict()))
+                # print("{}) history: {}".format(len(results), cur.history[0]))
+                # print("{}) result: {}\n".format(len(results),
+                #     cur.query.as_dict()))
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
@@ -930,7 +929,7 @@ class SuperModel(nn.Module):
         # print("{}".format(current_sql))
 
         if failed: return None
-        print("old history: {}".format(history[0]))
+        # print("old history: {}".format(history[0]))
         if len(sql_stack) > 0:
             current_sql = sql_stack[0]
         # print("{}".format(current_sql))
