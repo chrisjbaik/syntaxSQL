@@ -138,8 +138,8 @@ def test_old_and_new(data, model, schemas, n, b):
             correct += 1
             print('Correct!\n')
         else:
-            print(new)
             print(old)
+            print(new)
             print('Incorrect!\n')
     print('Correct: {}/{}'.format(correct, len(data)))
 
@@ -147,12 +147,12 @@ def test(model, schemas, n, b):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
-            db_name = 'bike_1'
+            db_name = 'concert_singer'
         print('Database: {}'.format(db_name))
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = [u'For', u'each', u'city', u',', u'return', u'the', u'highest', u'latitude', u'among', u'its', u'stations', u'.']
+            nlq = [u'Show', u'name', u',', u'country', u',', u'age', u'for', u'all', u'singers', u'ordered', u'by', u'age', u'from', u'the', u'oldest', u'to', u'the', u'youngest',    u'.']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, schemas, db_name, nlq, n, b, _old=True)
