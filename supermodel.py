@@ -395,10 +395,14 @@ class SuperModel(nn.Module):
                     cur.history[0].append('root')
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
+                    subquery_idx = len(cur_query.where)
                     cur_query.where.append(subquery)
-                    sub_state = SearchState(['keyword'], parent=cur,
-                        history=cur.history, query=subquery)
-                    stack.append(sub_state)
+
+                    substate = cur.copy()
+                    substate.set_parent(cur)
+                    substate.next.append(subquery_idx)
+                    substate.next.append('keyword')
+                    stack.append(substate)
                 else:
                     cur_query.where.append('terminal')
                     stack.append(cur)
@@ -547,10 +551,14 @@ class SuperModel(nn.Module):
                     cur.history[0].append('root')
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
+                    subquery_idx = len(cur_query.having)
                     cur_query.having.append(subquery)
-                    sub_state = SearchState(['keyword'], parent=cur,
-                        history=cur.history, query=subquery)
-                    stack.append(sub_state)
+
+                    substate = cur.copy()
+                    substate.set_parent(cur)
+                    substate.next.append(subquery_idx)
+                    substate.next.append('keyword')
+                    stack.append(substate)
                 else:
                     cur_query.having.append('terminal')
                     stack.append(cur)

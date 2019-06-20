@@ -122,22 +122,25 @@ class Query(object):
             return self.left.find_subquery(next[1:])
         elif next[0] == 'right':
             return self.right.find_subquery(next[1:])
-        elif next[0] == 'where' and isinstance(self.where, list):
-            return self.where[-1].find_subquery(next[1:])
-        elif next[0] == 'having' and isinstance(self.having, list):
-            return self.having[-1].find_subquery(next[1:])
+        elif next[0] == 'where_op' and \
+            len(next) > 1 and isinstance(next[1], int):
+            return self.where[next[1]].find_subquery(next[2:])
+        elif next[0] == 'having_op' and \
+            len(next) > 1 and isinstance(next[1], int):
+            return self.having[next[1]].find_subquery(next[2:])
         else:
             return self
 
 class SearchState(object):
-    def __init__(self, next, parent=None, history=None, query=None):
+    def __init__(self, next, history=None, query=None):
         # a chain of keys storing next item to infer, e.g.:
         #   left, select: select in left subquery
-        #   left, where: left subquery, where clause, last subquery
+        #   where_op, 2, select: first subquery at index 2 of where clause
+        #   having_op, 5, select: first subquery at index 5 of having clause
         self.next = next
 
-        # parent SearchState if in subquery
-        self.parent = parent
+        # store parent to return to it after subquery
+        self.parent = None
 
         # next column to use (from col_cands)
         self.next_col = None
@@ -170,6 +173,12 @@ class SearchState(object):
             query = Query()
         self.query = query
 
+    def set_parent(self, parent):
+        # link parent history, query with current values
+        self.parent = parent.copy()
+        self.parent.history = self.history
+        self.parent.query = self.query
+
     def copy(self):
         history_copy = [list(self.history[0])] * 2
 
@@ -177,7 +186,7 @@ class SearchState(object):
             query=self.query.copy())
 
         if self.parent:
-            copied.parent = self.parent.copy()
+            copied.set_parent(self.parent)
 
         copied.next_col = self.next_col
         copied.col_cands = self.col_cands       # will not be modified
