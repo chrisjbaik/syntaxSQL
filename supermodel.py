@@ -992,7 +992,7 @@ class SuperModel(nn.Module):
     def gen_orderby(self,sql,table,table_alias_dict):
         ret = []
         limit = ""
-        if len(sql) > 0 and sql[-1] == True:
+        if sql[-1] == True:
             limit = "limit 1"
         for i in range(0,len(sql),4):
             if sql[i+1] == "none_agg" or not isinstance(sql[i+1],basestring): #DEBUG-ed 20180817
@@ -1189,7 +1189,7 @@ class SuperModel(nn.Module):
             groupby_clause = self.gen_group_by(sql["groupBy"],"group by",table,table_alias_dict)
             if len(groupby_clause) > 0:
                 ret.append(groupby_clause)
-        if "orderBy" in sql:
+        if "orderBy" in sql and len(sql["orderBy"]) > 0:
             orderby_clause = self.gen_orderby(sql["orderBy"],table,table_alias_dict)
             if len(orderby_clause) > 0:
                 ret.append(orderby_clause)
