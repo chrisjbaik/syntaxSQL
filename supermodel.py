@@ -255,7 +255,7 @@ class SuperModel(nn.Module):
                 else:
                     aggs = agg_idxs
 
-                cur.iter_aggs = aggs[::-1]
+                cur.iter_aggs = aggs
                 cur.next[-1] = 'select_agg'
                 cur.next_agg_idx = 0
                 stack.append(cur)
