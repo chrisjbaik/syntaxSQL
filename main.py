@@ -157,11 +157,15 @@ def test(model, schemas, n, b):
 
         old = translate(model, schemas, db_name, nlq, n, b, _old=True)
         print('--- OLD ---')
-        print(old)
+        for cq in old:
+            print(' - {}'.format(cq))
+        print
+
         new = translate(model, schemas, db_name, nlq, n, b)
         print('--- NEW ---')
         for cq in new:
             print(' - {}'.format(cq))
+        print
 
 if __name__ == '__main__':
     main()
