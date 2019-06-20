@@ -649,9 +649,10 @@ class SuperModel(nn.Module):
                     continue
 
                 results.append(cur.query)
-                print("{}) history: {}".format(len(results), cur.history[0]))
-                print("{}) result: {}\n".format(len(results),
-                    cur.query.as_dict()))
+
+                # print("{}) history: {}".format(len(results), cur.history[0]))
+                # print("{}) result: {}\n".format(len(results),
+                #     cur.query.as_dict()))
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
@@ -928,11 +929,11 @@ class SuperModel(nn.Module):
         # print("{}".format(current_sql))
 
         if failed: return None
-        print("old history: {}".format(history[0]))
+        # print("old history: {}".format(history[0]))
         if len(sql_stack) > 0:
             current_sql = sql_stack[0]
         # print("{}".format(current_sql))
-        print("old query: {}".format(current_sql))
+        # print("old query: {}".format(current_sql))
 
         return current_sql
 
