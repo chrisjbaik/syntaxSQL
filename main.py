@@ -84,9 +84,9 @@ def main():
         default='generated_data_augment/saved_models')
     parser.add_argument('--glove_path', default='glove')
     parser.add_argument('--toy', action='store_true')
-    parser.add_argument('--n', default=10, type=int,
+    parser.add_argument('--n', default=1, type=int,
         help='Max number of final queries to output')
-    parser.add_argument('--b', default=5, type=int,
+    parser.add_argument('--b', default=1, type=int,
         help='Beam search parameter')
 
     parser.add_argument('--test_manual', action='store_true',
