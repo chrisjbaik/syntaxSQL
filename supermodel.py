@@ -285,7 +285,8 @@ class SuperModel(nn.Module):
 
                 if agg_num == 0:
                     cur_query.select.append('none_agg')
-                    stack.append(cur)
+                    for state in reversed(cur.next_col_states()):
+                        stack.append(state)
                 else:
                     cur.next[-1] = 'select_agg'
                     cur.agg_cands = agg_cands
