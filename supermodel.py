@@ -867,7 +867,7 @@ class SuperModel(nn.Module):
 
                 op_num = np.argmax(op_num_score[0]) + 1  # num_score 0 maps to 1 in truth, must have at least one op
 
-                ops = np.argsort(-op_score[0])[:op_num]
+                ops = np.argsort(-op_score[0])[:op_num][::-1]
 
                 # current_sql[kw].append([NEW_WHERE_OPS[op] for op in ops])
                 if op_num > 0:
