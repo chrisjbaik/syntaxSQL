@@ -176,6 +176,11 @@ class SuperModel(nn.Module):
         # return op_num + b - 1, so as to perform beam search on EACH op slot
         return list(np.argsort(-op_score[0])[:op_num + b - 1]), op_num
 
+    def print_stack(self, stack):
+        print('Stack:')
+        for item in stack:
+            print('  - {}'.format(item.next))
+
     def dfs_beam_search(self, q_seq, history, tables, n, b):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
@@ -199,6 +204,8 @@ class SuperModel(nn.Module):
         while stack:
             if len(results) >= n:
                 break
+
+            self.print_stack(stack)
 
             cur = stack.pop()
             cur_query = cur.query.find_subquery(cur.next)
