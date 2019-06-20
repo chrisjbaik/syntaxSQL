@@ -773,7 +773,7 @@ class SuperModel(nn.Module):
                 score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
                 col_num_score, col_score = [x.data.cpu().numpy() for x in score]
                 col_num = np.argmax(col_num_score[0]) + 1  # double check
-                cols = np.argsort(-col_score[0])[:col_num]
+                cols = np.argsort(-col_score[0])[:col_num][::-1]
                 # print(col_num)
                 # print("col_num_score:{}".format(col_num_score))
                 # print("col_score:{}".format(col_score))
