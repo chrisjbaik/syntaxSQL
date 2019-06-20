@@ -92,7 +92,8 @@ def main():
     parser.add_argument('--test_manual', action='store_true',
         help='For manual command line testing')
     parser.add_argument('--test_path', help='Path for dataset to test')
-    parser.add_argument('--debug', help='Enable debug output for test_manual')
+    parser.add_argument('--debug', action='store_true',
+        help='Enable debug output for test_manual')
 
     args = parser.parse_args()
 
