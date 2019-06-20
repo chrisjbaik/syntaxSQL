@@ -485,16 +485,16 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'having_agg'
+                cur.used_aggs = set()
                 if agg_num == 0:
                     cur.agg_cands = ['none_agg']
                     cur.num_aggs = 1
-                    stack.append(cur)
                 else:
                     cur.agg_cands = agg_cands
                     cur.num_aggs = agg_num
-                    cur.used_aggs = set()
-                    for state in reversed(cur.next_agg_states()):
-                        stack.append(state)
+
+                for state in reversed(cur.next_agg_states()):
+                    stack.append(state)
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None or len(cur.used_aggs) >= cur.num_aggs:
                     cur.next[-1] = 'having_col'
@@ -592,16 +592,16 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'order_by_agg'
+                cur.used_aggs = set()
                 if agg_num == 0:
                     cur.agg_cands = ['none_agg']
                     cur.num_aggs = 1
-                    stack.append(cur)
                 else:
                     cur.agg_cands = agg_cands
                     cur.num_aggs = agg_num
-                    cur.used_aggs = set()
-                    for state in reversed(cur.next_agg_states()):
-                        stack.append(state)
+
+                for state in reversed(cur.next_agg_states()):
+                    stack.append(state)
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None or len(cur.used_aggs) >= cur.num_aggs:
                     cur.next[-1] = 'order_by_col'
