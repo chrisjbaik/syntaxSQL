@@ -54,7 +54,10 @@ def translate(model, schemas, db_name, nlq, n, b, _old=False):
 
     schema = schemas[db_name]
 
-    tokens = tokenize(nlq)
+    if isinstance(nlq, list):
+        tokens = nlq
+    else:
+        tokens = tokenize(nlq)
 
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
     results = []
@@ -124,10 +127,11 @@ def main():
 def test_old_and_new(data, model, schemas, n, b):
     correct = 0
     for task in data:
-        print('{}, {}'.format(task['db_id'], task['question']))
-        old = translate(model, schemas, task['db_id'], task['question'], n, b,
-            _old=True)
-        new = translate(model, schemas, task['db_id'], task['question'], n, b)
+        print('{}, {}'.format(task['db_id'], task['question_toks']))
+        old = translate(model, schemas, task['db_id'], task['question_toks'],
+            n, b, _old=True)
+        new = translate(model, schemas, task['db_id'], task['question_toks'],
+            n, b)
         if new[0] == old[0]:
             correct += 1
             print('Correct!\n')
