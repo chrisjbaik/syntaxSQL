@@ -172,8 +172,12 @@ class SearchState(object):
 
     def copy(self):
         history_copy = [list(self.history[0])] * 2
-        copied = SearchState(self.next, parent=self.parent.copy(),
-            history=history_copy, query=self.query.copy())
+
+        copied = SearchState(self.next, history=history_copy,
+            query=self.query.copy())
+
+        if self.parent:
+            copied.parent = self.parent.copy()
 
         copied.next_col = self.next_col
         copied.col_cands = self.col_cands       # will not be modified
