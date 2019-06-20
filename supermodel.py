@@ -185,11 +185,13 @@ class SuperModel(nn.Module):
                 cur.history[0].append(cur_query.set_op)
                 if cur_query.set_op == 'none':
                     cur.next[-1] = 'keyword'
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                 else:
                     cur_query.left = Query(set_op='none')
                     cur_query.right = Query(set_op='none')
                     cur.next = ['left', 'root']
+                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'keyword':
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
@@ -208,6 +210,7 @@ class SuperModel(nn.Module):
                 cur_query.order_by = 'orderBy' in keywords
 
                 cur.next[-1] = 'select'
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
@@ -226,12 +229,14 @@ class SuperModel(nn.Module):
                 cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'select_col'
                 cur.next_col_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'select_col':
                 if cur.next_col_idx >= len(cur.iter_cols):
                     cur.next[-1] = 'where'
                     cur.next_col_idx = None
                     cur.iter_cols = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -258,6 +263,7 @@ class SuperModel(nn.Module):
                 cur.iter_aggs = aggs
                 cur.next[-1] = 'select_agg'
                 cur.next_agg_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'select_agg':
                 if cur.next_agg_idx >= len(cur.iter_aggs):
@@ -265,6 +271,7 @@ class SuperModel(nn.Module):
                     cur.next_col_idx += 1
                     cur.next_agg_idx = None
                     cur.iter_aggs = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -282,10 +289,12 @@ class SuperModel(nn.Module):
                     cur_query.select.append(AGG_OPS[agg])
 
                 cur.next_agg_idx += 1
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'where':
                 if not cur_query.where:
                     cur.next[-1] = 'group_by'
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('where')
@@ -311,12 +320,14 @@ class SuperModel(nn.Module):
                 cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'where_col'
                 cur.next_col_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'where_col':
                 if cur.next_col_idx >= len(cur.iter_cols):
                     cur.next[-1] = 'group_by'
                     cur.next_col_idx = None
                     cur.iter_cols = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -345,6 +356,7 @@ class SuperModel(nn.Module):
                 cur.iter_ops = ops[::-1]
                 cur.next[-1] = 'where_op'
                 cur.next_op_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
@@ -352,6 +364,7 @@ class SuperModel(nn.Module):
                     cur.next_col_idx += 1
                     cur.next_op_idx = None
                     cur.iter_ops = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -378,13 +391,16 @@ class SuperModel(nn.Module):
                     #       cur and cur.history
                     sub_state = SearchState(['keyword'], parent=cur,
                         history=cur.history, query=subquery)
+                    # TODO: consider copy on stack append
                     stack.append(sub_state)
                 else:
                     cur_query.where.append('terminal')
+                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'group_by':
                 if not cur_query.group_by:
                     cur.next[-1] = 'order_by'
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('groupBy')
@@ -411,13 +427,16 @@ class SuperModel(nn.Module):
                 if label == 1:
                     cur.next[-1] = 'having'
                     cur_query.having = True
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                 else:
                     cur.next[-1] = 'order_by'
+                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'having':
                 if not cur_query.having:
                     cur.next[-1] = 'order_by'
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('having')
@@ -435,12 +454,14 @@ class SuperModel(nn.Module):
                 cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'having_col'
                 cur.next_col_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'having_col':
                 if cur.next_col_idx >= len(cur.iter_cols):
                     cur.next[-1] = 'order_by'
                     cur.next_col_idx = None
                     cur.iter_cols = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -466,6 +487,7 @@ class SuperModel(nn.Module):
                 cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'having_agg'
                 cur.next_agg_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg_idx >= len(cur.iter_aggs):
@@ -473,6 +495,7 @@ class SuperModel(nn.Module):
                     cur.next_col_idx += 1
                     cur.next_agg_idx = None
                     cur.iter_aggs = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -503,6 +526,7 @@ class SuperModel(nn.Module):
                 cur.iter_ops = ops[::-1]
                 cur.next[-1] = 'having_op'
                 cur.next_op_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
@@ -510,6 +534,7 @@ class SuperModel(nn.Module):
                     cur.next_agg_idx += 1
                     cur.next_op_idx = None
                     cur.iter_ops = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -541,13 +566,16 @@ class SuperModel(nn.Module):
                     #       cur and cur.history
                     sub_state = SearchState(['keyword'], parent=cur,
                         history=cur.history, query=subquery)
+                    # TODO: consider copy on stack append
                     stack.append(sub_state)
                 else:
                     cur_query.having.append('terminal')
+                    # TODO: consider copy on stack append
                     stack.append(cur)
             elif cur.next[-1] == 'order_by':
                 if not cur_query.order_by:
                     cur.next[-1] = 'finish'
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
                 cur.history[0].append('orderBy')
@@ -566,12 +594,14 @@ class SuperModel(nn.Module):
                 cur.iter_cols = cols[::-1]
                 cur.next[-1] = 'order_by_col'
                 cur.next_col_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col_idx >= len(cur.iter_cols):
                     cur.next[-1] = 'finish'
                     cur.next_col_idx = None
                     cur.iter_cols = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -597,6 +627,7 @@ class SuperModel(nn.Module):
                 cur.iter_aggs = aggs[::-1]
                 cur.next[-1] = 'order_by_agg'
                 cur.next_agg_idx = 0
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg_idx >= len(cur.iter_aggs):
@@ -604,6 +635,7 @@ class SuperModel(nn.Module):
                     cur.next_col_idx += 1
                     cur.next_agg_idx = None
                     cur.iter_aggs = None
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
@@ -633,15 +665,18 @@ class SuperModel(nn.Module):
                 cur_query.limit = has_limit
 
                 cur.next_agg_idx += 1
+                # TODO: consider copy on stack append
                 stack.append(cur)
             elif cur.next[-1] == 'finish':
                 # redirect to parent if subquery
                 if cur.parent:
+                    # TODO: consider copy on stack append
                     stack.append(cur.parent)
                     continue
                 elif cur.next[0] == 'left':
                     # redirect to other child if set op
                     cur.next = ['right', 'root']
+                    # TODO: consider copy on stack append
                     stack.append(cur)
                     continue
 
