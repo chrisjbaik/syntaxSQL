@@ -95,6 +95,8 @@ def main():
 
     args = parser.parse_args()
 
+    print('Running with n = {} and b = {}'.format(args.n, args.b))
+
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
 
