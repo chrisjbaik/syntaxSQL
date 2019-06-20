@@ -436,8 +436,6 @@ class SuperModel(nn.Module):
                 cur.history[0].append(col_name)
                 cur_query.group_by.append(col_name)
 
-                cur.used_cols.add(cur.next_col)
-
                 if len(cur.used_cols) == 0:
                     score = self.having.forward(q_emb_var, q_len, hs_emb_var,
                         hs_len, col_emb_var, col_len, col_name_len,
@@ -448,6 +446,8 @@ class SuperModel(nn.Module):
                         cur_query.having = True
                     else:
                         cur_query.having = False
+
+                cur.used_cols.add(cur.next_col)
 
                 for state in reversed(cur.next_col_states()):
                     stack.append(state)
