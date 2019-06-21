@@ -135,7 +135,7 @@ def main():
 
             task = ProtoTask()
             task.ParseFromString(msg)
-            sqls = translate(model, db, schemas, task.db_name, task.nlq,
+            sqls = translate(model, db, schemas, task.db_name, task.nlq_tokens,
                 args.n, args.b, timeout=args.timeout)
 
             proto_cands = ProtoCandidates()
