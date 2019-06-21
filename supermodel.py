@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn as nn
 import traceback
 from collections import defaultdict
-from itertools import pairwise
+from itertools import izip
 
 from utils import *
 from word_embedding import WordEmbedding
@@ -55,6 +55,11 @@ class Stack:
      def insert(self,i,x):
          return self.items.insert(i,x)
 
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
 
 def to_batch_tables(tables, B, table_type):
     # col_lens = []
