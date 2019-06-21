@@ -144,7 +144,7 @@ class Query(object):
                     pred.subquery = item.to_proto()
                 else:
                     pred.has_subquery = FALSE
-                    pred.value = str(item)
+                    pred.value.append(str(item))
 
                 cur_col_id = None
                 cur_agg = None
@@ -199,7 +199,7 @@ class Query(object):
                         pred.subquery = item.to_proto()
                     else:
                         pred.has_subquery = FALSE
-                        pred.value = str(item)
+                        pred.value.append(str(item))
 
                     cur_col_id = None
                     cur_op = None
