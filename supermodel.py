@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn as nn
 import traceback
 from collections import defaultdict
-from itertools import izip
+from itertools import izip, tee
 
 from utils import *
 from word_embedding import WordEmbedding
