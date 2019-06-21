@@ -35,7 +35,7 @@ class Query(object):
             pq.set_op = EXCEPT
         elif self.set_op == 'union':
             pq.set_op = UNION
-        else
+        else:
             raise Exception('Unrecognized set_op: {}'.format(self.set_op))
 
         if self.left:
