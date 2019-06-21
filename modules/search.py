@@ -39,9 +39,9 @@ class Query(object):
             raise Exception('Unrecognized set_op: {}'.format(self.set_op))
 
         if self.left:
-            pq.left = self.left.to_proto()
+            pq.left.CopyFrom(self.left.to_proto())
         if self.right:
-            pq.right = self.right.to_proto()
+            pq.right.CopyFrom(self.right.to_proto())
 
         self.to_proto_select(pq)
         self.to_proto_where(pq)
@@ -141,7 +141,7 @@ class Query(object):
 
                 if isinstance(item, Query):
                     pred.has_subquery = TRUE
-                    pred.subquery = item.to_proto()
+                    pred.subquery.CopyFrom(item.to_proto())
                 else:
                     pred.has_subquery = FALSE
                     if isinstance(item, list):
@@ -200,7 +200,7 @@ class Query(object):
 
                     if isinstance(item, Query):
                         pred.has_subquery = TRUE
-                        pred.subquery = item.to_proto()
+                        pred.subquery.CopyFrom(item.to_proto())
                     else:
                         pred.has_subquery = FALSE
                         if isinstance(item, list):
