@@ -135,10 +135,10 @@ def main():
             sqls = translate(model, db, schemas, task.db_name, task.nlq,
                 args.n, args.b)
 
-            cqs = ProtoCandidates()
+            proto_cands = ProtoCandidates()
             for sql in sqls:
-                cqs.append(sql.SerializeToString())
-            conn.send_bytes(cqs)
+                proto_cands.cq.append(sql.SerializeToString())
+            conn.send_bytes(proto_cands)
         listener.close()
 
 # def test_old_and_new(data, model, db, schemas, n, b):
