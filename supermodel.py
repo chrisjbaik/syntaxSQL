@@ -21,6 +21,7 @@ from models.root_teminal_predictor import RootTeminalPredictor
 from models.andor_predictor import AndOrPredictor
 from models.op_predictor import OpPredictor
 
+from modules.literals import find_literal_candidates, LiteralsCache
 from modules.search import Query, SearchState
 
 from preprocess_train_dev_data import index_to_column_name
@@ -187,29 +188,7 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def to_number(self, str):
-        try:
-            val = float(str)
-            if val.is_integer():
-                return int(val)
-            else:
-                return val
-        except ValueError:
-            return None
-
-    def find_literal_candidates(self, nlq_toks, col_type):
-        if col_type == 'number':
-            cands = []
-            for tok in nlq_toks:
-                val = self.to_number(tok)
-                if val is not None:
-                    cands.append(val)
-            cands.sort()        # ascending for between queries
-            return cands
-        else:
-            return ['terminal']
-
-    def dfs_beam_search(self, q_seq, history, tables, n, b, debug=False):
+    def dfs_beam_search(self, db, q_seq, history, tables, n, b, debug=False):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
         col_seq = to_batch_tables(tables, B, self.table_type)
@@ -228,6 +207,9 @@ class SuperModel(nn.Module):
 
         # completed queries
         results = []
+
+        # literals cache
+        lit_cache = LiteralsCache()
 
         while stack:
             if len(results) >= n:
@@ -437,8 +419,8 @@ class SuperModel(nn.Module):
                     # use when testing against original SyntaxSQL
                     # cur_query.where.append('terminal')
 
-                    cands = self.find_literal_candidates(q_seq[0],
-                        tables['column_types'][cur.next_col])
+                    cands = self.find_literal_candidates(q_seq[0], db, tables,
+                        cur.next_col, lit_cache, b)
 
                     if NEW_WHERE_OPS[op] == 'between':
                         for a, b in pairwise(cands):
@@ -611,8 +593,8 @@ class SuperModel(nn.Module):
                     substate.next.append('keyword')
                     stack.append(substate)
                 else:
-                    cands = self.find_literal_candidates(q_seq[0],
-                        tables['column_types'][cur.next_col])
+                    cands = self.find_literal_candidates(q_seq[0], db, tables,
+                        cur.next_col, lit_cache, b)
 
                     if NEW_WHERE_OPS[op] == 'between':
                         for a, b in pairwise(cands):

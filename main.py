@@ -7,6 +7,8 @@ from process_sql import tokenize
 from supermodel import SuperModel
 from utils import load_word_emb
 
+from modules.database import Database
+
 def load_schemas(schemas_path):
     data = json.load(open(schemas_path))
     schemas = {}
@@ -48,7 +50,7 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, schemas, db_name, nlq, n, b, _old=False, debug=False):
+def translate(model, db, schemas, db_name, nlq, n, b, _old=False, debug=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -65,7 +67,8 @@ def translate(model, schemas, db_name, nlq, n, b, _old=False, debug=False):
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.dfs_beam_search([tokens] * 2, [], schema, n, b, debug=debug)
+        cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, n, b,
+            debug=debug)
 
         for cq in cqs:
             results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
@@ -83,12 +86,16 @@ def main():
     parser.add_argument('--models_path',
         default='generated_data_augment/saved_models')
     parser.add_argument('--glove_path', default='glove')
-    parser.add_argument('--toy', action='store_true')
+    parser.add_argument('--db_path', help='Database root path')
+
+    # System parameters
     parser.add_argument('--n', default=1, type=int,
         help='Max number of final queries to output')
     parser.add_argument('--b', default=1, type=int,
         help='Beam search parameter')
 
+    # Testing parameters
+    parser.add_argument('--toy', action='store_true')
     parser.add_argument('--test_manual', action='store_true',
         help='For manual command line testing')
     parser.add_argument('--test_path', help='Path for dataset to test')
@@ -101,13 +108,14 @@ def main():
 
     schemas = load_schemas(args.schemas_path)
     model = load_model(args.models_path, args.glove_path, args.toy)
+    db = Database(args.db_path, 'spider')
 
     if args.test_manual:
-        test(model, schemas, args.n, args.b, args.debug)
+        test(model, db, schemas, args.n, args.b, args.debug)
         exit()
     elif args.test_path:
         data = json.load(open(args.test_path))
-        test_old_and_new(data, model, schemas, args.n, args.b)
+        test_old_and_new(data, model, db, schemas, args.n, args.b)
         exit()
 
     while True:
@@ -124,18 +132,18 @@ def main():
                 break
 
             db_name, nlq = msg.split('\t')
-            sqls = translate(model, schemas, db_name, nlq, args.n, args.b)
+            sqls = translate(model, db, schemas, db_name, nlq, args.n, args.b)
             conn.send_bytes('\t'.join(sqls))
         listener.close()
 
-def test_old_and_new(data, model, schemas, n, b):
+def test_old_and_new(data, model, db, schemas, n, b):
     correct = 0
     for task in data:
         print('{}, {}'.format(task['db_id'], task['question_toks']))
-        old = translate(model, schemas, task['db_id'], task['question_toks'],
-            n, b, _old=True)
-        new = translate(model, schemas, task['db_id'], task['question_toks'],
-            n, b)
+        old = translate(model, db, schemas, task['db_id'],
+            task['question_toks'], n, b, _old=True)
+        new = translate(model, db, schemas, task['db_id'],
+            task['question_toks'], n, b)
         if new[0] == old[0]:
             correct += 1
             print('Correct!\n')
@@ -145,7 +153,7 @@ def test_old_and_new(data, model, schemas, n, b):
             print('Incorrect!\n')
     print('Correct: {}/{}'.format(correct, len(data)))
 
-def test(model, schemas, n, b, debug):
+def test(model, db, schemas, n, b, debug):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
@@ -154,17 +162,17 @@ def test(model, schemas, n, b, debug):
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = 'Find singers over the age of 30.'
+            nlq = 'Find me singers from a country is France.'
         print('NLQ: {}'.format(nlq))
 
-        old = translate(model, schemas, db_name, nlq, n, b, _old=True,
+        old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
             debug=debug)
         print('--- OLD ---')
         for cq in old:
             print(' - {}'.format(cq))
         print
 
-        new = translate(model, schemas, db_name, nlq, n, b, debug=debug)
+        new = translate(model, db, schemas, db_name, nlq, n, b, debug=debug)
         print('--- NEW ---')
         for cq in new:
             print(' - {}'.format(cq))
