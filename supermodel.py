@@ -187,18 +187,22 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def is_number(self, str):
+    def to_number(self, str):
         try:
-            float(str)
-            return True
+            val = float(str)
+            if val.is_integer():
+                return int(val)
+            else:
+                return val
         except ValueError:
-            return False
+            return None
 
     def find_literal_candidates(self, nlq_toks, col_type):
         if col_type == 'number':
             cands = []
             for tok in nlq_toks:
-                if self.is_number(tok):
+                val = self.to_number(tok)
+                if val is not None:
                     cands.append(float(tok))
             cands.sort()        # ascending for between queries
             return cands
