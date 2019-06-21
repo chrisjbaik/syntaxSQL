@@ -39,7 +39,6 @@ class Database(object):
         q = 'SELECT "{}" FROM "{}" WHERE "{}" LIKE ? ESCAPE \'\\\''.format(
             col_name, tbl_name, col_name
         )
-        print(q, ('%{}%'.format(str.replace('%', '\%')),))
         cur.execute(q, ('%{}%'.format(str.replace('%', '\%')),))
 
         results = []
