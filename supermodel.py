@@ -211,7 +211,7 @@ class SuperModel(nn.Module):
             if debug:
                 self.print_stack(stack)
                 print('* - {}'.format(cur.next))
-                print('\nproto: {}\n'.format(cur_query.to_proto().__str__()))
+                print('\nPROTO:\n{}\n'.format(cur_query.to_proto().__str__()))
 
             hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                 cur.history)

@@ -48,8 +48,6 @@ class Query(object):
         self.to_proto_group_by(pq)
         self.to_proto_having(pq)
 
-        # debug
-        print(pq.__str__())
         return pq
 
     def to_proto_order_by(self, pq):
