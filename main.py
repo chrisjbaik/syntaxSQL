@@ -115,10 +115,10 @@ def main():
         test(model, db, schemas, args.n, args.b, args.debug,
             timeout=args.timeout)
         exit()
-    # elif args.test_path:
-    #     data = json.load(open(args.test_path))
-    #     test_old_and_new(data, model, db, schemas, args.n, args.b)
-    #     exit()
+    elif args.test_path:
+        data = json.load(open(args.test_path))
+        test_old_and_new(data, model, db, schemas, args.n, args.b)
+        exit()
 
     while True:
         address = ('localhost', args.port)  # family is deduced to be 'AF_INET'
@@ -152,22 +152,22 @@ def main():
             conn.send_bytes(proto_cands.SerializeToString())
         listener.close()
 
-# def test_old_and_new(data, model, db, schemas, n, b):
-#     correct = 0
-#     for task in data:
-#         print('{}, {}'.format(task['db_id'], task['question_toks']))
-#         old = translate(model, db, schemas, task['db_id'],
-#             task['question_toks'], n, b, _old=True)
-#         new = translate(model, db, schemas, task['db_id'],
-#             task['question_toks'], n, b)
-#         if new[0] == old[0]:
-#             correct += 1
-#             print('Correct!\n')
-#         else:
-#             print(old)
-#             print(new)
-#             print('Incorrect!\n')
-#     print('Correct: {}/{}'.format(correct, len(data)))
+def test_old_and_new(data, model, db, schemas, n, b):
+    correct = 0
+    for task in data:
+        print('{}, {}'.format(task['db_id'], task['question_toks']))
+        old = translate(model, db, schemas, task['db_id'],
+            task['question_toks'], n, b, _old=True)
+        new = translate(model, db, schemas, task['db_id'],
+            task['question_toks'], n, b)
+        if new[0] == old[0]:
+            correct += 1
+            print('Correct!\n')
+        else:
+            print(old)
+            print(new)
+            print('Incorrect!\n')
+    print('Correct: {}/{}'.format(correct, len(data)))
 
 def test(model, db, schemas, n, b, debug, timeout=None):
     while True:
