@@ -331,7 +331,7 @@ class Query(object):
 
     # in format expected by SyntaxSQLNet
     def as_dict(self, sql_key=True):
-        if self.set_op != 'none':
+        if self.set_op is not None and self.set_op != 'none':
             sql = {
                 'sql': self.left.as_dict(sql_key=False),
                 'nested_sql': self.right.as_dict(sql_key=False),
