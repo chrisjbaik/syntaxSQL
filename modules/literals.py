@@ -47,7 +47,7 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b):
     ngrams = list(everygrams(nlq_toks, min_len=1, max_len=6))
 
     lits = []
-    for ngram in ngrams:
+    for ngram in reversed(ngrams):
         str = d.detokenize(ngram)
         if str in stopwords_bank:
             continue
@@ -55,6 +55,7 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b):
         lit = db.find_literals(db_name, tbl_name, col_name, str, b)
         if lit:
             lits.extend(lit)
+    return lits
 
 class LiteralsCache(object):
     def __init__(self):
