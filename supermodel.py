@@ -203,7 +203,7 @@ class SuperModel(nn.Module):
             for tok in nlq_toks:
                 val = self.to_number(tok)
                 if val is not None:
-                    cands.append(float(tok))
+                    cands.append(val)
             cands.sort()        # ascending for between queries
             return cands
         else:
