@@ -181,6 +181,23 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
+    def is_number(self, str):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    def find_literal_candidates(self, nlq_toks, col_type):
+        if col_type == 'number':
+            cands = []
+            for tok in nlq_toks:
+                if self.is_number(tok):
+                    cands.append(tok)
+                return cands
+        else:
+            return ['terminal']
+
     def dfs_beam_search(self, q_seq, history, tables, n, b, debug=False):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
@@ -406,8 +423,18 @@ class SuperModel(nn.Module):
                     substate.next.append('keyword')
                     stack.append(substate)
                 else:
-                    cur_query.where.append('terminal')
-                    stack.append(cur)
+                    # use when testing against original SyntaxSQL
+                    # cur_query.where.append('terminal')
+
+                    # TODO: add to having later
+                    cands = self.find_literal_candidates(q_seq[0],
+                        tables['column_types'][cur.next_col])
+
+                    for literal in cands:
+                        new = cur.copy()
+                        new_query = new.query.find_subquery(cur.next)
+                        new_query.where.append(literal)
+                        stack.append(new)
             elif cur.next[-1] == 'group_by':
                 if not cur_query.group_by:
                     cur.next[-1] = 'order_by'
