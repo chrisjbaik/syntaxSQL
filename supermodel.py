@@ -180,8 +180,14 @@ class SuperModel(nn.Module):
             [x.data.cpu().numpy() for x in score]
         op_num = np.argmax(op_num_score[0]) + 1
 
+        op_cands = list(np.argsort(-op_score[0]))
+
+        # Addresses glitch of nonexistent op
+        if 10 in op_cands:
+            op_cands.remove(10)
+
         # return op_num + b - 1, so as to perform beam search on EACH op slot
-        return list(np.argsort(-op_score[0])[:op_num + b - 1]), op_num
+        return op_cands[:op_num + b - 1], op_num
 
     def print_stack(self, stack):
         print('Stack:')
