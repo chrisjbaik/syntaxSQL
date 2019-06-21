@@ -403,7 +403,8 @@ class SuperModel(nn.Module):
                 cur_query.where.append(NEW_WHERE_OPS[op])
 
                 cur.next_op_idx += 1
-                if label == 'root':
+                # only allow subquery of depth 1
+                if label == 'root' and cur.parent is None:
                     cur.history[0].append('root')
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
@@ -580,7 +581,8 @@ class SuperModel(nn.Module):
                 cur_query.having.append(NEW_WHERE_OPS[op])
 
                 cur.next_op_idx += 1
-                if label == 'root':
+                # only allow subquery of depth 1
+                if label == 'root' and cur.parent is None:
                     cur.history[0].append('root')
                     cur.history[0].append('none')
                     subquery = Query(set_op='none')
