@@ -162,7 +162,7 @@ def test(model, db, schemas, n, b, debug):
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = 'Find me singers from a country is France.'
+            nlq = [u'What', u'is', u'the', u'average', u',', u'minimum', u',', u'and', u'maximum', u'age', u'of', u'all', u'singers', u'from', u'France', u'?']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
