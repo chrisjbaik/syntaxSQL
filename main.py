@@ -112,7 +112,8 @@ def main():
     db = Database(args.db_path, 'spider')
 
     if args.test_manual:
-        test(model, db, schemas, args.n, args.b, args.debug)
+        test(model, db, schemas, args.n, args.b, args.debug,
+            timeout=args.timeout)
         exit()
     # elif args.test_path:
     #     data = json.load(open(args.test_path))
