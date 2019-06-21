@@ -31,7 +31,7 @@ class Database(object):
 
     def find_literals(self, db_name, tbl_name, col_name, str, b):
         if col_name == '*':
-            raise Exception('Cannot check star column.')
+            return []
 
         conn = self.get_conn(db_name)
         cur = conn.cursor()
