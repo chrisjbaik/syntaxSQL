@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn as nn
 import traceback
 from collections import defaultdict
+from itertools import pairwise
 
 from utils import *
 from word_embedding import WordEmbedding
@@ -193,7 +194,8 @@ class SuperModel(nn.Module):
             cands = []
             for tok in nlq_toks:
                 if self.is_number(tok):
-                    cands.append(tok)
+                    cands.append(float(tok))
+            cands.sort()        # ascending for between queries
             return cands
         else:
             return ['terminal']
@@ -426,15 +428,28 @@ class SuperModel(nn.Module):
                     # use when testing against original SyntaxSQL
                     # cur_query.where.append('terminal')
 
-                    # TODO: add to having later
+                    # TODO: add to HAVING clause later
+
                     cands = self.find_literal_candidates(q_seq[0],
                         tables['column_types'][cur.next_col])
 
-                    for literal in cands:
+                    if NEW_WHERE_OPS[op] == 'between':
+                        for a, b in pairwise(cands):
+                            new = cur.copy()
+                            new_query = new.query.find_subquery(cur.next)
+                            new_query.where.append([a, b])
+                            stack.append(new)
+                    elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                         new = cur.copy()
                         new_query = new.query.find_subquery(cur.next)
-                        new_query.where.append(literal)
+                        new_query.where.append(cands)
                         stack.append(new)
+                    else:
+                        for literal in cands:
+                            new = cur.copy()
+                            new_query = new.query.find_subquery(cur.next)
+                            new_query.where.append(literal)
+                            stack.append(new)
             elif cur.next[-1] == 'group_by':
                 if not cur_query.group_by:
                     cur.next[-1] = 'order_by'
