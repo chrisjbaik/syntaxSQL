@@ -1061,23 +1061,23 @@ class SuperModel(nn.Module):
             where_item = ""
             if isinstance(val, dict):
                 val = self.gen_sql(val,table)
-                where_item = "{} {} ({})".format(col,op,val)
+                where_item = u"{} {} ({})".format(col,op,val)
             elif isinstance(val, list):
                 if op == 'between':
-                    where_item = "{} {} '{}' and '{}'".format(col, op , val[0],
+                    where_item = u"{} {} '{}' and '{}'".format(col, op , val[0],
                         val[1])
                 elif op in ('in', 'not in'):
-                    in_arr = ','.join(map(lambda x: '{}'.format(x), val))
-                    where_item = "{} {} ({})".format(col,op,in_arr)
+                    in_arr = u','.join(map(lambda x: '{}'.format(x), val))
+                    where_item = u"{} {} ({})".format(col,op,in_arr)
                 else:
-                    where_item = "{} {} 'terminal'".format(col,op)
+                    where_item = u"{} {} 'terminal'".format(col,op)
             else:
-                where_item = "{} {} '{}'".format(col,op,val)
+                where_item = u"{} {} '{}'".format(col,op,val)
             # if op == "between":
             #     #TODO temprarily fixed
             #     where_item += " and 'terminal'"
             ret.append(where_item)
-        return "where {}".format(" {} ".format(andor).join(ret))
+        return u"where {}".format(u" {} ".format(andor).join(ret))
 
     def gen_orderby(self,sql,table,table_alias_dict):
         ret = []
@@ -1291,7 +1291,7 @@ class SuperModel(nn.Module):
             nested_clause = "{} {}".format(nested_label,self.gen_sql(nested_sql,table))
             if len(nested_clause) > 0:
                 ret.append(nested_clause)
-        return " ".join(ret)
+        return u" ".join(ret)
 
     def check_acc(self, pred_sql, gt_sql):
         pass
