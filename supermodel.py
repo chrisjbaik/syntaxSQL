@@ -1021,11 +1021,11 @@ class SuperModel(nn.Module):
             op = sql[i+1]
             val = sql[i+2]
             where_item = ""
-            if val == "terminal":
-                where_item = "{} {} '{}'".format(col,op,val)
-            else:
+            if isinstance(val, dict):
                 val = self.gen_sql(val,table)
                 where_item = "{} {} ({})".format(col,op,val)
+            else:
+                where_item = "{} {} '{}'".format(col,op,val)
             if op == "between":
                 #TODO temprarily fixed
                 where_item += " and 'terminal'"
