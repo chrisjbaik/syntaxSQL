@@ -1,5 +1,7 @@
 from itertools import permutations
 
+from query_pb2 import *
+
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
 
 class Query(object):
@@ -21,6 +23,265 @@ class Query(object):
         self.having = None
         self.order_by = None
         self.limit = None
+
+    def to_proto(self):
+        pq = ProtoQuery()
+
+        if self.set_op is None or self.set_op == 'none':
+            pq.set_op = NO_SET_OP
+        elif self.set_op == 'intersect':
+            pq.set_op = INTERSECT
+        elif self.set_op == 'except':
+            pq.set_op = EXCEPT
+        elif self.set_op == 'union':
+            pq.set_op = UNION
+        else
+            raise Exception('Unrecognized set_op: {}'.format(self.set_op))
+
+        if self.left:
+            pq.left = self.left.to_proto()
+        if self.right:
+            pq.right = self.right.to_proto()
+
+        self.to_proto_select(pq)
+        self.to_proto_where(pq)
+        self.to_proto_group_by(pq)
+        self.to_proto_having(pq)
+
+        # debug
+        print(pq.__str__())
+        return pq
+
+    def to_proto_order_by(self, pq):
+        if self.order_by is None:
+            pq.has_order_by = UNKNOWN
+        elif self.order_by == False:
+            pq.has_order_by = False
+        else:
+            pq.has_order_by = True
+
+        if self.limit is None:
+            pq.has_limit = UNKNOWN
+        elif self.limit == False:
+            pq.has_limit = False
+        else:
+            pq.has_limit = True
+
+        if isinstance(self.order_by, list):
+            cur_col_id = None
+            cur_agg = None
+            cur_dir = None
+            for item in self.order_by:
+                if cur_col_id is None:
+                    cur_col_id = item[2]
+                    continue
+
+                if cur_agg is None:
+                    cur_agg = item
+                    continue
+
+                if cur_dir is None:
+                    cur_dir = item
+                    continue
+
+                orderedcol = OrderedColumn()
+                orderedcol.agg_col = AggregatedColumn()
+                orderedcol.agg_col.col_id = cur_col_id
+                if agg == 'none_agg':
+                    orderedcol.agg_col.has_agg = FALSE
+                else:
+                    orderedcol.agg_col.has_agg = TRUE
+                    orderedcol.agg_col.agg = self.to_proto_agg(cur_agg)
+
+                if cur_dir == 'asc':
+                    orderedcol.dir = ASC
+                elif cur_dir == 'desc':
+                    orderedcol.dir = DESC
+                else:
+                    raise Exception('Unrecognized dir: {}'.format(dir))
+
+                cur_col_id = None
+                cur_agg = None
+                cur_dir = None
+                pq.order_by.append(orderedcol)
+
+    def to_proto_having(self, pq):
+        if self.having is None:
+            pq.has_having = UNKNOWN
+        elif self.having == False:
+            pq.has_having = False
+        else:
+            pq.has_having = True
+
+        if isinstance(self.having, list):
+            having = SelectionClause()
+
+            cur_col_id = None
+            cur_agg = None
+            cur_op = None
+            for item in self.having:
+                if cur_col_id is None:
+                    cur_col_id = item[2]
+                    continue
+
+                if cur_agg is None:
+                    cur_agg = item
+                    continue
+
+                if cur_op is None:
+                    cur_op = item
+                    continue
+
+                pred = Predicate()
+                pred.col_id = cur_col_id
+
+                if cur_agg == 'none_agg':
+                    pred.has_agg = FALSE
+                else:
+                    pred.has_agg = TRUE
+                    pred.agg = self.to_proto_agg(cur_agg)
+
+                pred.op = self.to_proto_op(cur_op)
+
+                if isinstance(item, Query):
+                    pred.has_subquery = TRUE
+                    pred.subquery = item.to_proto()
+                else:
+                    pred.has_subquery = FALSE
+                    pred.value = str(item)
+
+                cur_col_id = None
+                cur_agg = None
+                cur_op = None
+
+                having.predicates.append(pred)
+
+            pq.having = having
+
+    def to_proto_group_by(self, pq):
+        if self.group_by is None:
+            pq.has_group_by = UNKNOWN
+        elif self.group_by == False:
+            pq.has_group_by = False
+        else:
+            pq.has_group_by = True
+
+        if isinstance(self.group_by, list):
+            for col in self.group_by:
+                pq.group_by.append(col[2])
+
+    def to_proto_where(self, pq):
+        if self.where is None:
+            pq.has_where = UNKNOWN
+        elif self.where == False:
+            pq.has_where = False
+        else:
+            pq.has_where = True
+
+        if isinstance(self.where, list):
+            where = SelectionClause()
+
+            cur_col_id = None
+            cur_op = None
+            for item in self.where:
+                if item == 'and':
+                    where.logical_op = AND
+                elif item == 'or':
+                    where.logical_op = OR
+                else:
+                    if cur_col_id is None:
+                        cur_col_id = item[2]
+                        continue
+
+                    if cur_op is None:
+                        cur_op = item
+                        continue
+
+                    pred = Predicate()
+                    pred.col_id = cur_col_id
+                    pred.op = self.to_proto_op(cur_op)
+                    pred.has_agg = FALSE
+
+                    if isinstance(item, Query):
+                        pred.has_subquery = TRUE
+                        pred.subquery = item.to_proto()
+                    else:
+                        pred.has_subquery = FALSE
+                        pred.value = str(item)
+
+                    cur_col_id = None
+                    cur_op = None
+
+                    where.predicates.append(pred)
+
+            pq.where = where
+
+    def to_proto_op(self, op):
+        if op == '=':
+            return EQUALS
+        elif op == '>':
+            return GT
+        elif op == '<':
+            return LT
+        elif op == '>=':
+            return GEQ
+        elif op == '<=':
+            return LEQ
+        elif op == '!=':
+            return NEQ
+        elif op == 'like':
+            return LIKE
+        elif op == 'in':
+            return IN
+        elif op == 'not in':
+            return NOT_IN
+        elif op == 'between':
+            return BETWEEN
+        else:
+            raise Exception('Unrecognized op: {}'.format(op))
+
+    def to_proto_agg(self, agg):
+        if agg == 'max':
+            return MAX
+        elif agg == 'min':
+            return MIN
+        elif agg == 'count':
+            return COUNT
+        elif agg == 'sum':
+            return SUM
+        elif agg == 'avg':
+            return AVG
+        else:
+            raise Exception('Unrecognized agg: {}'.format(agg))
+
+    def to_proto_select(self, pq):
+        if isinstance(self.select, list):
+            # [(tbl_name, col_name, col_id), agg] repeated, agg may be missing
+            cur_col_id = None
+            for item in self.select:
+                if cur_col_id is None:
+                    cur_col_id = item[2]
+                    continue
+
+                agg = item
+
+                aggcol = AggregatedColumn()
+                aggcol.col_id = cur_col_id
+                if agg == 'none_agg':
+                    aggcol.has_agg = FALSE
+                else:
+                    aggcol.has_agg = TRUE
+                    aggcol.agg = self.to_proto_agg(agg)
+
+                pq.select.append(aggcol)
+                cur_col_id = None
+
+            # hanging column with no aggregate means we don't know
+            if cur_col_id:
+                aggcol = AggregatedColumn()
+                aggcol.col_id = cur_col_id
+                aggcol.has_agg = UNKNOWN
+                pq.select.append(aggcol)
 
     def copy(self):
         copied = Query()

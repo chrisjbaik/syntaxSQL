@@ -205,18 +205,20 @@ class SuperModel(nn.Module):
             if len(results) >= n:
                 break
 
-            if debug:
-                self.print_stack(stack)
-
             cur = stack.pop()
             cur_query = cur.query.find_subquery(cur.next)
+
+            if debug:
+                self.print_stack(stack)
+                print('* - {}'.format(cur.next))
+                print('\nproto: {}\n'.format(cur_query.to_proto().__str__()))
 
             hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                 cur.history)
 
             # Only one level of set ops permitted, so 'root' is once only
             if cur.next[-1] == 'root':
-                # TODO: beam searchify root state
+                # TODO: beam searchify root state?
 
                 # only do this on first level
                 if len(cur.next) == 1:
@@ -238,8 +240,7 @@ class SuperModel(nn.Module):
                     cur.next = ['left', 'root']
                     stack.append(cur)
             elif cur.next[-1] == 'keyword':
-                # TODO: beam searchify keyword state
-
+                # TODO: beam searchify keyword state?
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, kw_emb_var, kw_len)
                 kw_num_score, kw_score = [x.data.cpu().numpy() for x in score]
@@ -641,7 +642,9 @@ class SuperModel(nn.Module):
                 cur.history[0].append(dec_asc)
                 cur_query.order_by.append(dec_asc)
                 cur_query.order_by.append(has_limit)
-                cur_query.limit = has_limit
+
+                if not has_limit:
+                    cur_query.limit = has_limit
 
                 for state in reversed(cur.next_agg_states()):
                     stack.append(state)
