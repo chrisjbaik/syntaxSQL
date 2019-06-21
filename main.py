@@ -130,7 +130,8 @@ def main():
                 conn.close()
                 break
 
-            task = ProtoTask.ParseFromString(msg)
+            task = ProtoTask()
+            task.ParseFromString(msg)
             sqls = translate(model, db, schemas, task.db_name, task.nlq,
                 args.n, args.b)
 
