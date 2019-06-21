@@ -62,9 +62,9 @@ class Query(object):
         if self.limit is None:
             pq.has_limit = UNKNOWN
         elif self.limit == False:
-            pq.has_limit = False
+            pq.has_limit = FALSE
         else:
-            pq.has_limit = True
+            pq.has_limit = TRUE
 
         if isinstance(self.order_by, list):
             cur_col_id = None
