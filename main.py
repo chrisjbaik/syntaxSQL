@@ -89,7 +89,7 @@ def main():
     parser.add_argument('--db_path', help='Database root path')
 
     # System parameters
-    parser.add_argument('--timeout', default=0, type=int)
+    parser.add_argument('--timeout', default=5, type=int)
     parser.add_argument('--n', default=1, type=int,
         help='Max number of final queries to output')
     parser.add_argument('--b', default=1, type=int,
