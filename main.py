@@ -51,7 +51,8 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, db, schemas, db_name, nlq, n, b, _old=False, debug=False):
+def translate(model, db, schemas, db_name, nlq, n, b, timeout=None, _old=False,
+    debug=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -69,7 +70,7 @@ def translate(model, db, schemas, db_name, nlq, n, b, _old=False, debug=False):
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
         cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, n, b,
-            debug=debug)
+            timeout=timeout, debug=debug)
 
         for cq in cqs:
             results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
@@ -88,6 +89,7 @@ def main():
     parser.add_argument('--db_path', help='Database root path')
 
     # System parameters
+    parser.add_argument('--timeout', default=0, type=int)
     parser.add_argument('--n', default=1, type=int,
         help='Max number of final queries to output')
     parser.add_argument('--b', default=1, type=int,
@@ -133,7 +135,7 @@ def main():
             task = ProtoTask()
             task.ParseFromString(msg)
             sqls = translate(model, db, schemas, task.db_name, task.nlq,
-                args.n, args.b)
+                args.n, args.b, timeout=args.timeout)
 
             proto_cands = ProtoCandidates()
             for sql in sqls:
@@ -158,7 +160,7 @@ def main():
 #             print('Incorrect!\n')
 #     print('Correct: {}/{}'.format(correct, len(data)))
 
-def test(model, db, schemas, n, b, debug):
+def test(model, db, schemas, n, b, debug, timeout=None):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
@@ -177,7 +179,8 @@ def test(model, db, schemas, n, b, debug):
             print(' - {}'.format(cq))
         print
 
-        new = translate(model, db, schemas, db_name, nlq, n, b, debug=debug)
+        new = translate(model, db, schemas, db_name, nlq, n, b, timeout=timeout,
+            debug=debug)
         print('--- NEW ---')
         for cq in new:
             print(' - {}'.format(cq))

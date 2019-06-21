@@ -188,7 +188,8 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def dfs_beam_search(self, db, q_seq, history, tables, n, b, debug=False):
+    def dfs_beam_search(self, db, q_seq, history, tables, n, b, timeout=None,
+        debug=False):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
         col_seq = to_batch_tables(tables, B, self.table_type)
@@ -211,8 +212,14 @@ class SuperModel(nn.Module):
         # literals cache
         lit_cache = LiteralsCache()
 
+        # timeout to prevent infinite recursion
+        if timeout:
+            end_time = time.time() + timeout
+
         while stack:
             if len(results) >= n:
+                break
+            if timeout and time.time() > end_time:
                 break
 
             cur = stack.pop()
