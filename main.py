@@ -178,7 +178,7 @@ def test(model, db, schemas, n, b, debug, timeout=None):
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = ['What', 'are', 'the', 'locations', 'and', 'names', 'of', 'all', 'stations', 'with', 'capacity', 'between', '5000', 'and', '10000', '?']
+            nlq = ['Find', 'the', 'id', 'of', 'the', 'pet', 'owned', 'by', 'student', 'whose', 'last', 'name', 'is', '‘Smith’', '.']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
