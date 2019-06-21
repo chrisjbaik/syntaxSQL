@@ -183,7 +183,7 @@ class SuperModel(nn.Module):
 
     def is_number(self, str):
         try:
-            float(s)
+            float(str)
             return True
         except ValueError:
             return False
