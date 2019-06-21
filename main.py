@@ -137,8 +137,8 @@ def main():
 
             proto_cands = ProtoCandidates()
             for sql in sqls:
-                proto_cands.cq.append(sql.SerializeToString())
-            conn.send_bytes(proto_cands)
+                proto_cands.cq.append(sql)
+            conn.send_bytes(proto_cands.SerializeToString())
         listener.close()
 
 # def test_old_and_new(data, model, db, schemas, n, b):
