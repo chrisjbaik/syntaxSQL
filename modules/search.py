@@ -47,6 +47,7 @@ class Query(object):
         self.to_proto_where(pq)
         self.to_proto_group_by(pq)
         self.to_proto_having(pq)
+        self.to_proto_order_by(pq)
 
         return pq
 
