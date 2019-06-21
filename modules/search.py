@@ -85,7 +85,7 @@ class Query(object):
 
                 orderedcol = OrderedColumn()
                 orderedcol.agg_col.col_id = cur_col_id
-                if agg == 'none_agg':
+                if cur_agg == 'none_agg':
                     orderedcol.agg_col.has_agg = FALSE
                 else:
                     orderedcol.agg_col.has_agg = TRUE
