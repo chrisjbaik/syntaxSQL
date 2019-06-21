@@ -1024,11 +1024,20 @@ class SuperModel(nn.Module):
             if isinstance(val, dict):
                 val = self.gen_sql(val,table)
                 where_item = "{} {} ({})".format(col,op,val)
+            elif isinstance(val, list):
+                if op == 'between':
+                    where_item = "{} {} '{}' and '{}'".format(col, op , val[0],
+                        val[1])
+                elif op in ('in', 'not in'):
+                    in_arr = ','.join(map(lambda x: '{}'.format(x), val))
+                    where_item = "{} {} ({})".format(col,op,in_arr)
+                else:
+                    where_item = "{} {} 'terminal'".format(col,op)
             else:
                 where_item = "{} {} '{}'".format(col,op,val)
-            if op == "between":
-                #TODO temprarily fixed
-                where_item += " and 'terminal'"
+            # if op == "between":
+            #     #TODO temprarily fixed
+            #     where_item += " and 'terminal'"
             ret.append(where_item)
         return "where {}".format(" {} ".format(andor).join(ret))
 
