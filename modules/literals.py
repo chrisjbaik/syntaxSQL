@@ -31,7 +31,11 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b):
             if val is not None:
                 cands.append(val)
         cands.sort()        # ascending for between queries
-        return cands
+
+        if cands:
+            return cands
+        else:
+            return ['terminal']
     else:
         cached = cache.get(col_id)
         if cached:
@@ -39,6 +43,8 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b):
         else:
             lits = find_string_literals(nlq_toks, db, schema['db_id'], tbl_name,
                 col_name, b)
+            if not lits:
+                lits = ['terminal']
             cache.set(col_id, lits)
             return lits
 
