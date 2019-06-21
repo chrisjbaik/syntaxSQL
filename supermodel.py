@@ -194,7 +194,7 @@ class SuperModel(nn.Module):
             for tok in nlq_toks:
                 if self.is_number(tok):
                     cands.append(tok)
-                return cands
+            return cands
         else:
             return ['terminal']
 
