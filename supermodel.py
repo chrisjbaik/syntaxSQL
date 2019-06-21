@@ -612,18 +612,18 @@ class SuperModel(nn.Module):
                         for a, b in pairwise(cands):
                             new = cur.copy()
                             new_query = new.query.find_subquery(cur.next)
-                            new_query.where.append([a, b])
+                            new_query.having.append([a, b])
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                         new = cur.copy()
                         new_query = new.query.find_subquery(cur.next)
-                        new_query.where.append(cands)
+                        new_query.having.append(cands)
                         stack.append(new)
                     else:
                         for literal in cands:
                             new = cur.copy()
                             new_query = new.query.find_subquery(cur.next)
-                            new_query.where.append(literal)
+                            new_query.having.append(literal)
                             stack.append(new)
             elif cur.next[-1] == 'order_by':
                 if not cur_query.order_by:
