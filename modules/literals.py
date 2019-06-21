@@ -62,7 +62,7 @@ class LiteralsCache(object):
         self.cache = {}
 
     def get(self, col_id):
-        if col_id in self.cache[col_id]:
+        if col_id in self.cache:
             return list(self.cache[col_id])
         return None
 
