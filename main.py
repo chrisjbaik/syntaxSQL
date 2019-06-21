@@ -173,12 +173,12 @@ def test(model, db, schemas, n, b, debug, timeout=None):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
-            db_name = 'world_1'
+            db_name = 'pets_1'
         print('Database: {}'.format(db_name))
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = ['Give', 'the', 'names', 'of', 'the', 'nations', 'that', 'were', 'founded', 'after', '1950', '.']
+            nlq = ['Find', 'the', 'first', 'name', 'and', 'gender', 'of', 'student', 'who', 'have', 'more', 'than', 'one', 'pet', '.']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
