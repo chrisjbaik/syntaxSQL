@@ -8,6 +8,7 @@ from supermodel import SuperModel
 from utils import load_word_emb
 
 from modules.database import Database
+from modules.task_pb2 import ProtoTask, ProtoCandidates
 
 def load_schemas(schemas_path):
     data = json.load(open(schemas_path))
@@ -75,8 +76,6 @@ def translate(model, db, schemas, db_name, nlq, n, b, _old=False, debug=False):
 
     return results
 
-# Listens for: `{db_name}\t{NLQ}' (plaintext) on port 6000
-# Response: `{SQL}\t{SQL}\t{SQL}...`
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=6000)
@@ -98,7 +97,7 @@ def main():
     parser.add_argument('--toy', action='store_true')
     parser.add_argument('--test_manual', action='store_true',
         help='For manual command line testing')
-    parser.add_argument('--test_path', help='Path for dataset to test')
+    # parser.add_argument('--test_path', help='Path for dataset to test')
     parser.add_argument('--debug', action='store_true',
         help='Enable debug output for test_manual')
 
@@ -113,10 +112,10 @@ def main():
     if args.test_manual:
         test(model, db, schemas, args.n, args.b, args.debug)
         exit()
-    elif args.test_path:
-        data = json.load(open(args.test_path))
-        test_old_and_new(data, model, db, schemas, args.n, args.b)
-        exit()
+    # elif args.test_path:
+    #     data = json.load(open(args.test_path))
+    #     test_old_and_new(data, model, db, schemas, args.n, args.b)
+    #     exit()
 
     while True:
         address = ('localhost', args.port)  # family is deduced to be 'AF_INET'
@@ -131,27 +130,32 @@ def main():
                 conn.close()
                 break
 
-            db_name, nlq = msg.split('\t')
-            sqls = translate(model, db, schemas, db_name, nlq, args.n, args.b)
-            conn.send_bytes('\t'.join(sqls))
+            task = ProtoTask.ParseFromString(msg)
+            sqls = translate(model, db, schemas, task.db_name, task.nlq,
+                args.n, args.b)
+
+            cqs = ProtoCandidates()
+            for sql in sqls:
+                cqs.append(sql)
+            conn.send_bytes(cqs)
         listener.close()
 
-def test_old_and_new(data, model, db, schemas, n, b):
-    correct = 0
-    for task in data:
-        print('{}, {}'.format(task['db_id'], task['question_toks']))
-        old = translate(model, db, schemas, task['db_id'],
-            task['question_toks'], n, b, _old=True)
-        new = translate(model, db, schemas, task['db_id'],
-            task['question_toks'], n, b)
-        if new[0] == old[0]:
-            correct += 1
-            print('Correct!\n')
-        else:
-            print(old)
-            print(new)
-            print('Incorrect!\n')
-    print('Correct: {}/{}'.format(correct, len(data)))
+# def test_old_and_new(data, model, db, schemas, n, b):
+#     correct = 0
+#     for task in data:
+#         print('{}, {}'.format(task['db_id'], task['question_toks']))
+#         old = translate(model, db, schemas, task['db_id'],
+#             task['question_toks'], n, b, _old=True)
+#         new = translate(model, db, schemas, task['db_id'],
+#             task['question_toks'], n, b)
+#         if new[0] == old[0]:
+#             correct += 1
+#             print('Correct!\n')
+#         else:
+#             print(old)
+#             print(new)
+#             print('Incorrect!\n')
+#     print('Correct: {}/{}'.format(correct, len(data)))
 
 def test(model, db, schemas, n, b, debug):
     while True:
