@@ -55,9 +55,9 @@ class Query(object):
         if self.order_by is None:
             pq.has_order_by = UNKNOWN
         elif self.order_by == False:
-            pq.has_order_by = False
+            pq.has_order_by = FALSE
         else:
-            pq.has_order_by = True
+            pq.has_order_by = TRUE
 
         if self.limit is None:
             pq.has_limit = UNKNOWN
@@ -107,9 +107,9 @@ class Query(object):
         if self.having is None:
             pq.has_having = UNKNOWN
         elif self.having == False:
-            pq.has_having = False
+            pq.has_having = FALSE
         else:
-            pq.has_having = True
+            pq.has_having = TRUE
 
         if isinstance(self.having, list):
             having = SelectionClause()
@@ -160,9 +160,9 @@ class Query(object):
         if self.group_by is None:
             pq.has_group_by = UNKNOWN
         elif self.group_by == False:
-            pq.has_group_by = False
+            pq.has_group_by = FALSE
         else:
-            pq.has_group_by = True
+            pq.has_group_by = TRUE
 
         if isinstance(self.group_by, list):
             for col in self.group_by:
@@ -172,9 +172,9 @@ class Query(object):
         if self.where is None:
             pq.has_where = UNKNOWN
         elif self.where == False:
-            pq.has_where = False
+            pq.has_where = FALSE
         else:
-            pq.has_where = True
+            pq.has_where = TRUE
 
         if isinstance(self.where, list):
             where = SelectionClause()
