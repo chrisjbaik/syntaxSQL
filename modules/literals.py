@@ -43,7 +43,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b):
             return lits
 
 def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b):
-    d = TreebankWordDetokenizer())
+    d = TreebankWordDetokenizer()
     ngrams = list(everygrams(nlq_toks, min_len=1, max_len=6))
 
     lits = []
