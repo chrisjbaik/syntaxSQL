@@ -136,7 +136,7 @@ def main():
 
             cqs = ProtoCandidates()
             for sql in sqls:
-                cqs.append(sql)
+                cqs.append(sql.SerializeToString())
             conn.send_bytes(cqs)
         listener.close()
 
