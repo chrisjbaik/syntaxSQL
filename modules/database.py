@@ -37,7 +37,7 @@ class Database(object):
         cur = conn.cursor()
 
         q = 'SELECT "{}" FROM "{}" WHERE "{}" LIKE ? ESCAPE \'\\\''.format(
-            col_name, table_name, col_name
+            col_name, tbl_name, col_name
         )
         cur.execute(q, ('%{}%'.format(tok.replace('%', '\%')),))
 
