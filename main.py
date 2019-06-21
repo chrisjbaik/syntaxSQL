@@ -185,14 +185,14 @@ def test(model, db, schemas, n, b, debug, timeout=None):
             debug=debug)
         print('--- OLD ---')
         for cq in old:
-            print(' - {}'.format(cq))
+            print(u' - {}'.format(cq))
         print
 
         new = translate(model, db, schemas, db_name, nlq, n, b, timeout=timeout,
             debug=debug)
         print('--- NEW ---')
         for cq in new:
-            print(' - {}'.format(cq))
+            print(u' - {}'.format(cq))
         print
 
 if __name__ == '__main__':
