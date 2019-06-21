@@ -417,11 +417,10 @@ class SuperModel(nn.Module):
                     substate.next.append('keyword')
                     stack.append(substate)
                 else:
-                    # use when testing against original SyntaxSQL
-                    # cur_query.where.append('terminal')
-
                     cands = find_literal_candidates(q_seq[0], db, tables,
                         cur.next_col, lit_cache, b)
+                    if not cands:
+                        continue
 
                     if NEW_WHERE_OPS[op] == 'between':
                         for a, b in pairwise(cands):
@@ -597,6 +596,8 @@ class SuperModel(nn.Module):
                 else:
                     cands = find_literal_candidates(q_seq[0], db, tables,
                         cur.next_col, lit_cache, b)
+                    if not cands:
+                        continue
 
                     if NEW_WHERE_OPS[op] == 'between':
                         for a, b in pairwise(cands):
