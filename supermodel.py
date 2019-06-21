@@ -437,8 +437,6 @@ class SuperModel(nn.Module):
                     # use when testing against original SyntaxSQL
                     # cur_query.where.append('terminal')
 
-                    # TODO: add to HAVING clause later
-
                     cands = self.find_literal_candidates(q_seq[0],
                         tables['column_types'][cur.next_col])
 
@@ -613,8 +611,26 @@ class SuperModel(nn.Module):
                     substate.next.append('keyword')
                     stack.append(substate)
                 else:
-                    cur_query.having.append('terminal')
-                    stack.append(cur)
+                    cands = self.find_literal_candidates(q_seq[0],
+                        tables['column_types'][cur.next_col])
+
+                    if NEW_WHERE_OPS[op] == 'between':
+                        for a, b in pairwise(cands):
+                            new = cur.copy()
+                            new_query = new.query.find_subquery(cur.next)
+                            new_query.where.append([a, b])
+                            stack.append(new)
+                    elif NEW_WHERE_OPS[op] in ('in', 'not in'):
+                        new = cur.copy()
+                        new_query = new.query.find_subquery(cur.next)
+                        new_query.where.append(cands)
+                        stack.append(new)
+                    else:
+                        for literal in cands:
+                            new = cur.copy()
+                            new_query = new.query.find_subquery(cur.next)
+                            new_query.where.append(literal)
+                            stack.append(new)
             elif cur.next[-1] == 'order_by':
                 if not cur_query.order_by:
                     cur.next[-1] = 'finish'
