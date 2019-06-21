@@ -644,7 +644,7 @@ class SuperModel(nn.Module):
                 cur_query.order_by.append(dec_asc)
                 cur_query.order_by.append(has_limit)
 
-                if not has_limit:
+                if not cur_query.limit:
                     cur_query.limit = has_limit
 
                 for state in reversed(cur.next_agg_states()):
