@@ -435,8 +435,8 @@ class SuperModel(nn.Module):
 
                     if NEW_WHERE_OPS[op] == 'between':
                         # default options to not degrade performance
-                        if len(cands) < 2:
-                            cands = ['terminal', 'terminal']
+                        # if len(cands) < 2:
+                        #     cands = ['terminal', 'terminal']
                         for a, b in pairwise(cands):
                             new = cur.copy()
                             new_query = new.query.find_subquery(cur.next)
@@ -444,16 +444,16 @@ class SuperModel(nn.Module):
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                         # default options to not degrade performance
-                        if len(cands) == 0:
-                            cands = ['terminal']
+                        # if len(cands) == 0:
+                        #     cands = ['terminal']
                         new = cur.copy()
                         new_query = new.query.find_subquery(cur.next)
                         new_query.where.append(cands)
                         stack.append(new)
                     else:
                         # default options to not degrade performance
-                        if len(cands) == 0:
-                            cands = ['terminal']
+                        # if len(cands) == 0:
+                        #     cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
                             new_query = new.query.find_subquery(cur.next)
@@ -619,8 +619,8 @@ class SuperModel(nn.Module):
 
                     if NEW_WHERE_OPS[op] == 'between':
                         # default options to not degrade performance
-                        if len(cands) < 2:
-                            cands = ['terminal', 'terminal']
+                        # if len(cands) < 2:
+                        #     cands = ['terminal', 'terminal']
                         for a, b in pairwise(cands):
                             new = cur.copy()
                             new_query = new.query.find_subquery(cur.next)
@@ -628,16 +628,16 @@ class SuperModel(nn.Module):
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                         # default options to not degrade performance
-                        if len(cands) == 0:
-                            cands = ['terminal']
+                        # if len(cands) == 0:
+                        #     cands = ['terminal']
                         new = cur.copy()
                         new_query = new.query.find_subquery(cur.next)
                         new_query.having.append(cands)
                         stack.append(new)
                     else:
                         # default options to not degrade performance
-                        if len(cands) == 0:
-                            cands = ['terminal']
+                        # if len(cands) == 0:
+                        #     cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
                             new_query = new.query.find_subquery(cur.next)

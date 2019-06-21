@@ -155,7 +155,7 @@ def main():
 def test_old_and_new(data, model, db, schemas, n, b):
     correct = 0
     for i, task in enumerate(data):
-        print('{}/{} || {}, {}'.format(i, len(data), task['db_id'],
+        print('{}/{} || {}, {}'.format(i+1, len(data), task['db_id'],
             task['question_toks']))
         old = translate(model, db, schemas, task['db_id'],
             task['question_toks'], n, b, _old=True)
