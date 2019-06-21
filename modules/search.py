@@ -146,9 +146,9 @@ class Query(object):
                     pred.has_subquery = FALSE
                     if isinstance(item, list):
                         for val in item:
-                            pred.value.append(str(val))
+                            pred.value.append(unicode(val))
                     else:
-                        pred.value.append(str(item))
+                        pred.value.append(unicode(item))
 
                 cur_col_id = None
                 cur_agg = None
@@ -205,9 +205,9 @@ class Query(object):
                         pred.has_subquery = FALSE
                         if isinstance(item, list):
                             for val in item:
-                                pred.value.append(str(val))
+                                pred.value.append(unicode(val))
                         else:
-                            pred.value.append(str(item))
+                            pred.value.append(unicode(item))
 
                     cur_col_id = None
                     cur_op = None
