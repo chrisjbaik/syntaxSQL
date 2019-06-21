@@ -135,7 +135,15 @@ def main():
 
             task = ProtoTask()
             task.ParseFromString(msg)
-            sqls = translate(model, db, schemas, task.db_name, task.nlq_tokens,
+
+            tokens_list = list(task.nlq_tokens)
+            nlq = None
+            if len(tokens_list) == 1:
+                nlq = tokens_list[0]
+            else:
+                nlq = tokens_list
+
+            sqls = translate(model, db, schemas, task.db_name, nlq,
                 args.n, args.b, timeout=args.timeout)
 
             proto_cands = ProtoCandidates()
