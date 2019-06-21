@@ -112,8 +112,6 @@ class Query(object):
             pq.has_having = TRUE
 
         if isinstance(self.having, list):
-            having = SelectionClause()
-
             cur_col_id = None
             cur_agg = None
             cur_op = None
@@ -152,9 +150,7 @@ class Query(object):
                 cur_agg = None
                 cur_op = None
 
-                having.predicates.append(pred)
-
-            pq.having = having
+                pq.having.predicates.append(pred)
 
     def to_proto_group_by(self, pq):
         if self.group_by is None:
@@ -177,15 +173,13 @@ class Query(object):
             pq.has_where = TRUE
 
         if isinstance(self.where, list):
-            where = SelectionClause()
-
             cur_col_id = None
             cur_op = None
             for item in self.where:
                 if item == 'and':
-                    where.logical_op = AND
+                    pq.where.logical_op = AND
                 elif item == 'or':
-                    where.logical_op = OR
+                    pq.where.logical_op = OR
                 else:
                     if cur_col_id is None:
                         cur_col_id = item[2]
@@ -210,9 +204,7 @@ class Query(object):
                     cur_col_id = None
                     cur_op = None
 
-                    where.predicates.append(pred)
-
-            pq.where = where
+                    pq.where.predicates.append(pred)
 
     def to_proto_op(self, op):
         if op == '=':
