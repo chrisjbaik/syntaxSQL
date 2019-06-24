@@ -616,7 +616,7 @@ class SuperModel(nn.Module):
                     stack.append(substate)
                 else:
                     cands = find_literal_candidates(q_seq[0], db, tables,
-                        cur.next_col, lit_cache, b,
+                        cur.next_col, lit_cache, b, agg=AGG_OPS[cur.next_agg],
                         like=NEW_WHERE_OPS[op] == 'like')
 
                     if NEW_WHERE_OPS[op] == 'between':

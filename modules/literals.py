@@ -22,9 +22,10 @@ def get_col_info(schema, col_id):
 
     return tbl_name, col_name, col_type
 
-def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, like=False):
+def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
+    like=False):
     tbl_name, col_name, col_type = get_col_info(schema, col_id)
-    if col_type == 'number':
+    if agg == 'count' or col_type == 'number':
         cands = []
         for tok in nlq_toks:
             val = to_number(tok)
