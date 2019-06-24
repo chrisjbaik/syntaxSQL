@@ -212,8 +212,12 @@ def test(model, db, schemas, n, b, debug, timeout=None):
         new = translate(model, db, schemas, db_name, nlq, n, b, timeout=timeout,
             debug=debug)
         print('--- NEW ---')
+
+        proto_cands = ProtoCandidates()
         for cq in new:
             print(u' - {}'.format(cq))
+            proto_cands.cq.append(sql)
+        print('Len of proto_cands: {}'.format(proto_cands.cq))
         print
 
 if __name__ == '__main__':
