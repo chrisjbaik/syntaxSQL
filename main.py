@@ -63,6 +63,8 @@ def translate(model, db, schemas, db_name, nlq, n, b, timeout=None, _old=False,
     else:
         tokens = tokenize(nlq)
 
+    print(u'Tokens: {}'.format(tokens))
+
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
     results = []
     if _old:
@@ -180,25 +182,16 @@ def test(model, db, schemas, n, b, debug, timeout=None):
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
             nlq = [
-             "Which",
-             "distinctive",
-             "models",
-             "are",
-             "produced",
-             "by",
-             "maker",
-             "with",
+             "Show",
              "the",
-             "full",
-             "name",
-             "General",
-             "Motors",
-             "or",
-             "weighing",
-             "more",
-             "than",
-             "3500",
-             "?"
+             "hometowns",
+             "shared",
+             "by",
+             "at",
+             "least",
+             "two",
+             "teachers",
+             "."
            ]
         print('NLQ: {}'.format(nlq))
 
@@ -213,11 +206,8 @@ def test(model, db, schemas, n, b, debug, timeout=None):
             debug=debug)
         print('--- NEW ---')
 
-        proto_cands = ProtoCandidates()
         for cq in new:
             print(u' - {}'.format(cq))
-            proto_cands.cq.append(sql)
-        print('Len of proto_cands: {}'.format(proto_cands.cq))
         print
 
 if __name__ == '__main__':
