@@ -2,6 +2,8 @@ from nltk import everygrams
 from nltk.corpus import stopwords
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 
+from word2number import w2n
+
 stopwords_bank = set(stopwords.words('english'))
 
 def to_number(str):
@@ -12,7 +14,11 @@ def to_number(str):
         else:
             return val
     except ValueError:
-        return None
+        try:
+            val = w2n.word_to_num(str)
+            return val
+        except Exception:
+            return None
 
 def get_col_info(schema, col_id):
     col_type = schema['column_types'][col_id]
