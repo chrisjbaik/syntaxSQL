@@ -42,7 +42,9 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b):
             cache.set(col_id, lits)
             return lits
 
-def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b):
+def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b,
+    like=False):
+
     d = TreebankWordDetokenizer()
     ngrams = list(everygrams(nlq_toks, min_len=1, max_len=6))
 
@@ -58,7 +60,10 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b):
 
         lit = db.find_literals(db_name, tbl_name, col_name, str, b)
         if lit:
-            lits.extend(lit)
+            if like:
+                lits.extend(map(lambda x: u'%{}%'.format(str), lit))
+            else:
+                lits.extend(lit)
     return lits
 
 class LiteralsCache(object):
