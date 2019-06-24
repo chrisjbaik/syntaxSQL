@@ -22,7 +22,7 @@ def get_col_info(schema, col_id):
 
     return tbl_name, col_name, col_type
 
-def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b):
+def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, like=False):
     tbl_name, col_name, col_type = get_col_info(schema, col_id)
     if col_type == 'number':
         cands = []
@@ -38,13 +38,11 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b):
             return cached
         else:
             lits = find_string_literals(nlq_toks, db, schema['db_id'], tbl_name,
-                col_name, b)
+                col_name, b, like=like)
             cache.set(col_id, lits)
             return lits
 
-def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b,
-    like=False):
-
+def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
     d = TreebankWordDetokenizer()
     ngrams = list(everygrams(nlq_toks, min_len=1, max_len=6))
 
