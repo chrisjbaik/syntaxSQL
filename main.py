@@ -174,7 +174,7 @@ def test(model, db, schemas, n, b, debug, timeout=None):
     while True:
         db_name = raw_input('Database (hit enter for default) > ')
         if not db_name:
-            db_name = 'concert_singer'
+            db_name = 'car_1'
         print('Database: {}'.format(db_name))
 
         nlq = raw_input('NLQ (hit enter for default) > ')
