@@ -1089,9 +1089,6 @@ class SuperModel(nn.Module):
                     where_item = u"{} {} 'terminal'".format(col,op)
             else:
                 where_item = u"{} {} '{}'".format(col,op,val)
-            # if op == "between":
-            #     #TODO temprarily fixed
-            #     where_item += " and 'terminal'"
             ret.append(where_item)
         return u"where {}".format(u" {} ".format(andor).join(ret))
 
@@ -1116,11 +1113,22 @@ class SuperModel(nn.Module):
                 col = "{}({})".format(sql[i+1], self.gen_col(sql[i], table, table_alias_dict))
             op = sql[i+2]
             val = sql[i+3]
-            if val == "terminal":
-                ret.append("{} {} '{}'".format(col,op,val))
+            having_item = ""
+            if isinstance(val, dict):
+                val = self.gen_sql(val,table)
+                having_item = u"{} {} ({})".format(col,op,val)
+            elif isinstance(val, list):
+                if op == 'between':
+                    having_item = u"{} {} '{}' and '{}'".format(col, op , val[0],
+                        val[1])
+                elif op in ('in', 'not in'):
+                    in_arr = u','.join(map(lambda x: '{}'.format(x), val))
+                    having_item = u"{} {} ({})".format(col,op,in_arr)
+                else:
+                    having_item = u"{} {} 'terminal'".format(col,op)
             else:
-                val = self.gen_sql(val, table)
-                ret.append("{} {} ({})".format(col, op, val))
+                having_item = u"{} {} '{}'".format(col,op,val)
+            ret.append(having_item)
         return "having {}".format(",".join(ret))
 
     def find_shortest_path(self,start,end,graph):
