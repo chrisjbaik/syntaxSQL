@@ -181,18 +181,7 @@ def test(model, db, schemas, n, b, debug, timeout=None):
 
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
-            nlq = [
-             "Show",
-             "the",
-             "hometowns",
-             "shared",
-             "by",
-             "at",
-             "least",
-             "two",
-             "teachers",
-             "."
-           ]
+            nlq = [u'Show', u'the', u'hometowns', u'shared', u'by', u'at', u'least', u'two', u'teachers', u'.']
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
