@@ -50,7 +50,7 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b):
     for ngram in reversed(ngrams):
         # HACK: single length tokens sometimes include random punctuation
         if len(ngram) == 1:
-            ngram[0] = ngram[0].replace("'", '')
+            ngram = (ngram[0].replace("'", ''),)
 
         str = d.detokenize(ngram)
         if str in stopwords_bank:
