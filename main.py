@@ -180,27 +180,26 @@ def test(model, db, schemas, n, b, debug, timeout=None):
         nlq = raw_input('NLQ (hit enter for default) > ')
         if not nlq:
             nlq = [
-             "what",
-             "is",
+             "Which",
+             "distinctive",
+             "models",
+             "are",
+             "produced",
+             "by",
+             "maker",
+             "with",
              "the",
+             "full",
              "name",
-             "and",
-             "nation",
-             "of",
-             "the",
-             "singer",
-             "who",
-             "have",
-             "a",
-             "song",
-             "having",
-             "'Hey",
-             "'",
-             "in",
-             "its",
-             "name",
+             "General",
+             "Motors",
+             "or",
+             "weighing",
+             "more",
+             "than",
+             "3500",
              "?"
-            ]
+           ]
         print('NLQ: {}'.format(nlq))
 
         old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
