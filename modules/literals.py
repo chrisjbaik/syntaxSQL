@@ -15,7 +15,7 @@ def to_number(str):
             return val
     except ValueError:
         try:
-            val = w2n.word_to_num(str)
+            val = w2n.word_to_num(str(str))
             return val
         except Exception:
             return None
