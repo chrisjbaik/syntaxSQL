@@ -6,16 +6,16 @@ from word2number import w2n
 
 stopwords_bank = set(stopwords.words('english'))
 
-def to_number(str):
+def to_number(tok):
     try:
-        val = float(str)
+        val = float(tok)
         if val.is_integer():
             return int(val)
         else:
             return val
     except ValueError:
         try:
-            val = w2n.word_to_num(str(str))
+            val = w2n.word_to_num(str(tok))
             return val
         except Exception:
             return None
