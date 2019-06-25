@@ -63,8 +63,6 @@ def translate(model, db, schemas, db_name, nlq, n, b, timeout=None, _old=False,
     else:
         tokens = tokenize(nlq)
 
-    print(u'Tokens: {}'.format(tokens))
-
     # 06/13/2019: not sure why multiply by 2 is necessary for tokens
     results = []
     if _old:
