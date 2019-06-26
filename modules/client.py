@@ -13,7 +13,7 @@ class MixtapeClient(object):
 
     def should_prune(self, query):
         protolist = ProtoQueryList()
-        protolist.append(query.to_proto())
+        protolist.queries.append(query.to_proto())
 
         self.conn.send_bytes(protolist.SerializeToString())
         msg = self.conn.recv_bytes()
