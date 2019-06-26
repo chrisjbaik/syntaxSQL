@@ -126,7 +126,7 @@ def main():
     #     exit()
 
     while True:
-        address = ('localhost', config.get('nlq', 'port'))
+        address = ('localhost', int(config.get('nlq', 'port')))
         listener = Listener(address, authkey=config.get('nlq', 'authkey'))
         print('Listening on port {}...'.format(config.get('nlq', 'port')))
         conn = listener.accept()
