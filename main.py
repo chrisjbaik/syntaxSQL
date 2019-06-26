@@ -1,4 +1,5 @@
 import argparse
+import ConfigParser
 import json
 from multiprocessing.connection import Listener
 import torch
@@ -51,8 +52,8 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, db, schemas, db_name, nlq, n, b, timeout=None, _old=False,
-    debug=False):
+def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
+    _old=False, debug=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -69,7 +70,7 @@ def translate(model, db, schemas, db_name, nlq, n, b, timeout=None, _old=False,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, n, b,
+        cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, client, n, b,
             timeout=timeout, debug=debug)
 
         for cq in cqs:
@@ -79,51 +80,54 @@ def translate(model, db, schemas, db_name, nlq, n, b, timeout=None, _old=False,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', default=6000)
-    parser.add_argument('--authkey', default='mixtape')
-    parser.add_argument('--schemas_path',
-        default='../../data/spider/tables.json')
-    parser.add_argument('--models_path',
-        default='generated_data_augment/saved_models')
-    parser.add_argument('--glove_path', default='glove')
-    parser.add_argument('--db_path', help='Database root path')
+    parser.add_argument('dataset', choices=['spider', 'wikisql'])
+    parser.add_argument('mode', choices=['spider', 'wikisql'])
 
-    # System parameters
-    parser.add_argument('--timeout', default=5, type=int)
-    parser.add_argument('--n', default=1, type=int,
-        help='Max number of final queries to output')
-    parser.add_argument('--b', default=1, type=int,
-        help='Beam search parameter')
-
-    # Testing parameters
-    parser.add_argument('--toy', action='store_true')
-    parser.add_argument('--test_manual', action='store_true',
-        help='For manual command line testing')
-    parser.add_argument('--test_path', help='Path for dataset to test')
-    parser.add_argument('--debug', action='store_true',
-        help='Enable debug output for test_manual')
+    parser.add_argument('--config_path', default='../../src/config.ini')
+    parser.add_argument('--timeout', default=5, type=int,
+        help='Timeout if search does not terminate')
+    parser.add_argument('--toy', action='store_true',
+        help='Use toy word embedding set to save load time')
+    # parser.add_argument('--test_manual', action='store_true',
+    #     help='For manual command line testing')
+    # parser.add_argument('--test_path', help='Path for dataset to test')
+    # parser.add_argument('--debug', action='store_true',
+        # help='Enable debug output for test_manual')
 
     args = parser.parse_args()
 
-    print('Running with n = {} and b = {}'.format(args.n, args.b))
+    config = ConfigParser.RawConfigParser()
+    config.read(args.config_path)
 
-    schemas = load_schemas(args.schemas_path)
-    model = load_model(args.models_path, args.glove_path, args.toy)
-    db = Database(args.db_path, 'spider')
+    schemas_path = None
+    db_path = None
+    if args.dataset == 'spider':
+        schemas_path = config.get('spider', '{}_tables_path'.format(args.mode))
+        db_path = config.get('spider', '{}_db_path'.format(args.mode))
+    elif args.dataset == 'wikisql':
+        pass  # TODO
 
-    if args.test_manual:
-        test(model, db, schemas, args.n, args.b, args.debug,
-            timeout=args.timeout)
-        exit()
-    elif args.test_path:
-        data = json.load(open(args.test_path))
-        test_old_and_new(data, model, db, schemas, args.n, args.b)
-        exit()
+    schemas = load_schemas(schemas_path)
+    model = load_model(config.get('syntaxsql', 'models_path'),
+        config.get('syntaxsql', 'glove_path'), args.toy)
+    db = Database(db_path, args.dataset)
+    client = MixtapeClient(config.get('mixtape', 'port'),
+        config.get('mixtape', 'authkey'))
+
+    # if args.test_manual:
+    #     n = 1
+    #     b = 1
+    #     test(model, db, schemas, client, n, b, args.debug, timeout=args.timeout)
+    #     exit()
+    # elif args.test_path:
+    #     data = json.load(open(args.test_path))
+    #     test_old_and_new(data, model, db, schemas, args.n, args.b)
+    #     exit()
 
     while True:
-        address = ('localhost', args.port)  # family is deduced to be 'AF_INET'
-        listener = Listener(address, authkey=args.authkey)
-        print('Listening on port {}...'.format(args.port))
+        address = ('localhost', config.get('nlq', 'port'))
+        listener = Listener(address, authkey=config.get('nlq', 'authkey'))
+        print('Listening on port {}...'.format(config.get('nlq', 'port'))
         conn = listener.accept()
         print('Connection accepted from:', listener.last_accepted)
         while True:
@@ -143,8 +147,11 @@ def main():
             else:
                 nlq = tokens_list
 
-            sqls = translate(model, db, schemas, task.db_name, nlq,
-                args.n, args.b, timeout=args.timeout)
+            if not task.enable_mixtape:
+                client = None
+
+            sqls = translate(model, db, schemas, client, task.db_name, nlq,
+                task.n, task.b, timeout=args.timeout)
 
             proto_cands = ProtoCandidates()
             for sql in sqls:
@@ -152,50 +159,51 @@ def main():
             conn.send_bytes(proto_cands.SerializeToString())
         listener.close()
 
-def test_old_and_new(data, model, db, schemas, n, b):
-    correct = 0
-    for i, task in enumerate(data):
-        print('{}/{} || {}, {}'.format(i+1, len(data), task['db_id'],
-            task['question_toks']))
-        old = translate(model, db, schemas, task['db_id'],
-            task['question_toks'], n, b, _old=True)
-        new = translate(model, db, schemas, task['db_id'],
-            task['question_toks'], n, b)
-        if new[0] == old[0]:
-            correct += 1
-            print('Correct!\n')
-        else:
-            print(old)
-            print(new)
-            print('Incorrect!\n')
-    print('Correct: {}/{}'.format(correct, len(data)))
+# def test_old_and_new(data, model, db, schemas, n, b):
+#     correct = 0
+#     for i, task in enumerate(data):
+#         print('{}/{} || {}, {}'.format(i+1, len(data), task['db_id'],
+#             task['question_toks']))
+#         old = translate(model, db, schemas, task['db_id'],
+#             task['question_toks'], n, b, _old=True)
+#         new = translate(model, db, schemas, task['db_id'],
+#             task['question_toks'], n, b)
+#         if new[0] == old[0]:
+#             correct += 1
+#             print('Correct!\n')
+#         else:
+#             print(old)
+#             print(new)
+#             print('Incorrect!\n')
+#     print('Correct: {}/{}'.format(correct, len(data)))
 
-def test(model, db, schemas, n, b, debug, timeout=None):
-    while True:
-        db_name = raw_input('Database (hit enter for default) > ')
-        if not db_name:
-            db_name = 'course_teach'
-        print('Database: {}'.format(db_name))
-
-        nlq = raw_input('NLQ (hit enter for default) > ')
-        if not nlq:
-            nlq = [u'Show', u'the', u'hometowns', u'shared', u'by', u'at', u'least', u'two', u'teachers', u'.']
-        print('NLQ: {}'.format(nlq))
-
-        old = translate(model, db, schemas, db_name, nlq, n, b, _old=True,
-            debug=debug)
-        print('--- OLD ---')
-        for cq in old:
-            print(u' - {}'.format(cq))
-        print
-
-        new = translate(model, db, schemas, db_name, nlq, n, b, timeout=timeout,
-            debug=debug)
-        print('--- NEW ---')
-
-        for cq in new:
-            print(u' - {}'.format(cq))
-        print
+# def test(model, db, schemas, client, n, b, debug, timeout=None):
+#     while True:
+#         db_name = raw_input('Database (hit enter for default) > ')
+#         if not db_name:
+#             db_name = 'course_teach'
+#         print('Database: {}'.format(db_name))
+#
+#         nlq = raw_input('NLQ (hit enter for default) > ')
+#         if not nlq:
+#             nlq = [u'Show', u'the', u'hometowns', u'shared', u'by', u'at',
+#                 u'least', u'two', u'teachers', u'.']
+#         print('NLQ: {}'.format(nlq))
+#
+#         old = translate(model, db, schemas, client, db_name, nlq, n, b,
+#             _old=True, debug=debug)
+#         print('--- OLD ---')
+#         for cq in old:
+#             print(u' - {}'.format(cq))
+#         print
+#
+#         new = translate(model, db, schemas, client, db_name, nlq, n, b,
+#             timeout=timeout, debug=debug)
+#         print('--- NEW ---')
+#
+#         for cq in new:
+#             print(u' - {}'.format(cq))
+#         print
 
 if __name__ == '__main__':
     main()

@@ -194,8 +194,11 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def dfs_beam_search(self, db, q_seq, history, tables, n, b, timeout=None,
-        debug=False):
+    def dfs_beam_search(self, db, q_seq, history, tables, client, n, b,
+        timeout=None, debug=False):
+        if client:
+            client.connect()
+
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
         col_seq = to_batch_tables(tables, B, self.table_type)
@@ -229,6 +232,11 @@ class SuperModel(nn.Module):
                 break
 
             cur = stack.pop()
+
+            # check if Mixtape says to prune it
+            if client and client.should_prune(cur.query):
+                continue
+
             cur_query = cur.query.find_subquery(cur.next)
 
             if debug:
@@ -749,6 +757,8 @@ class SuperModel(nn.Module):
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
+        if client:
+            client.close()
         return results
 
 
