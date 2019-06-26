@@ -8,6 +8,7 @@ from process_sql import tokenize
 from supermodel import SuperModel
 from utils import load_word_emb
 
+from modules.client import MixtapeClient
 from modules.database import Database
 from modules.task_pb2 import ProtoTask, ProtoCandidates
 
