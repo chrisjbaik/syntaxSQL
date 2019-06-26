@@ -112,7 +112,7 @@ def main():
     model = load_model(config.get('syntaxsql', 'models_path'),
         config.get('syntaxsql', 'glove_path'), args.toy)
     db = Database(db_path, args.dataset)
-    client = MixtapeClient(config.get('mixtape', 'port'),
+    client = MixtapeClient(int(config.get('mixtape', 'port')),
         config.get('mixtape', 'authkey'))
 
     # if args.test_manual:
