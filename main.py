@@ -81,7 +81,7 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset', choices=['spider', 'wikisql'])
-    parser.add_argument('mode', choices=['spider', 'wikisql'])
+    parser.add_argument('mode', choices=['dev', 'test'])
 
     parser.add_argument('--config_path', default='../../src/config.ini')
     parser.add_argument('--timeout', default=5, type=int,
