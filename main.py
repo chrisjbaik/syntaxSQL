@@ -53,8 +53,8 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, db, schemas, client, db_name, nlq, n, b, num_cols=0,
-    timeout=None, _old=False, debug=False):
+def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
+    _old=False, debug=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -71,7 +71,7 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, num_cols=0,
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
         cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, client, n, b,
-            num_cols=num_cols, timeout=timeout, debug=debug)
+            timeout=timeout, debug=debug)
 
         for cq in cqs:
             results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
@@ -150,7 +150,7 @@ def main():
             mtc = client if task.enable_mixtape else None
 
             sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
-                task.n, task.b, num_cols=task.num_cols, timeout=args.timeout)
+                task.n, task.b, timeout=args.timeout)
 
             proto_cands = ProtoCandidates()
             for sql in sqls:
