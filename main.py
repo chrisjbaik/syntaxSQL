@@ -148,10 +148,9 @@ def main():
             else:
                 nlq = tokens_list
 
-            if not task.enable_mixtape:
-                client = None
+            mtc = client if task.enable_mixtape else None
 
-            sqls = translate(model, db, schemas, client, task.db_name, nlq,
+            sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
                 task.n, task.b, timeout=args.timeout)
 
             proto_cands = ProtoCandidates()
