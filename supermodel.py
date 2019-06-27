@@ -150,14 +150,16 @@ class SuperModel(nn.Module):
         # return self.dfs_beam_search(q_seq, history, tables, n, b)
 
     def get_col_cands(self, b, q_emb_var, q_len, hs_emb_var, hs_len,
-        col_emb_var, col_len, col_name_len):
+        col_emb_var, col_len, col_name_len, num_cols=None):
         score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
             col_emb_var, col_len, col_name_len)
         col_num_score, col_score = [x.data.cpu().numpy() for x in score]
-        col_num = np.argmax(col_num_score[0]) + 1
+
+        if not num_cols:
+            num_cols = np.argmax(col_num_score[0]) + 1
 
         # return col_num + b - 1, so as to perform beam search on EACH col slot
-        return list(np.argsort(-col_score[0])[:col_num + b - 1]), col_num
+        return list(np.argsort(-col_score[0])[:num_cols + b - 1]), num_cols
 
     def get_agg_cands(self, b, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
         col_emb_var, col_len, col_name_len):
@@ -195,7 +197,7 @@ class SuperModel(nn.Module):
             print('  - {}'.format(item.next))
 
     def dfs_beam_search(self, db, q_seq, history, tables, client, n, b,
-        timeout=None, debug=False):
+        num_cols=0, timeout=None, debug=False):
         if client:
             client.connect()
 
@@ -298,7 +300,7 @@ class SuperModel(nn.Module):
 
                 cur.col_cands, cur.num_cols = \
                     self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
-                        col_emb_var, col_len, col_name_len)
+                        col_emb_var, col_len, col_name_len, num_cols=num_cols)
 
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
