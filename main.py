@@ -3,6 +3,7 @@ import ConfigParser
 import json
 from multiprocessing.connection import Listener
 import torch
+import traceback
 
 from process_sql import tokenize
 from supermodel import SuperModel
@@ -125,38 +126,42 @@ def main():
     #     exit()
 
     while True:
-        address = ('localhost', int(config.get('nlq', 'port')))
-        listener = Listener(address, authkey=config.get('nlq', 'authkey'))
-        print('Listening on port {}...'.format(config.get('nlq', 'port')))
-        conn = listener.accept()
-        print('Connection accepted from:', listener.last_accepted)
-        while True:
-            msg = conn.recv_bytes()
+        try:
+            address = ('localhost', int(config.get('nlq', 'port')))
+            listener = Listener(address, authkey=config.get('nlq', 'authkey'))
+            print('Listening on port {}...'.format(config.get('nlq', 'port')))
+            conn = listener.accept()
+            print('Connection accepted from:', listener.last_accepted)
+            while True:
+                msg = conn.recv_bytes()
 
-            if msg == 'close':
-                conn.close()
-                break
+                if msg == 'close':
+                    conn.close()
+                    break
 
-            task = ProtoTask()
-            task.ParseFromString(msg)
+                task = ProtoTask()
+                task.ParseFromString(msg)
 
-            tokens_list = list(task.nlq_tokens)
-            nlq = None
-            if len(tokens_list) == 1:
-                nlq = tokens_list[0]
-            else:
-                nlq = tokens_list
+                tokens_list = list(task.nlq_tokens)
+                nlq = None
+                if len(tokens_list) == 1:
+                    nlq = tokens_list[0]
+                else:
+                    nlq = tokens_list
 
-            mtc = client if task.enable_mixtape else None
+                mtc = client if task.enable_mixtape else None
 
-            sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
-                task.n, task.b, timeout=args.timeout)
+                sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
+                    task.n, task.b, timeout=args.timeout)
 
-            proto_cands = ProtoCandidates()
-            for sql in sqls:
-                proto_cands.cq.append(sql)
-            conn.send_bytes(proto_cands.SerializeToString())
-        listener.close()
+                proto_cands = ProtoCandidates()
+                for sql in sqls:
+                    proto_cands.cq.append(sql)
+                conn.send_bytes(proto_cands.SerializeToString())
+        except Exception as e:
+            traceback.print_exc()
+        finally:
+            listener.close()
 
 # def test_old_and_new(data, model, db, schemas, n, b):
 #     correct = 0
