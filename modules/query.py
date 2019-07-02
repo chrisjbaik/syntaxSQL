@@ -450,6 +450,8 @@ def set_proto_from(pq, jp):
         pq.from_clause.edge_list.edges.append(proto_edge)
 
     for tbl, edges in jp.edge_map.items():
+        # initialize table in protobuf even if edges don't exist
+        pq.from_clause.edge_map[tbl.id]
         for edge in edges:
             proto_edge = ProtoJoinEdge()
             proto_edge.fk_col_id = edge.fk_col.id
