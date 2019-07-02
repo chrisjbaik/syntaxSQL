@@ -138,7 +138,7 @@ def from_clause_str(pq, schema, alias_prefix):
     aliases = {}
     join_exprs = ['FROM']
 
-    tables = map(lambda x: schema.get_table(x), pq.from.edge_map.keys())
+    tables = map(lambda x: schema.get_table(x), pq.from_clause.edge_map.keys())
     tbl = min(tables, key=lambda x: x.syn_name)
     alias = gen_alias(len(aliases) + 1, alias_prefix)
     aliases[tbl.syn_name] = alias
@@ -148,7 +148,7 @@ def from_clause_str(pq, schema, alias_prefix):
 
     while stack:
         tbl = stack.pop()
-        for edge in pq.from.edge_map[tbl].edges:
+        for edge in pq.from_clause.edge_map[tbl].edges:
             edge = JoinEdge(
                 schema.get_col(edge.fk_col_id),
                 schema.get_col(edge.pk_col_id)
@@ -347,7 +347,7 @@ def get_tables(schema, pq):
 # Does not consider for subqueries or set op children
 def join_path_needs_update(schema, pq):
     tables_in_cur_jp = set(map(lambda x: schema.get_table(x),
-        pq.from.edge_map.keys()))
+        pq.from_clause.edge_map.keys()))
 
     # if SELECT has a column (i.e. inference started) and there are no tables
     if pq.select and len(tables_in_cur_jp) == 0:
@@ -446,7 +446,7 @@ def set_proto_from(pq, jp):
         proto_edge = ProtoJoinEdge()
         proto_edge.fk_col_id = edge.fk_col.id
         proto_edge.pk_col_id = edge.pk_col.id
-        pq.from.edge_list.edges.append(proto_edge)
+        pq.from_clause.edge_list.edges.append(proto_edge)
 
     for tbl, edges in jp.edge_map.items():
         proto_edge_list = ProtoJoinEdgeList()
@@ -456,7 +456,7 @@ def set_proto_from(pq, jp):
             proto_edge.pk_col_id = edge.pk_col.id
             proto_edge_list.edges.append(proto_edge)
 
-        pq.from.edge_map[tbl.id] = proto_edge_list
+        pq.from_clause.edge_map[tbl.id] = proto_edge_list
 
 class Query(object):
     def __init__(self, schema, protoquery=None):

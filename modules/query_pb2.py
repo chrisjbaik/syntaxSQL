@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bquery.proto\".\n\x0eProtoQueryList\x12\x1c\n\x07queries\x18\x01 \x03(\x0b\x32\x0b.ProtoQuery\"(\n\x0bProtoResult\x12\x19\n\x07results\x18\x01 \x03(\x0e\x32\x08.Tribool\"\xcc\x03\n\nProtoQuery\x12\x16\n\x06set_op\x18\x01 \x01(\x0e\x32\x06.SetOp\x12\x1b\n\thas_where\x18\x02 \x01(\x0e\x32\x08.Tribool\x12\x1e\n\x0chas_group_by\x18\x03 \x01(\x0e\x32\x08.Tribool\x12\x1c\n\nhas_having\x18\x04 \x01(\x0e\x32\x08.Tribool\x12\x1e\n\x0chas_order_by\x18\x05 \x01(\x0e\x32\x08.Tribool\x12\x1b\n\thas_limit\x18\x06 \x01(\x0e\x32\x08.Tribool\x12!\n\x06select\x18\x07 \x03(\x0b\x32\x11.AggregatedColumn\x12\x1f\n\x05where\x18\x08 \x01(\x0b\x32\x10.SelectionClause\x12\x10\n\x08group_by\x18\t \x03(\x05\x12 \n\x06having\x18\n \x01(\x0b\x32\x10.SelectionClause\x12 \n\x08order_by\x18\x0b \x03(\x0b\x32\x0e.OrderedColumn\x12\r\n\x05limit\x18\x10 \x01(\x05\x12\x1c\n\x04\x66rom\x18\x0c \x01(\x0b\x32\x0e.ProtoJoinPath\x12\x19\n\x04left\x18\r \x01(\x0b\x32\x0b.ProtoQuery\x12\x1a\n\x05right\x18\x0e \x01(\x0b\x32\x0b.ProtoQuery\x12\x10\n\x08\x64istinct\x18\x0f \x01(\x08\"\xa9\x01\n\rProtoJoinPath\x12%\n\tedge_list\x18\x01 \x01(\x0b\x32\x12.ProtoJoinEdgeList\x12-\n\x08\x65\x64ge_map\x18\x02 \x03(\x0b\x32\x1b.ProtoJoinPath.EdgeMapEntry\x1a\x42\n\x0c\x45\x64geMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12!\n\x05value\x18\x02 \x01(\x0b\x32\x12.ProtoJoinEdgeList:\x02\x38\x01\"2\n\x11ProtoJoinEdgeList\x12\x1d\n\x05\x65\x64ges\x18\x01 \x03(\x0b\x32\x0e.ProtoJoinEdge\"5\n\rProtoJoinEdge\x12\x11\n\tfk_col_id\x18\x01 \x01(\x05\x12\x11\n\tpk_col_id\x18\x02 \x01(\x05\"V\n\x10\x41ggregatedColumn\x12\x0e\n\x06\x63ol_id\x18\x01 \x01(\x05\x12\x19\n\x07has_agg\x18\x02 \x01(\x0e\x32\x08.Tribool\x12\x17\n\x03\x61gg\x18\x03 \x01(\x0e\x32\n.Aggregate\"Q\n\rOrderedColumn\x12\"\n\x07\x61gg_col\x18\x01 \x01(\x0b\x32\x11.AggregatedColumn\x12\x1c\n\x03\x64ir\x18\x02 \x01(\x0e\x32\x0f.OrderDirection\"Q\n\x0fSelectionClause\x12\x1e\n\npredicates\x18\x01 \x03(\x0b\x32\n.Predicate\x12\x1e\n\nlogical_op\x18\x02 \x01(\x0e\x32\n.LogicalOp\"\xae\x01\n\tPredicate\x12\x0e\n\x06\x63ol_id\x18\x01 \x01(\x05\x12\x0f\n\x02op\x18\x02 \x01(\x0e\x32\x03.Op\x12\x1e\n\x0chas_subquery\x18\x03 \x01(\x0e\x32\x08.Tribool\x12\r\n\x05value\x18\x04 \x03(\t\x12\x1d\n\x08subquery\x18\x05 \x01(\x0b\x32\x0b.ProtoQuery\x12\x19\n\x07has_agg\x18\x06 \x01(\x0e\x32\x08.Tribool\x12\x17\n\x03\x61gg\x18\x07 \x01(\x0e\x32\n.Aggregate*+\n\x07Tribool\x12\t\n\x05\x46\x41LSE\x10\x00\x12\x0b\n\x07UNKNOWN\x10\x01\x12\x08\n\x04TRUE\x10\x02*<\n\x05SetOp\x12\r\n\tNO_SET_OP\x10\x00\x12\r\n\tINTERSECT\x10\x01\x12\n\n\x06\x45XCEPT\x10\x02\x12\t\n\x05UNION\x10\x03*F\n\tAggregate\x12\n\n\x06NO_AGG\x10\x00\x12\x07\n\x03MAX\x10\x01\x12\x07\n\x03MIN\x10\x02\x12\t\n\x05\x43OUNT\x10\x03\x12\x07\n\x03SUM\x10\x04\x12\x07\n\x03\x41VG\x10\x05*)\n\tLogicalOp\x12\x0b\n\x07NO_COND\x10\x00\x12\x07\n\x03\x41ND\x10\x01\x12\x06\n\x02OR\x10\x02*f\n\x02Op\x12\n\n\x06\x45QUALS\x10\x00\x12\x06\n\x02GT\x10\x01\x12\x06\n\x02LT\x10\x02\x12\x07\n\x03GEQ\x10\x03\x12\x07\n\x03LEQ\x10\x04\x12\x07\n\x03NEQ\x10\x05\x12\x08\n\x04LIKE\x10\x06\x12\x06\n\x02IN\x10\x07\x12\n\n\x06NOT_IN\x10\x08\x12\x0b\n\x07\x42\x45TWEEN\x10\t*#\n\x0eOrderDirection\x12\x07\n\x03\x41SC\x10\x00\x12\x08\n\x04\x44\x45SC\x10\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x0bquery.proto\".\n\x0eProtoQueryList\x12\x1c\n\x07queries\x18\x01 \x03(\x0b\x32\x0b.ProtoQuery\"(\n\x0bProtoResult\x12\x19\n\x07results\x18\x01 \x03(\x0e\x32\x08.Tribool\"\xd3\x03\n\nProtoQuery\x12\x16\n\x06set_op\x18\x01 \x01(\x0e\x32\x06.SetOp\x12\x1b\n\thas_where\x18\x02 \x01(\x0e\x32\x08.Tribool\x12\x1e\n\x0chas_group_by\x18\x03 \x01(\x0e\x32\x08.Tribool\x12\x1c\n\nhas_having\x18\x04 \x01(\x0e\x32\x08.Tribool\x12\x1e\n\x0chas_order_by\x18\x05 \x01(\x0e\x32\x08.Tribool\x12\x1b\n\thas_limit\x18\x06 \x01(\x0e\x32\x08.Tribool\x12#\n\x0b\x66rom_clause\x18\x0c \x01(\x0b\x32\x0e.ProtoJoinPath\x12!\n\x06select\x18\x07 \x03(\x0b\x32\x11.AggregatedColumn\x12\x1f\n\x05where\x18\x08 \x01(\x0b\x32\x10.SelectionClause\x12\x10\n\x08group_by\x18\t \x03(\x05\x12 \n\x06having\x18\n \x01(\x0b\x32\x10.SelectionClause\x12 \n\x08order_by\x18\x0b \x03(\x0b\x32\x0e.OrderedColumn\x12\r\n\x05limit\x18\x10 \x01(\x05\x12\x19\n\x04left\x18\r \x01(\x0b\x32\x0b.ProtoQuery\x12\x1a\n\x05right\x18\x0e \x01(\x0b\x32\x0b.ProtoQuery\x12\x10\n\x08\x64istinct\x18\x0f \x01(\x08\"\xa9\x01\n\rProtoJoinPath\x12%\n\tedge_list\x18\x01 \x01(\x0b\x32\x12.ProtoJoinEdgeList\x12-\n\x08\x65\x64ge_map\x18\x02 \x03(\x0b\x32\x1b.ProtoJoinPath.EdgeMapEntry\x1a\x42\n\x0c\x45\x64geMapEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12!\n\x05value\x18\x02 \x01(\x0b\x32\x12.ProtoJoinEdgeList:\x02\x38\x01\"2\n\x11ProtoJoinEdgeList\x12\x1d\n\x05\x65\x64ges\x18\x01 \x03(\x0b\x32\x0e.ProtoJoinEdge\"5\n\rProtoJoinEdge\x12\x11\n\tfk_col_id\x18\x01 \x01(\x05\x12\x11\n\tpk_col_id\x18\x02 \x01(\x05\"V\n\x10\x41ggregatedColumn\x12\x0e\n\x06\x63ol_id\x18\x01 \x01(\x05\x12\x19\n\x07has_agg\x18\x02 \x01(\x0e\x32\x08.Tribool\x12\x17\n\x03\x61gg\x18\x03 \x01(\x0e\x32\n.Aggregate\"Q\n\rOrderedColumn\x12\"\n\x07\x61gg_col\x18\x01 \x01(\x0b\x32\x11.AggregatedColumn\x12\x1c\n\x03\x64ir\x18\x02 \x01(\x0e\x32\x0f.OrderDirection\"Q\n\x0fSelectionClause\x12\x1e\n\npredicates\x18\x01 \x03(\x0b\x32\n.Predicate\x12\x1e\n\nlogical_op\x18\x02 \x01(\x0e\x32\n.LogicalOp\"\xae\x01\n\tPredicate\x12\x0e\n\x06\x63ol_id\x18\x01 \x01(\x05\x12\x0f\n\x02op\x18\x02 \x01(\x0e\x32\x03.Op\x12\x1e\n\x0chas_subquery\x18\x03 \x01(\x0e\x32\x08.Tribool\x12\r\n\x05value\x18\x04 \x03(\t\x12\x1d\n\x08subquery\x18\x05 \x01(\x0b\x32\x0b.ProtoQuery\x12\x19\n\x07has_agg\x18\x06 \x01(\x0e\x32\x08.Tribool\x12\x17\n\x03\x61gg\x18\x07 \x01(\x0e\x32\n.Aggregate*+\n\x07Tribool\x12\t\n\x05\x46\x41LSE\x10\x00\x12\x0b\n\x07UNKNOWN\x10\x01\x12\x08\n\x04TRUE\x10\x02*<\n\x05SetOp\x12\r\n\tNO_SET_OP\x10\x00\x12\r\n\tINTERSECT\x10\x01\x12\n\n\x06\x45XCEPT\x10\x02\x12\t\n\x05UNION\x10\x03*F\n\tAggregate\x12\n\n\x06NO_AGG\x10\x00\x12\x07\n\x03MAX\x10\x01\x12\x07\n\x03MIN\x10\x02\x12\t\n\x05\x43OUNT\x10\x03\x12\x07\n\x03SUM\x10\x04\x12\x07\n\x03\x41VG\x10\x05*)\n\tLogicalOp\x12\x0b\n\x07NO_COND\x10\x00\x12\x07\n\x03\x41ND\x10\x01\x12\x06\n\x02OR\x10\x02*f\n\x02Op\x12\n\n\x06\x45QUALS\x10\x00\x12\x06\n\x02GT\x10\x01\x12\x06\n\x02LT\x10\x02\x12\x07\n\x03GEQ\x10\x03\x12\x07\n\x03LEQ\x10\x04\x12\x07\n\x03NEQ\x10\x05\x12\x08\n\x04LIKE\x10\x06\x12\x06\n\x02IN\x10\x07\x12\n\n\x06NOT_IN\x10\x08\x12\x0b\n\x07\x42\x45TWEEN\x10\t*#\n\x0eOrderDirection\x12\x07\n\x03\x41SC\x10\x00\x12\x08\n\x04\x44\x45SC\x10\x01\x62\x06proto3')
 )
 
 _TRIBOOL = _descriptor.EnumDescriptor(
@@ -45,8 +45,8 @@ _TRIBOOL = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1278,
-  serialized_end=1321,
+  serialized_start=1285,
+  serialized_end=1328,
 )
 _sym_db.RegisterEnumDescriptor(_TRIBOOL)
 
@@ -76,8 +76,8 @@ _SETOP = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1323,
-  serialized_end=1383,
+  serialized_start=1330,
+  serialized_end=1390,
 )
 _sym_db.RegisterEnumDescriptor(_SETOP)
 
@@ -115,8 +115,8 @@ _AGGREGATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1385,
-  serialized_end=1455,
+  serialized_start=1392,
+  serialized_end=1462,
 )
 _sym_db.RegisterEnumDescriptor(_AGGREGATE)
 
@@ -142,8 +142,8 @@ _LOGICALOP = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1457,
-  serialized_end=1498,
+  serialized_start=1464,
+  serialized_end=1505,
 )
 _sym_db.RegisterEnumDescriptor(_LOGICALOP)
 
@@ -197,8 +197,8 @@ _OP = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1500,
-  serialized_end=1602,
+  serialized_start=1507,
+  serialized_end=1609,
 )
 _sym_db.RegisterEnumDescriptor(_OP)
 
@@ -220,8 +220,8 @@ _ORDERDIRECTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1604,
-  serialized_end=1639,
+  serialized_start=1611,
+  serialized_end=1646,
 )
 _sym_db.RegisterEnumDescriptor(_ORDERDIRECTION)
 
@@ -369,51 +369,51 @@ _PROTOQUERY = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='select', full_name='ProtoQuery.select', index=6,
+      name='from_clause', full_name='ProtoQuery.from_clause', index=6,
+      number=12, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='select', full_name='ProtoQuery.select', index=7,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='where', full_name='ProtoQuery.where', index=7,
+      name='where', full_name='ProtoQuery.where', index=8,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='group_by', full_name='ProtoQuery.group_by', index=8,
+      name='group_by', full_name='ProtoQuery.group_by', index=9,
       number=9, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='having', full_name='ProtoQuery.having', index=9,
+      name='having', full_name='ProtoQuery.having', index=10,
       number=10, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='order_by', full_name='ProtoQuery.order_by', index=10,
+      name='order_by', full_name='ProtoQuery.order_by', index=11,
       number=11, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='limit', full_name='ProtoQuery.limit', index=11,
+      name='limit', full_name='ProtoQuery.limit', index=12,
       number=16, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='from', full_name='ProtoQuery.from', index=12,
-      number=12, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -451,7 +451,7 @@ _PROTOQUERY = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=106,
-  serialized_end=566,
+  serialized_end=573,
 )
 
 
@@ -488,8 +488,8 @@ _PROTOJOINPATH_EDGEMAPENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=672,
-  serialized_end=738,
+  serialized_start=679,
+  serialized_end=745,
 )
 
 _PROTOJOINPATH = _descriptor.Descriptor(
@@ -525,8 +525,8 @@ _PROTOJOINPATH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=569,
-  serialized_end=738,
+  serialized_start=576,
+  serialized_end=745,
 )
 
 
@@ -556,8 +556,8 @@ _PROTOJOINEDGELIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=740,
-  serialized_end=790,
+  serialized_start=747,
+  serialized_end=797,
 )
 
 
@@ -594,8 +594,8 @@ _PROTOJOINEDGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=792,
-  serialized_end=845,
+  serialized_start=799,
+  serialized_end=852,
 )
 
 
@@ -639,8 +639,8 @@ _AGGREGATEDCOLUMN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=847,
-  serialized_end=933,
+  serialized_start=854,
+  serialized_end=940,
 )
 
 
@@ -677,8 +677,8 @@ _ORDEREDCOLUMN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=935,
-  serialized_end=1016,
+  serialized_start=942,
+  serialized_end=1023,
 )
 
 
@@ -715,8 +715,8 @@ _SELECTIONCLAUSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1018,
-  serialized_end=1099,
+  serialized_start=1025,
+  serialized_end=1106,
 )
 
 
@@ -788,8 +788,8 @@ _PREDICATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1102,
-  serialized_end=1276,
+  serialized_start=1109,
+  serialized_end=1283,
 )
 
 _PROTOQUERYLIST.fields_by_name['queries'].message_type = _PROTOQUERY
@@ -800,11 +800,11 @@ _PROTOQUERY.fields_by_name['has_group_by'].enum_type = _TRIBOOL
 _PROTOQUERY.fields_by_name['has_having'].enum_type = _TRIBOOL
 _PROTOQUERY.fields_by_name['has_order_by'].enum_type = _TRIBOOL
 _PROTOQUERY.fields_by_name['has_limit'].enum_type = _TRIBOOL
+_PROTOQUERY.fields_by_name['from_clause'].message_type = _PROTOJOINPATH
 _PROTOQUERY.fields_by_name['select'].message_type = _AGGREGATEDCOLUMN
 _PROTOQUERY.fields_by_name['where'].message_type = _SELECTIONCLAUSE
 _PROTOQUERY.fields_by_name['having'].message_type = _SELECTIONCLAUSE
 _PROTOQUERY.fields_by_name['order_by'].message_type = _ORDEREDCOLUMN
-_PROTOQUERY.fields_by_name['from'].message_type = _PROTOJOINPATH
 _PROTOQUERY.fields_by_name['left'].message_type = _PROTOQUERY
 _PROTOQUERY.fields_by_name['right'].message_type = _PROTOQUERY
 _PROTOJOINPATH_EDGEMAPENTRY.fields_by_name['value'].message_type = _PROTOJOINEDGELIST
