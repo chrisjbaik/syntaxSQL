@@ -182,7 +182,7 @@ def select_clause_str(pq, schema, aliases):
                 )
             else:
                 proj_str = u'{}({})'.format(
-                    AGG_OPS[agg_idx],
+                    to_str_agg(agg_col.agg),
                     schema.get_aliased_col(aliases, agg_col.col_id)
                 )
             projs.append(proj_str)
