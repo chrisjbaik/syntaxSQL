@@ -1,4 +1,4 @@
-from queue import Queue
+from Queue import Queue
 
 class FromClause(object):
     def __init__(self, aliases, clause, distinct=False):
