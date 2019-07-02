@@ -22,7 +22,9 @@ from models.andor_predictor import AndOrPredictor
 from models.op_predictor import OpPredictor
 
 from modules.literals import find_literal_candidates, LiteralsCache
-from modules.search import Query, SearchState
+from modules.query import *
+from modules.search import SearchState
+from modules.schema import Schema
 
 from preprocess_train_dev_data import index_to_column_name
 
@@ -211,9 +213,12 @@ class SuperModel(nn.Module):
             "group by", "order by"], (B))
         kw_len = np.full(q_len.shape, 3, dtype=np.int64)
 
+        # schema, in new style
+        schema = Schema(tables)
+
         # stack to store DFS beam search states
         stack = []
-        stack.append(SearchState(['root']))
+        stack.append(SearchState(['root'], Query(schema)))
 
         # completed queries
         results = []
@@ -233,17 +238,23 @@ class SuperModel(nn.Module):
 
             cur = stack.pop()
 
-            # check if Mixtape says to prune it
+            # update join path if needed
+            states = cur.update_join_paths()
+            if len(states) > 1:     # if multiple possible join paths
+                stack.extend(reversed(states))
+                continue
+
+            # check if Duoquest says to prune it
             if client and client.should_prune(cur.query):
                 continue
 
-            cur_query = cur.query.find_subquery(cur.next)
+            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             if debug:
                 self.print_stack(stack)
                 print('* - {}'.format(cur.next))
-                print('\nDICT:\n{}'.format(cur_query.as_dict()))
-                print('\nPROTO:\n{}\n'.format(cur_query.to_proto().__str__()))
+                # print('\nDICT:\n{}'.format(cur_pq.as_dict()))
+                print('\nPROTO:\n{}\n'.format(cur_pq.__str__()))
 
             hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                 cur.history)
@@ -258,17 +269,17 @@ class SuperModel(nn.Module):
                         hs_len, mkw_emb_var, mkw_len)
                     label = np.argmax(score[0].data.cpu().numpy())
                     label = SQL_OPS[label]
-                    cur_query.set_op = label
+                    cur_pq.set_op = to_proto_set_op(label)
                 else:
                     cur.history[0].append('root')
 
-                cur.history[0].append(cur_query.set_op)
-                if cur_query.set_op == 'none':
+                cur.history[0].append(label)
+                if label == 'none':
                     cur.next[-1] = 'keyword'
                     stack.append(cur)
                 else:
-                    cur_query.left = Query(set_op='none')
-                    cur_query.right = Query(set_op='none')
+                    cur_pq.left.set_op = to_proto_set_op('none')
+                    cur_pq.right.set_op = to_proto_set_op('none')
                     cur.next = ['left', 'root']
                     stack.append(cur)
             elif cur.next[-1] == 'keyword':
@@ -284,15 +295,14 @@ class SuperModel(nn.Module):
                 for kw in kw_score:
                     keywords.append(KW_OPS[kw])
 
-                cur_query.where = 'where' in keywords
-                cur_query.group_by = 'groupBy' in keywords
-                cur_query.order_by = 'orderBy' in keywords
+                cur_pq.has_where = to_proto_tribool('where' in keywords)
+                cur_pq.group_by = to_proto_tribool('groupBy' in keywords)
+                cur_pq.order_by = to_proto_tribool('orderBy' in keywords)
 
                 cur.next[-1] = 'select'
                 stack.append(cur)
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
-                cur_query.select = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
@@ -316,7 +326,8 @@ class SuperModel(nn.Module):
                 cur.history[0].append(col_name)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
-                cur_query.select.append(col_name)
+
+                # cur_pq.select.append(col_name)
 
                 cur.used_cols.add(cur.next_col)
 
@@ -325,7 +336,12 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 if agg_num == 0:
-                    cur_query.select.append('none_agg')
+                    agg_col = AggregatedColumn()
+                    agg_col.col_id = cur.next_col
+                    agg_col.has_agg = to_proto_tribool(False)
+                    cur_pq.select.append(agg_col)
+                    # cur_pq.select.append('none_agg')
+
                     for state in reversed(cur.next_col_states()):
                         stack.append(state)
                 else:
@@ -347,21 +363,28 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(cur.next_col, tables)
                 if len(cur.used_aggs) > 0:
                     cur.history[0].append(col_name)
-                    cur_query.select.append(col_name)
+                    # cur_pq.select.append(col_name)
                 cur.history[0].append(AGG_OPS[cur.next_agg])
-                cur_query.select.append(AGG_OPS[cur.next_agg])
+
+                agg_col = AggregatedColumn()
+                agg_col.col_id = cur.next_col
+                agg_col.has_agg = to_proto_tribool(True)
+                agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                cur_pq.select.append(agg_col)
+
+                # cur_pq.select.append(AGG_OPS[cur.next_agg])
 
                 cur.used_aggs.add(cur.next_agg)
 
                 for state in reversed(cur.next_agg_states()):
                     stack.append(state)
             elif cur.next[-1] == 'where':
-                if not cur_query.where:
+                if cur_pq.has_where != to_proto_tribool(True):
                     cur.next[-1] = 'group_by'
                     stack.append(cur)
                     continue
                 cur.history[0].append('where')
-                cur_query.where = []
+                # cur_pq.where = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
@@ -375,7 +398,8 @@ class SuperModel(nn.Module):
                         hs_len)
                     label = np.argmax(score[0].data.cpu().numpy())
                     andor_cond = COND_OPS[label]
-                    cur_query.where.append(andor_cond)
+                    cur_pq.where.logical_op = to_proto_logical_op(andor_cond)
+                    # cur_pq.where.append(andor_cond)
 
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
@@ -420,17 +444,23 @@ class SuperModel(nn.Module):
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
-                cur_query.where.append(col_name)
-                cur_query.where.append(NEW_WHERE_OPS[op])
+                # cur_pq.where.append(col_name)
+                # cur_pq.where.append(NEW_WHERE_OPS[op])
 
                 cur.next_op_idx += 1
                 # only allow subquery of depth 1
                 if label == 'root' and cur.parent is None:
                     cur.history[0].append('root')
                     cur.history[0].append('none')
-                    subquery = Query(set_op='none')
-                    subquery_idx = len(cur_query.where)
-                    cur_query.where.append(subquery)
+                    subquery_idx = len(cur_pq.where.predicates)
+
+                    pred = Predicate()
+                    pred.col_id = cur.next_col
+                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                    pred.has_subquery = to_proto_tribool(True)
+                    pred.subquery.set_op = to_proto_set_op('none')
+                    cur_pq.where.predicates.append(pred)
+                    # cur_pq.where.append(subquery)
 
                     substate = cur.copy()
                     substate.set_parent(cur)
@@ -448,16 +478,32 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal', 'terminal']
                         for a, b in pairwise(cands):
                             new = cur.copy()
-                            new_query = new.query.find_subquery(cur.next)
-                            new_query.where.append([a, b])
+                            new_pq = new.find_subquery(new.query.pq,
+                                cur.next)
+
+                            pred = Predicate()
+                            pred.col_id = cur.next_col
+                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                            pred.has_subquery = to_proto_tribool(False)
+                            pred.value.append(a)
+                            pred.value.append(b)
+                            new_pq.where.predicates.append(pred)
+
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                         # default options to not degrade performance
                         # if len(cands) == 0:
                         #     cands = ['terminal']
                         new = cur.copy()
-                        new_query = new.query.find_subquery(cur.next)
-                        new_query.where.append(cands)
+                        new_pq = new.find_subquery(new.query.pq,
+                            cur.next)
+
+                        pred = Predicate()
+                        pred.col_id = cur.next_col
+                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        pred.has_subquery = to_proto_tribool(False)
+                        pred.value.extend(cands)
+                        new_pq.where.predicates.append(pred)
                         stack.append(new)
                     else:
                         # default options to not degrade performance
@@ -465,16 +511,24 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
-                            new_query = new.query.find_subquery(cur.next)
-                            new_query.where.append(literal)
+                            new_pq = new.find_subquery(new.query.pq,
+                                cur.next)
+
+                            pred = Predicate()
+                            pred.col_id = cur.next_col
+                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                            pred.has_subquery = to_proto_tribool(False)
+                            pred.value.extend(literal)
+                            new_pq.where.predicates.append(pred)
+
                             stack.append(new)
             elif cur.next[-1] == 'group_by':
-                if not cur_query.group_by:
+                if cur_pq.has_group_by != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
                     stack.append(cur)
                     continue
                 cur.history[0].append('groupBy')
-                cur_query.group_by = []
+                # cur_pq.group_by = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
@@ -496,7 +550,8 @@ class SuperModel(nn.Module):
 
                 col_name = index_to_column_name(cur.next_col, tables)
                 cur.history[0].append(col_name)
-                cur_query.group_by.append(col_name)
+
+                cur_pq.group_by.append(cur.next_col)
 
                 if len(cur.used_cols) == 0:
                     score = self.having.forward(q_emb_var, q_len, hs_emb_var,
@@ -504,22 +559,19 @@ class SuperModel(nn.Module):
                         np.full(B, cur.next_col, dtype=np.int64))
                     label = np.argmax(score[0].data.cpu().numpy())
 
-                    if label == 1:
-                        cur_query.having = True
-                    else:
-                        cur_query.having = False
+                    cur_pq.has_having = to_proto_tribool(label == 1)
 
                 cur.used_cols.add(cur.next_col)
 
                 for state in reversed(cur.next_col_states()):
                     stack.append(state)
             elif cur.next[-1] == 'having':
-                if not cur_query.having:
+                if cur_pq.has_having != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
                     stack.append(cur)
                     continue
                 cur.history[0].append('having')
-                cur_query.having = []
+                # cur_pq.having = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
@@ -601,21 +653,32 @@ class SuperModel(nn.Module):
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
-                cur_query.having.append(col_name)
-                if cur.next_agg == 'none_agg':
-                    cur_query.having.append('none_agg')
-                else:
-                    cur_query.having.append(AGG_OPS[cur.next_agg])
-                cur_query.having.append(NEW_WHERE_OPS[op])
+                # cur_pq.having.append(col_name)
+                # if cur.next_agg == 'none_agg':
+                #     cur_pq.having.append('none_agg')
+                # else:
+                #     cur_pq.having.append(AGG_OPS[cur.next_agg])
+                # cur_pq.having.append(NEW_WHERE_OPS[op])
 
                 cur.next_op_idx += 1
                 # only allow subquery of depth 1
                 if label == 'root' and cur.parent is None:
                     cur.history[0].append('root')
                     cur.history[0].append('none')
-                    subquery = Query(set_op='none')
-                    subquery_idx = len(cur_query.having)
-                    cur_query.having.append(subquery)
+                    subquery_idx = len(cur_pq.having.predicates)
+                    # cur_pq.having.append(subquery)
+
+                    pred = Predicate()
+                    pred.col_id = cur.next_col
+                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                    pred.has_subquery = to_proto_tribool(True)
+                    pred.subquery.set_op = to_proto_set_op('none')
+                    if cur.next_agg == 'none_agg':
+                        pred.has_agg = to_proto_tribool(False)
+                    else:
+                        pred.has_agg = to_proto_tribool(True)
+                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                    cur_pq.having.predicates.append(pred)
 
                     substate = cur.copy()
                     substate.set_parent(cur)
@@ -633,16 +696,42 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal', 'terminal']
                         for a, b in pairwise(cands):
                             new = cur.copy()
-                            new_query = new.query.find_subquery(cur.next)
-                            new_query.having.append([a, b])
+                            new_pq = new.find_subquery(new.query.pq,
+                                cur.next)
+
+                            pred = Predicate()
+                            pred.col_id = cur.next_col
+                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                            pred.has_subquery = to_proto_tribool(False)
+                            pred.value.append(a)
+                            pred.value.append(b)
+                            if cur.next_agg == 'none_agg':
+                                pred.has_agg = to_proto_tribool(False)
+                            else:
+                                pred.has_agg = to_proto_tribool(True)
+                                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                            new_pq.having.predicates.append(pred)
+
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                         # default options to not degrade performance
                         # if len(cands) == 0:
                         #     cands = ['terminal']
                         new = cur.copy()
-                        new_query = new.query.find_subquery(cur.next)
-                        new_query.having.append(cands)
+                        new_pq = new.find_subquery(new.query.pq,
+                            cur.next)
+
+                        pred = Predicate()
+                        pred.col_id = cur.next_col
+                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        pred.has_subquery = to_proto_tribool(False)
+                        pred.value.extend(cands)
+                        if cur.next_agg == 'none_agg':
+                            pred.has_agg = to_proto_tribool(False)
+                        else:
+                            pred.has_agg = to_proto_tribool(True)
+                            pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        new_pq.having.predicates.append(pred)
                         stack.append(new)
                     else:
                         # default options to not degrade performance
@@ -650,16 +739,29 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
-                            new_query = new.query.find_subquery(cur.next)
-                            new_query.having.append(literal)
+                            new_pq = new.find_subquery(new.query.pq,
+                                cur.next)
+
+                            pred = Predicate()
+                            pred.col_id = cur.next_col
+                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                            pred.has_subquery = to_proto_tribool(False)
+                            pred.value.extend(literal)
+                            if cur.next_agg == 'none_agg':
+                                pred.has_agg = to_proto_tribool(False)
+                            else:
+                                pred.has_agg = to_proto_tribool(True)
+                                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                            new_pq.having.predicates.append(pred)
+
                             stack.append(new)
             elif cur.next[-1] == 'order_by':
-                if not cur_query.order_by:
+                if cur_pq.has_order_by != to_proto_tribool(True):
                     cur.next[-1] = 'finish'
                     stack.append(cur)
                     continue
                 cur.history[0].append('orderBy')
-                cur_query.order_by = []
+                # cur_pq.order_by = []
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
@@ -713,13 +815,20 @@ class SuperModel(nn.Module):
 
                 if len(cur.used_aggs) > 0:
                     cur.history[0].append(col_name)
-                cur_query.order_by.append(col_name)
+
+                ordered_col = OrderedColumn()
+                ordered_col.agg_col.col_id = cur.next_col
+                # cur_pq.order_by.append(col_name)
 
                 if cur.next_agg == 'none_agg':
-                    cur_query.order_by.append('none_agg')
+                    ordered_col.agg_col.has_agg = to_proto_tribool(False)
+                    # cur_pq.order_by.append('none_agg')
                 else:
                     cur.history[0].append(AGG_OPS[cur.next_agg])
-                    cur_query.order_by.append(AGG_OPS[cur.next_agg])
+                    ordered_col.agg_col.has_agg = to_proto_tribool(True)
+                    ordered_col.agg_col.agg = to_proto_agg(
+                        AGG_OPS[cur.next_agg])
+                    # cur_pq.order_by.append(AGG_OPS[cur.next_agg])
 
                 cur.used_aggs.add(cur.next_agg)
 
@@ -730,11 +839,15 @@ class SuperModel(nn.Module):
 
                 dec_asc, has_limit = DEC_ASC_OPS[label]
                 cur.history[0].append(dec_asc)
-                cur_query.order_by.append(dec_asc)
-                cur_query.order_by.append(has_limit)
 
-                if not cur_query.limit:
-                    cur_query.limit = has_limit
+                ordered_col.dir = to_proto_dir(dec_asc)
+                cur_pq.order_by.append(ordered_col)
+
+                # cur_pq.order_by.append(dec_asc)
+                # cur_pq.order_by.append(has_limit)
+
+                if cur_pq.has_limit == to_proto_tribool(None):
+                    cur_pq.has_limit = to_proto_tribool(has_limit)
 
                 for state in reversed(cur.next_agg_states()):
                     stack.append(state)

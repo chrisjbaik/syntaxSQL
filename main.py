@@ -9,8 +9,9 @@ from process_sql import tokenize
 from supermodel import SuperModel
 from utils import load_word_emb
 
-from modules.client import MixtapeClient
+from modules.client import DuoquestClient
 from modules.database import Database
+from modules.query import generate_sql_str
 from modules.task_pb2 import ProtoTask, ProtoCandidates
 
 def load_schemas(schemas_path):
@@ -75,7 +76,7 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
             timeout=timeout, debug=debug)
 
         for cq in cqs:
-            results.append(model.gen_sql(cq.as_dict(), schemas[db_name]))
+            results.append(generate_sql_str(cq.pq, cq.schema))
 
     return results
 
@@ -112,8 +113,8 @@ def main():
     model = load_model(config.get('syntaxsql', 'models_path'),
         config.get('syntaxsql', 'glove_path'), args.toy)
     db = Database(db_path, args.dataset)
-    client = MixtapeClient(int(config.get('mixtape', 'port')),
-        config.get('mixtape', 'authkey'))
+    client = DuoquestClient(int(config.get('duoquest', 'port')),
+        config.get('duoquest', 'authkey'))
 
     # if args.test_manual:
     #     n = 1
@@ -149,7 +150,7 @@ def main():
                 else:
                     nlq = tokens_list
 
-                mtc = client if task.enable_mixtape else None
+                mtc = client if task.enable_duoquest else None
 
                 sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
                     task.n, task.b, timeout=args.timeout)

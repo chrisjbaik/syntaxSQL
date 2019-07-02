@@ -2,7 +2,7 @@ from multiprocessing.connection import Client
 
 from query_pb2 import ProtoQueryList, ProtoResult, FALSE, UNKNOWN, TRUE
 
-class MixtapeClient(object):
+class DuoquestClient(object):
     def __init__(self, port, authkey):
         self.port = port
         self.authkey = authkey
@@ -13,7 +13,7 @@ class MixtapeClient(object):
 
     def should_prune(self, query):
         protolist = ProtoQueryList()
-        protolist.queries.append(query.to_proto())
+        protolist.queries.append(query.pq)
 
         self.conn.send_bytes(protolist.SerializeToString())
         msg = self.conn.recv_bytes()
