@@ -354,7 +354,8 @@ def join_path_needs_update(schema, pq):
         return True
 
     # if the current join path doesn't account for all tables in protoquery
-    if tables_in_cur_jp != get_tables(schema, pq):
+    tables = get_tables(schema, pq)
+    if tables_in_cur_jp < tables:
         return True
 
     return False
