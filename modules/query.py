@@ -263,12 +263,12 @@ def order_by_clause_str(pq, schema, aliases):
         if ordered_col.agg_col.has_agg:
             order_by_exprs.append('{}({}) {}'.format(
                 to_str_agg(ordered_col.agg_col.agg),
-                schema.get_aliased_col(aliases, col_id),
+                schema.get_aliased_col(aliases, ordered_col.agg_col.col_id),
                 to_str_dir(ordered_col.dir)
             ))
         else:
             order_by_exprs.append('{} {}'.format(
-                schema.get_aliased_col(aliases, col_id),
+                schema.get_aliased_col(aliases, ordered_col.agg_col.col_id),
                 to_str_dir(ordered_col.dir)
             ))
     return u' '.join(order_by_exprs)
