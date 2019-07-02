@@ -8,6 +8,9 @@ class FromClause(object):
 
 class JoinPath(object):
     def __init__(self):
+        # If SELECT should be distinct
+        self.distinct = False
+
         self.edges = list()
 
         # table -> [ join edges ]
@@ -16,45 +19,6 @@ class JoinPath(object):
     def add_single_table(self, table):
         if table not in self.edge_map:
             self.edge_map[table] = []
-
-    def gen_alias(self, alias_idx, set_op=None):
-        if set_op:
-            return '{}t{}'.format(set_op[0], alias_idx)
-        else:
-            return 't{}'.format(alias_idx)
-
-    def get_from_clause(self, set_op=None):
-        aliases = {}
-        join_exprs = ['FROM']
-
-        # start with first alphabetical table
-        tables = self.edge_map.keys()
-        tbl = min(tables, key=lambda x: x.syn_name)
-        alias = self.gen_alias(len(aliases) + 1, set_op=set_op)
-        aliases[tbl.syn_name] = alias
-        join_exprs.append('{} AS {}'.format(tbl.syn_name, alias))
-
-        stack = [tbl]
-
-        while stack:
-            tbl = stack.pop()
-            for edge in self.edge_map[tbl]:
-                other_tbl = edge.other(tbl)
-                if other_tbl.syn_name in aliases:
-                    continue
-
-                alias = self.gen_alias(len(aliases) + 1, set_op=set_op)
-                aliases[other_tbl.syn_name] = alias
-                join_exprs.append(
-                    'JOIN {} AS {} ON {}.{} = {}.{}'.format(
-                        other_tbl.syn_name, alias,
-                        aliases[tbl.syn_name], edge.key(tbl).syn_name,
-                        aliases[other_tbl.syn_name], edge.key(other_tbl).syn_name
-                    )
-                )
-                stack.append(other_tbl)
-
-        return aliases, ' '.join(join_exprs)
 
     def __len__(self):
         return len(self.edges)
@@ -334,7 +298,27 @@ class Schema(object):
 
         return mst
 
-    def single_table_join_paths(self, table, set_op):
+    def get_join_paths(self, tables):
+        if len(tables) == 0:
+            # when there's 0 tables (due to * being the only column),
+            #   generate join path for each table in the schema
+            return self.zero_table_join_paths()
+        elif len(tables) == 1:
+            return self.single_table_join_paths(next(iter(tables)))
+        elif len(tables) > 1:
+            return self.steiner(tables)
+        else:
+            raise Exception('Cannot get join paths with 0 tables.')
+
+    def zero_table_join_paths(self):
+        jps = []
+        for tbl in self.tables:
+            jp = JoinPath()
+            jp.add_single_table(tbl)
+            jps.append(jp)
+        return jps
+
+    def single_table_join_paths(self, table):
         join_paths = []
 
         # Case 1: only use single table
@@ -343,14 +327,15 @@ class Schema(object):
         join_paths.append(jp)
 
         # Case 2: join with other table and count distinct ones
-        # TODO: convert to JoinPath, not FromClause
         if len(table.pk_edges) > 0:
             for edge in table.pk_edges:
                 other_tbl = edge.other(table)
 
                 jp = self.steiner([table, other_tbl])
-                aliases, clause = jp.get_from_clause(set_op=set_op)
-                from_clauses.append(FromClause(aliases, clause, distinct=True))
+                jp.distinct = True
+                join_paths.append(jp)
+                # aliases, clause = jp.get_from_clause(set_op=set_op)
+                # from_clauses.append(FromClause(aliases, clause, distinct=True))
 
                 if len(other_tbl.pk_edges) > 0:
                     for edge in other_tbl.pk_edges:
@@ -358,13 +343,15 @@ class Schema(object):
 
                         if other2_tbl != table:
                             jp = self.steiner([table, other_tbl, other2_tbl])
-                            aliases, clause = jp.get_from_clause(
-                                set_op=set_op)
-                            from_clauses.append(
-                                FromClause(aliases, clause, distinct=True)
-                            )
+                            jp.distinct = True
+                            join_paths.append(jp)
+                            # aliases, clause = jp.get_from_clause(
+                            #     set_op=set_op)
+                            # from_clauses.append(
+                            #     FromClause(aliases, clause, distinct=True)
+                            # )
 
-        return from_clauses
+        return join_paths
 
     def get_aliased_col(self, aliases, col_idx):
         col = self.get_col(col_idx)
