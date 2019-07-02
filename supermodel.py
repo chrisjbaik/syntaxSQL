@@ -296,8 +296,8 @@ class SuperModel(nn.Module):
                     keywords.append(KW_OPS[kw])
 
                 cur_pq.has_where = to_proto_tribool('where' in keywords)
-                cur_pq.group_by = to_proto_tribool('groupBy' in keywords)
-                cur_pq.order_by = to_proto_tribool('orderBy' in keywords)
+                cur_pq.has_group_by = to_proto_tribool('groupBy' in keywords)
+                cur_pq.has_order_by = to_proto_tribool('orderBy' in keywords)
 
                 cur.next[-1] = 'select'
                 stack.append(cur)
