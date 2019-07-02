@@ -436,7 +436,7 @@ def with_updated_join_paths(schema, pq):
         return new_pqs
 
     # If no change, return current query
-    return pq
+    return [pq]
 
 def set_proto_from(pq, jp):
     if jp.distinct:
