@@ -386,14 +386,14 @@ def with_updated_join_paths(schema, pq):
                 join_path_needs_update(schema, pred.subquery):
                     subqs = with_updated_join_paths(schema, pred.subquery)
                     if len(subqs) == 1:
-                        pred.subquery = subqs[0]
+                        pred.subquery.CopyFrom(subqs[0])
                         return [pq]
                     elif len(subqs) > 1:
                         new_pqs = []
                         for subq in subqs:
                             new_pq = ProtoQuery()
                             new_pq.CopyFrom(pq)
-                            new_pq.where.predicates[i] = subq
+                            new_pq.where.predicates[i].subquery.CopyFrom(subq)
                             new_pqs.append(new_pq)
                         return new_pqs
 
