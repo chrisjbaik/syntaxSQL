@@ -240,9 +240,13 @@ class SuperModel(nn.Module):
 
             # update join path if needed
             states = cur.update_join_paths()
-            if len(states) > 1:     # if multiple possible join paths
+            if len(states) == 1:
+                cur = states[0]
+            elif len(states) > 1:     # if multiple possible join paths
                 stack.extend(reversed(states))
                 continue
+            else:
+                raise Exception('Zero states from update_join_paths.')
 
             # check if Duoquest says to prune it
             if client and client.should_prune(cur.query):
