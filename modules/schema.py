@@ -296,7 +296,7 @@ class Schema(object):
         # STEP 4: Find minimal spanning tree of `mst`
         # STEP 5: Delete edges so that all leaves are Steiner points
 
-        return mst
+        return [mst]
 
     def get_join_paths(self, tables):
         if len(tables) == 0:
