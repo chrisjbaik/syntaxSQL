@@ -392,14 +392,12 @@ class SuperModel(nn.Module):
                     self.get_col_cands(b, q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
-                # compute and/or if more than one column
-                if cur.num_cols > 1:
-                    score = self.andor.forward(q_emb_var, q_len, hs_emb_var,
-                        hs_len)
-                    label = np.argmax(score[0].data.cpu().numpy())
-                    andor_cond = COND_OPS[label]
-                    cur_pq.where.logical_op = to_proto_logical_op(andor_cond)
-                    # cur_pq.where.append(andor_cond)
+                score = self.andor.forward(q_emb_var, q_len, hs_emb_var,
+                    hs_len)
+                label = np.argmax(score[0].data.cpu().numpy())
+                andor_cond = COND_OPS[label]
+                cur_pq.where.logical_op = to_proto_logical_op(andor_cond)
+                # cur_pq.where.append(andor_cond)
 
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
