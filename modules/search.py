@@ -65,7 +65,7 @@ class SearchState(object):
                 raise Exception('No subquery at {}'.format(next[1]))
             return self.find_protoquery(pred.subquery, next[2:])
         else:
-            return self
+            return pq
 
     def update_join_paths(self):
         states = []
