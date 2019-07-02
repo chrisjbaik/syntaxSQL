@@ -449,14 +449,11 @@ def set_proto_from(pq, jp):
         pq.from_clause.edge_list.edges.append(proto_edge)
 
     for tbl, edges in jp.edge_map.items():
-        proto_edge_list = ProtoJoinEdgeList()
         for edge in edges:
             proto_edge = ProtoJoinEdge()
             proto_edge.fk_col_id = edge.fk_col.id
             proto_edge.pk_col_id = edge.pk_col.id
-            proto_edge_list.edges.append(proto_edge)
-
-        pq.from_clause.edge_map[tbl.id].edges = proto_edge_list
+            pq.from_clause.edge_map[tbl.id].edges.append(proto_edge)
 
 class Query(object):
     def __init__(self, schema, protoquery=None):
