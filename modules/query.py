@@ -301,6 +301,7 @@ def generate_sql_str(pq, schema, alias_prefix=None):
 
     clauses = []
     clauses.append(select_clause_str(pq, schema, aliases))
+    clause.append(from_clause)
     if pq.has_where == TRUE:
         clauses.append(where_clause_str(pq, schema, aliases))
     if pq.has_group_by == TRUE:
