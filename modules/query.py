@@ -148,7 +148,7 @@ def from_clause_str(pq, schema, alias_prefix):
 
     while stack:
         tbl = stack.pop()
-        for edge in pq.from_clause.edge_map[tbl].edges:
+        for edge in pq.from_clause.edge_map[tbl.id].edges:
             edge = JoinEdge(
                 schema.get_col(edge.fk_col_id),
                 schema.get_col(edge.pk_col_id)
