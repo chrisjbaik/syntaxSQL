@@ -382,7 +382,7 @@ def with_updated_join_paths(schema, pq):
                         return new_pqs
 
     if pq.has_having == TRUE:
-        for pred in pq.having.predicates:
+        for i, pred in enumerate(pq.having.predicates):
             if pred.has_subquery and \
                 join_path_needs_update(schema, pred.subquery):
                     subqs = with_updated_join_paths(schema, pred.subquery)
