@@ -478,15 +478,15 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal', 'terminal']
                         for a, b in pairwise(cands):
                             new = cur.copy()
-                            new_pq = new.find_subquery(new.query.pq,
+                            new_pq = new.find_protoquery(new.query.pq,
                                 cur.next)
 
                             pred = Predicate()
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(a)
-                            pred.value.append(b)
+                            pred.value.append(str(a))
+                            pred.value.append(str(b))
                             new_pq.where.predicates.append(pred)
 
                             stack.append(new)
@@ -495,14 +495,14 @@ class SuperModel(nn.Module):
                         # if len(cands) == 0:
                         #     cands = ['terminal']
                         new = cur.copy()
-                        new_pq = new.find_subquery(new.query.pq,
+                        new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
 
                         pred = Predicate()
                         pred.col_id = cur.next_col
                         pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         pred.has_subquery = to_proto_tribool(False)
-                        pred.value.extend(cands)
+                        pred.value.extend(map(lambda x: str(x), cands))
                         new_pq.where.predicates.append(pred)
                         stack.append(new)
                     else:
@@ -511,14 +511,14 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
-                            new_pq = new.find_subquery(new.query.pq,
+                            new_pq = new.find_protoquery(new.query.pq,
                                 cur.next)
 
                             pred = Predicate()
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.extend(literal)
+                            pred.value.append(str(literal))
                             new_pq.where.predicates.append(pred)
 
                             stack.append(new)
@@ -696,15 +696,15 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal', 'terminal']
                         for a, b in pairwise(cands):
                             new = cur.copy()
-                            new_pq = new.find_subquery(new.query.pq,
+                            new_pq = new.find_protoquery(new.query.pq,
                                 cur.next)
 
                             pred = Predicate()
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(a)
-                            pred.value.append(b)
+                            pred.value.append(str(a))
+                            pred.value.append(str(b))
                             if cur.next_agg == 'none_agg':
                                 pred.has_agg = to_proto_tribool(False)
                             else:
@@ -718,14 +718,14 @@ class SuperModel(nn.Module):
                         # if len(cands) == 0:
                         #     cands = ['terminal']
                         new = cur.copy()
-                        new_pq = new.find_subquery(new.query.pq,
+                        new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
 
                         pred = Predicate()
                         pred.col_id = cur.next_col
                         pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         pred.has_subquery = to_proto_tribool(False)
-                        pred.value.extend(cands)
+                        pred.value.extend(map(lambda x: str(x), cands))
                         if cur.next_agg == 'none_agg':
                             pred.has_agg = to_proto_tribool(False)
                         else:
@@ -739,14 +739,14 @@ class SuperModel(nn.Module):
                         #     cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
-                            new_pq = new.find_subquery(new.query.pq,
+                            new_pq = new.find_protoquery(new.query.pq,
                                 cur.next)
 
                             pred = Predicate()
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.extend(literal)
+                            pred.value.append(str(literal))
                             if cur.next_agg == 'none_agg':
                                 pred.has_agg = to_proto_tribool(False)
                             else:

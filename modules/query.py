@@ -158,7 +158,7 @@ def from_clause_str(pq, schema, alias_prefix):
             if other_tbl.syn_name in aliases:
                 continue
 
-            alias = self.gen_alias(len(aliases) + 1, alias_prefix)
+            alias = gen_alias(len(aliases) + 1, alias_prefix)
             aliases[other_tbl.syn_name] = alias
             join_exprs.append(
                 u'JOIN {} AS {} ON {}.{} = {}.{}'.format(
@@ -219,7 +219,7 @@ def where_clause_str(pq, schema, aliases):
             to_str_op(pred.op),
             where_val
         ])
-        where_expr.append(pred_str)
+        where_exprs.append(pred_str)
 
     return u' '.join(where_exprs)
 
@@ -369,14 +369,14 @@ def with_updated_join_paths(schema, pq):
                 join_path_needs_update(schema, pred.subquery):
                     subqs = with_updated_join_paths(schema, pred.subquery)
                     if len(subqs) == 1:
-                        pred.subquery = subqs[0]
+                        pred.subquery.CopyFrom(subqs[0])
                         return [pq]
                     elif len(subqs) > 1:
                         new_pqs = []
                         for subq in subqs:
                             new_pq = ProtoQuery()
                             new_pq.CopyFrom(pq)
-                            new_pq.where.predicates[i] = subq
+                            new_pq.where.predicates[i].subquery.CopyFrom(subq)
                             new_pqs.append(new_pq)
                         return new_pqs
 
