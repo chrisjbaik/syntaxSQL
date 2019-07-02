@@ -493,8 +493,7 @@ class Query(object):
         return with_updated_join_paths(self.schema, self.pq)
 
     def copy(self):
-        new_query = Query()
-        new_query.schema = self.schema
+        new_query = Query(self.schema)
         new_query.pq.CopyFrom(self.pq)
         return new_query
 
