@@ -70,15 +70,15 @@ class SearchState(object):
     def update_join_paths(self):
         states = []
 
-        queries = self.query.with_updated_join_paths()
-        if len(queries) == 1:
-            self.query = queries[0]
+        pqs = self.query.with_updated_join_paths()
+        if len(pqs) == 1:
+            self.query = Query(self.query.schema, pqs[0])
             states.append(self)
         else:
-            for query in queries:
-                new = self.copy(query=query)
+            for pq in pqs:
+                new = self.copy(query=Query(self.query.schema, pq))
                 states.append(new)
-    
+
         return states
 
     def set_parent(self, parent):
