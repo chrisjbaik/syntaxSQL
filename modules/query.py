@@ -254,7 +254,7 @@ def having_clause_str(pq, schema, aliases):
             having_val = u"'{}'".format(pred.value)
 
         pred_str = u' '.join([having_col, to_str_op(pred.op), having_val])
-        having_expr.append(pred_str)
+        having_exprs.append(pred_str)
 
     return u' '.join(having_exprs)
 
