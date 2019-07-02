@@ -1,4 +1,5 @@
 from query_pb2 import *
+from schema import JoinEdge
 
 def to_proto_tribool(boolval):
     if boolval is None:
