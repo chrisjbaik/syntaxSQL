@@ -265,7 +265,7 @@ class Schema(object):
 
         # STEPS 2-3: Get MST of shortest, replace shortest paths with join edges
         # TODO: extend to get multiple MSTs if needed
-        tbls_in = set([tables[0]])
+        tbls_in = set([next(iter(tables))])
 
         mst = JoinPath()
 
