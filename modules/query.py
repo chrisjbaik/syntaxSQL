@@ -398,7 +398,7 @@ def with_updated_join_paths(schema, pq):
                         for subq in subqs:
                             new_pq = ProtoQuery()
                             new_pq.CopyFrom(pq)
-                            new_pq.where.predicates[i].subquery.CopyFrom(subq)
+                            new_pq.having.predicates[i].subquery.CopyFrom(subq)
                             new_pqs.append(new_pq)
                         return new_pqs
 
@@ -433,6 +433,8 @@ def with_updated_join_paths(schema, pq):
 
     # Then the main query.
     if join_path_needs_update(schema, pq):
+        # TODO: only update join paths that are extensions of the current
+        #       join path
         jps = schema.get_join_paths(get_tables(schema, pq))
         new_pqs = []
         for jp in jps:
