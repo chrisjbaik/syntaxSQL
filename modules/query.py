@@ -109,7 +109,7 @@ def to_str_op(proto_op):
     elif proto_op == IN:
         return 'in'
     elif proto_op == NOT_IN:
-        return 'not_in'
+        return 'not in'
     elif proto_op == BETWEEN:
         return 'between'
     else:
@@ -259,7 +259,7 @@ def having_clause_str(pq, schema, aliases):
         elif pred.op == BETWEEN:
             having_val = u"{} AND {}".format(pred.value[0], pred.value[1])
         else:
-            having_val = u"'{}'".format(pred.value)
+            having_val = u"'{}'".format(pred.value[0])
 
         pred_str = u' '.join([having_col, to_str_op(pred.op), having_val])
         having_exprs.append(pred_str)
