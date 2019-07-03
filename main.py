@@ -90,11 +90,11 @@ def main():
         help='Timeout if search does not terminate')
     parser.add_argument('--toy', action='store_true',
         help='Use toy word embedding set to save load time')
+    parser.add_argument('--debug', action='store_true',
+        help='Enable debug output')
     # parser.add_argument('--test_manual', action='store_true',
     #     help='For manual command line testing')
     # parser.add_argument('--test_path', help='Path for dataset to test')
-    # parser.add_argument('--debug', action='store_true',
-        # help='Enable debug output for test_manual')
 
     args = parser.parse_args()
 
@@ -153,7 +153,7 @@ def main():
                 mtc = client if task.enable_duoquest else None
 
                 sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
-                    task.n, task.b, timeout=args.timeout)
+                    task.n, task.b, timeout=args.timeout, debug=args.debug)
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:

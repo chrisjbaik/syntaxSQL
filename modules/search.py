@@ -116,12 +116,13 @@ class SearchState(object):
 
     def next_agg_states(self):
         states = []
-        for agg in self.agg_cands:
-            if agg in self.used_aggs:
-                continue
-            new = self.copy()
-            new.next_agg = agg
-            states.append(new)
+        if len(cur.used_aggs) < cur.num_aggs:
+            for agg in self.agg_cands:
+                if agg in self.used_aggs:
+                    continue
+                new = self.copy()
+                new.next_agg = agg
+                states.append(new)
 
         # if no candidate states, next_agg to None
         if not states:
@@ -132,12 +133,13 @@ class SearchState(object):
 
     def next_col_states(self):
         states = []
-        for col in self.col_cands:
-            if col in self.used_cols:
-                continue
-            new = self.copy()
-            new.next_col = col
-            states.append(new)
+        if len(cur.used_cols) < cur.num_cols:
+            for col in self.col_cands:
+                if col in self.used_cols:
+                    continue
+                new = self.copy()
+                new.next_col = col
+                states.append(new)
 
         # if no candidate states, next_col to None
         if not states:
