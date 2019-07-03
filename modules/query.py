@@ -206,7 +206,8 @@ def where_clause_str(pq, schema, aliases):
         where_val = None
         if pred.has_subquery:
             where_val = u'({})'.format(
-                generate_sql_str(pred.subquery, schema)
+                generate_sql_str(pred.subquery, schema,
+                    alias_prefix='w{}'.format(i))
             )
         else:
             if not pred.value:
@@ -249,7 +250,8 @@ def having_clause_str(pq, schema, aliases):
         having_val = None
         if pred.has_subquery:
             having_val = '({})'.format(
-                generate_sql_str(pred.subquery, schema)
+                generate_sql_str(pred.subquery, schema,
+                    alias_prefix='h{}'.format(i))
             )
         elif pred.op in (IN, NOT_IN):
             having_val = u"({})".format(
@@ -363,7 +365,7 @@ def join_path_needs_update(schema, pq):
 
     # if the current join path doesn't account for all tables in protoquery
     tables = get_tables(schema, pq)
-    if tables_in_cur_jp < tables:
+    if len(tables - tables_in_cur_jp) > 0:
         return True
 
     return False
