@@ -496,17 +496,18 @@ class SuperModel(nn.Module):
                         # default options to not degrade performance
                         # if len(cands) == 0:
                         #     cands = ['terminal']
-                        new = cur.copy()
-                        new_pq = new.find_protoquery(new.query.pq,
-                            cur.next)
+                        if cands:
+                            new = cur.copy()
+                            new_pq = new.find_protoquery(new.query.pq,
+                                cur.next)
 
-                        pred = Predicate()
-                        pred.col_id = cur.next_col
-                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        pred.has_subquery = to_proto_tribool(False)
-                        pred.value.extend(map(lambda x: str(x), cands))
-                        new_pq.where.predicates.append(pred)
-                        stack.append(new)
+                            pred = Predicate()
+                            pred.col_id = cur.next_col
+                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                            pred.has_subquery = to_proto_tribool(False)
+                            pred.value.extend(map(lambda x: str(x), cands))
+                            new_pq.where.predicates.append(pred)
+                            stack.append(new)
                     else:
                         # default options to not degrade performance
                         # if len(cands) == 0:
@@ -719,22 +720,23 @@ class SuperModel(nn.Module):
                         # default options to not degrade performance
                         # if len(cands) == 0:
                         #     cands = ['terminal']
-                        new = cur.copy()
-                        new_pq = new.find_protoquery(new.query.pq,
-                            cur.next)
+                        if cands:
+                            new = cur.copy()
+                            new_pq = new.find_protoquery(new.query.pq,
+                                cur.next)
 
-                        pred = Predicate()
-                        pred.col_id = cur.next_col
-                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        pred.has_subquery = to_proto_tribool(False)
-                        pred.value.extend(map(lambda x: str(x), cands))
-                        if cur.next_agg == 'none_agg':
-                            pred.has_agg = to_proto_tribool(False)
-                        else:
-                            pred.has_agg = to_proto_tribool(True)
-                            pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                        new_pq.having.predicates.append(pred)
-                        stack.append(new)
+                            pred = Predicate()
+                            pred.col_id = cur.next_col
+                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                            pred.has_subquery = to_proto_tribool(False)
+                            pred.value.extend(map(lambda x: str(x), cands))
+                            if cur.next_agg == 'none_agg':
+                                pred.has_agg = to_proto_tribool(False)
+                            else:
+                                pred.has_agg = to_proto_tribool(True)
+                                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                            new_pq.having.predicates.append(pred)
+                            stack.append(new)
                     else:
                         # default options to not degrade performance
                         # if len(cands) == 0:
