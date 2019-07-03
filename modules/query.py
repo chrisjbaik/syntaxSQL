@@ -355,6 +355,10 @@ def get_tables(schema, pq):
 
 # Only considers whether join path for current localized pq needs updating.
 # Does not consider for subqueries or set op children
+# Returns:
+# - True: if join path needs to be and can be updated
+# - False: if join path needs no updating
+# - None: if cannot be updated by expanding current join path
 def join_path_needs_update(schema, pq):
     tables_in_cur_jp = set(map(lambda x: schema.get_table(x),
         pq.from_clause.edge_map.keys()))
@@ -365,17 +369,22 @@ def join_path_needs_update(schema, pq):
 
     # if the current join path doesn't account for all tables in protoquery
     tables = get_tables(schema, pq)
-    if len(tables - tables_in_cur_jp) > 0:
+    if tables_in_cur_jp < tables:
         return True
-
-    return False
+    elif tables_in_cur_jp >= tables:
+        return False
+    else:
+        return None
 
 def with_updated_join_paths(schema, pq):
     # Prioritize subqueries.
     if pq.has_where == TRUE:
         for i, pred in enumerate(pq.where.predicates):
-            if pred.has_subquery and \
-                join_path_needs_update(schema, pred.subquery):
+            if pred.has_subquery:
+                should_update_s = join_path_needs_update(schema, pred.subquery)
+                if should_update_s is None:
+                    return None
+                elif should_update_s:
                     subqs = with_updated_join_paths(schema, pred.subquery)
                     if subqs is None:
                         return None
@@ -390,11 +399,13 @@ def with_updated_join_paths(schema, pq):
                             new_pq.where.predicates[i].subquery.CopyFrom(subq)
                             new_pqs.append(new_pq)
                         return new_pqs
-
     if pq.has_having == TRUE:
         for i, pred in enumerate(pq.having.predicates):
-            if pred.has_subquery and \
-                join_path_needs_update(schema, pred.subquery):
+            if pred.has_subquery:
+                should_update_s = join_path_needs_update(schema, pred.subquery)
+                if should_update_s is None:
+                    return None
+                elif should_update_s:
                     subqs = with_updated_join_paths(schema, pred.subquery)
                     if not subqs:
                         return None
@@ -412,7 +423,10 @@ def with_updated_join_paths(schema, pq):
 
     # Then set op children.
     if pq.set_op != NO_SET_OP:
-        if join_path_needs_update(schema, pq.left):
+        should_update_left = join_path_needs_update(schema, pq.left)
+        if should_update_left is None:
+            return None
+        elif should_update_left:
             subqs = with_updated_join_paths(schema, pq.left)
             if not subqs:
                 return None
@@ -427,7 +441,10 @@ def with_updated_join_paths(schema, pq):
                     new_pq.left = subq
                     new_pqs.append(new_pq)
                 return new_pqs
-        if join_path_needs_update(schema, pq.right):
+        should_update_right = join_path_needs_update(schema, pq.right)
+        if should_update_right is None:
+            return None
+        elif should_update_right:
             subqs = with_updated_join_paths(schema, pq.right)
             if not subqs:
                 return None
@@ -444,9 +461,10 @@ def with_updated_join_paths(schema, pq):
                 return new_pqs
 
     # Then the main query.
-    if join_path_needs_update(schema, pq):
-        # TODO: only update join paths that are extensions of the current
-        #       join path
+    should_update = join_path_needs_update(schema, pq)
+    if should_update is None:
+        return None
+    elif should_update:
         try:
             jps = schema.get_join_paths(get_tables(schema, pq))
         except Exception as e:
