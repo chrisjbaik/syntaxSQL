@@ -159,7 +159,7 @@ class SuperModel(nn.Module):
         num_cols = np.argmax(col_num_score[0]) + 1
 
         # return col_num + b - 1, so as to perform beam search on EACH col slot
-        return list(np.argsort(-col_score[0])[:num_cols + b - 1]), num_cols
+        return list(np.argsort(-col_score[0])[:int(num_cols)+b - 1]), num_cols
 
     def get_agg_cands(self, b, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
         col_emb_var, col_len, col_name_len):
@@ -171,7 +171,7 @@ class SuperModel(nn.Module):
         agg_num = np.argmax(agg_num_score[0])
 
         # return agg_num + b - 1, so as to perform beam search on EACH agg slot
-        return list(np.argsort(-agg_score[0])[:agg_num + b - 1]), agg_num
+        return list(np.argsort(-agg_score[0])[:int(agg_num) + b - 1]), agg_num
 
     def get_op_cands(self, b, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
         col_emb_var, col_len, col_name_len):
@@ -189,7 +189,7 @@ class SuperModel(nn.Module):
             op_cands.remove(10)
 
         # return op_num + b - 1, so as to perform beam search on EACH op slot
-        return op_cands[:op_num + b - 1], op_num
+        return op_cands[:int(op_num) + b - 1], op_num
 
     def print_stack(self, stack):
         print('Stack:')
