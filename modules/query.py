@@ -465,6 +465,11 @@ def with_updated_join_paths(schema, pq):
     return [pq]
 
 def set_proto_from(pq, jp):
+    # reset from clause
+    del pq.from_clause.edge_list.edges[:]
+    for key in pq.from_clause.edge_map:
+        del pq.from_clause.edge_map[key]
+
     if jp.distinct:
         pq.distinct = True
 
@@ -476,7 +481,7 @@ def set_proto_from(pq, jp):
 
     for tbl, edges in jp.edge_map.items():
         # initialize table in protobuf even if edges don't exist
-        pq.from_clause.edge_map[tbl.id]
+        pq.from_clause.edge_map.get_or_create(tbl.id)
         for edge in edges:
             proto_edge = ProtoJoinEdge()
             proto_edge.fk_col_id = edge.fk_col.id
