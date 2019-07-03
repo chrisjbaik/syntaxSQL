@@ -375,10 +375,12 @@ def with_updated_join_paths(schema, pq):
             if pred.has_subquery and \
                 join_path_needs_update(schema, pred.subquery):
                     subqs = with_updated_join_paths(schema, pred.subquery)
-                    if len(subqs) == 1:
+                    if subqs is None:
+                        return None
+                    elif len(subqs) == 1:
                         pred.subquery.CopyFrom(subqs[0])
                         return [pq]
-                    elif len(subqs) > 1:
+                    else:
                         new_pqs = []
                         for subq in subqs:
                             new_pq = ProtoQuery()
@@ -392,10 +394,12 @@ def with_updated_join_paths(schema, pq):
             if pred.has_subquery and \
                 join_path_needs_update(schema, pred.subquery):
                     subqs = with_updated_join_paths(schema, pred.subquery)
-                    if len(subqs) == 1:
+                    if not subqs:
+                        return None
+                    elif len(subqs) == 1:
                         pred.subquery.CopyFrom(subqs[0])
                         return [pq]
-                    elif len(subqs) > 1:
+                    else:
                         new_pqs = []
                         for subq in subqs:
                             new_pq = ProtoQuery()
@@ -408,10 +412,12 @@ def with_updated_join_paths(schema, pq):
     if pq.set_op != NO_SET_OP:
         if join_path_needs_update(schema, pq.left):
             subqs = with_updated_join_paths(schema, pq.left)
-            if len(subqs) == 1:
+            if not subqs:
+                return None
+            elif len(subqs) == 1:
                 pq.left = subqs[0]
                 return [pq]
-            elif len(subqs) > 1:
+            else:
                 new_pqs = []
                 for subq in subqs:
                     new_pq = ProtoQuery()
@@ -421,10 +427,12 @@ def with_updated_join_paths(schema, pq):
                 return new_pqs
         if join_path_needs_update(schema, pq.right):
             subqs = with_updated_join_paths(schema, pq.right)
-            if len(subqs) == 1:
+            if not subqs:
+                return None
+            elif len(subqs) == 1:
                 pq.right = subqs[0]
                 return [pq]
-            elif len(subqs) > 1:
+            else:
                 new_pqs = []
                 for subq in subqs:
                     new_pq = ProtoQuery()
