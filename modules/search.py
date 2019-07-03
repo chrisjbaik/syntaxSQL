@@ -116,7 +116,7 @@ class SearchState(object):
 
     def next_agg_states(self):
         states = []
-        if len(cur.used_aggs) < cur.num_aggs:
+        if len(self.used_aggs) < self.num_aggs:
             for agg in self.agg_cands:
                 if agg in self.used_aggs:
                     continue
@@ -133,7 +133,7 @@ class SearchState(object):
 
     def next_col_states(self):
         states = []
-        if len(cur.used_cols) < cur.num_cols:
+        if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
                 if col in self.used_cols:
                     continue
