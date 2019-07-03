@@ -36,7 +36,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
         for tok in nlq_toks:
             val = to_number(tok)
             if val is not None:
-                cands.append(val)
+                cands.append(str(val))
         cands.sort()        # ascending for between queries
         return cands
     else:

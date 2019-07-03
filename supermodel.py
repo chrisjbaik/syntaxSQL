@@ -487,8 +487,8 @@ class SuperModel(nn.Module):
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(str(a))
-                            pred.value.append(str(b))
+                            pred.value.append(a)
+                            pred.value.append(b)
                             new_pq.where.predicates.append(pred)
 
                             stack.append(new)
@@ -505,7 +505,7 @@ class SuperModel(nn.Module):
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.extend(map(lambda x: str(x), cands))
+                            pred.value.extend(cands)
                             new_pq.where.predicates.append(pred)
                             stack.append(new)
                     else:
@@ -521,7 +521,7 @@ class SuperModel(nn.Module):
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(str(literal))
+                            pred.value.append(literal)
                             new_pq.where.predicates.append(pred)
 
                             stack.append(new)
@@ -706,8 +706,8 @@ class SuperModel(nn.Module):
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(str(a))
-                            pred.value.append(str(b))
+                            pred.value.append(a)
+                            pred.value.append(b)
                             if cur.next_agg == 'none_agg':
                                 pred.has_agg = to_proto_tribool(False)
                             else:
@@ -729,7 +729,7 @@ class SuperModel(nn.Module):
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.extend(map(lambda x: str(x), cands))
+                            pred.value.extend(cands)
                             if cur.next_agg == 'none_agg':
                                 pred.has_agg = to_proto_tribool(False)
                             else:
@@ -750,7 +750,7 @@ class SuperModel(nn.Module):
                             pred.col_id = cur.next_col
                             pred.op = to_proto_op(NEW_WHERE_OPS[op])
                             pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(str(literal))
+                            pred.value.append(literal)
                             if cur.next_agg == 'none_agg':
                                 pred.has_agg = to_proto_tribool(False)
                             else:
