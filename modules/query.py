@@ -206,13 +206,17 @@ def where_clause_str(pq, schema, aliases):
             where_val = u'({})'.format(
                 generate_sql_str(pred.subquery, schema)
             )
-        elif pred.op in (IN, NOT_IN):
-            where_val = u"({})".format(
-                    u','.join(map(lambda x: u"'{}'".format(x), pred.value)))
-        elif pred.op == BETWEEN:
-            where_val = u"{} AND {}".format(pred.value[0], pred.value[1])
         else:
-            where_val = u"'{}'".format(pred.value)
+            if not pred.value:
+                raise Exception('Value is empty when generating where clause.')
+
+            if pred.op in (IN, NOT_IN):
+                where_val = u"({})".format(
+                        u','.join(map(lambda x: u"'{}'".format(x), pred.value)))
+            elif pred.op == BETWEEN:
+                where_val = u"{} AND {}".format(pred.value[0], pred.value[1])
+            else:
+                where_val = u"'{}'".format(pred.value[0])
 
         pred_str = u' '.join([
             schema.get_aliased_col(aliases, pred.col_id),
