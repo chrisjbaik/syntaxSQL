@@ -71,7 +71,9 @@ class SearchState(object):
         states = []
 
         pqs = self.query.with_updated_join_paths()
-        if len(pqs) == 1:
+        if pqs is None:
+            return []
+        elif len(pqs) == 1:
             self.query = Query(self.query.schema, pqs[0])
             states.append(self)
         else:

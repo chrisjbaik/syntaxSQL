@@ -305,10 +305,8 @@ class Schema(object):
             return self.zero_table_join_paths()
         elif len(tables) == 1:
             return self.single_table_join_paths(next(iter(tables)))
-        elif len(tables) > 1:
-            return [self.steiner(tables)]
         else:
-            raise Exception('Cannot get join paths with 0 tables.')
+            return [self.steiner(tables)]
 
     def zero_table_join_paths(self):
         jps = []

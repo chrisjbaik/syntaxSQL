@@ -1,3 +1,5 @@
+import traceback
+
 from query_pb2 import *
 from schema import JoinEdge
 
@@ -435,7 +437,12 @@ def with_updated_join_paths(schema, pq):
     if join_path_needs_update(schema, pq):
         # TODO: only update join paths that are extensions of the current
         #       join path
-        jps = schema.get_join_paths(get_tables(schema, pq))
+        try:
+            jps = schema.get_join_paths(get_tables(schema, pq))
+        except Exception as e:
+            traceback.print_exc()
+            return None
+
         new_pqs = []
         for jp in jps:
             new_pq = ProtoQuery()
