@@ -467,7 +467,7 @@ def with_updated_join_paths(schema, pq):
 def set_proto_from(pq, jp):
     # reset from clause
     del pq.from_clause.edge_list.edges[:]
-    for key in pq.from_clause.edge_map:
+    for key in pq.from_clause.edge_map.keys():
         del pq.from_clause.edge_map[key]
 
     if jp.distinct:
