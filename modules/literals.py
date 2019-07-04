@@ -59,14 +59,14 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
         if len(ngram) == 1:
             ngram = (ngram[0].replace("'", ''),)
 
-        str = d.detokenize(ngram)
-        if str in stopwords_bank:
+        token_str = d.detokenize(ngram)
+        if token_str in stopwords_bank:
             continue
 
-        lit = db.find_literals(db_name, tbl_name, col_name, str, b)
+        lit = db.find_literals(db_name, tbl_name, col_name, token_str, b)
         if lit:
             if like:
-                lits.append(u'%{}%'.format(str))
+                lits.append(u'%{}%'.format(token_str))
             else:
                 lits.extend(map(lambda x: str(x), lit))
     return lits
