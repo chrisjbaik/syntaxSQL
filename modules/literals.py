@@ -36,9 +36,9 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
         for tok in nlq_toks:
             val = to_number(tok)
             if val is not None:
-                cands.append(str(val))
+                cands.append(val)
         cands.sort()        # ascending for between queries
-        return cands
+        return list(map(lambda x: str(x), cands))
     else:
         cached = cache.get(col_id)
         if cached:
@@ -66,9 +66,9 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
         lit = db.find_literals(db_name, tbl_name, col_name, str, b)
         if lit:
             if like:
-                lits.extend(map(lambda x: u'%{}%'.format(str), lit))
+                lits.append(u'%{}%'.format(str))
             else:
-                lits.extend(lit)
+                lits.extend(map(lambda x: str(x), lit))
     return lits
 
 class LiteralsCache(object):

@@ -386,7 +386,7 @@ def with_updated_join_paths(schema, pq):
                     return None
                 elif should_update_s:
                     subqs = with_updated_join_paths(schema, pred.subquery)
-                    if subqs is None:
+                    if not subqs:
                         return None
                     elif len(subqs) == 1:
                         pred.subquery.CopyFrom(subqs[0])
@@ -478,9 +478,9 @@ def with_updated_join_paths(schema, pq):
             set_proto_from(new_pq, jp)
             new_pqs.append(new_pq)
         return new_pqs
-
-    # If no change, return current query
-    return [pq]
+    else:
+        # If no change, return current query
+        return [pq]
 
 def set_proto_from(pq, jp):
     # reset from clause
