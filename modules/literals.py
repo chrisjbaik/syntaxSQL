@@ -68,7 +68,7 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
             if like:
                 lits.append(u'%{}%'.format(token_str))
             else:
-                lits.extend(map(lambda x: str(x), lit))
+                lits.extend(map(lambda x: unicode(x), lit))
     return lits
 
 class LiteralsCache(object):
