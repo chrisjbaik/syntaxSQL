@@ -334,7 +334,8 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
 
-                for state in reversed(cur.next_num_col_states(b)):
+                for state in reversed(cur.next_num_col_states(num_col_cands,
+                    b)):
                     for col_state in reversed(state.next_col_states(b)):
                         stack.append(col_state)
             elif cur.next[-1] == 'select_col':
@@ -353,11 +354,12 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                agg_cands, num_aggs_cands = \
+                agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                for state in reversed(cur.next_num_agg_states(b)):
+                for state in reversed(cur.next_num_agg_states(num_agg_cands,
+                    b)):
                     if state.num_aggs == 0:
                         agg_col = AggregatedColumn()
                         agg_col.col_id = state.next_col
@@ -426,7 +428,8 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
 
-                for state in reversed(cur.next_num_col_states(b)):
+                for state in reversed(cur.next_num_col_states(num_col_cands,
+                    b)):
                     for col_state in reversed(state.next_col_states(b)):
                         stack.append(col_state)
             elif cur.next[-1] == 'where_col':
@@ -564,7 +567,8 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
 
-                for state in reversed(cur.next_num_col_states(b)):
+                for state in reversed(cur.next_num_col_states(num_col_cands,
+                    b)):
                     for col_state in reversed(state.next_col_states(b)):
                         stack.append(col_state)
             elif cur.next[-1] == 'group_by_col':
@@ -608,7 +612,8 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
 
-                for state in reversed(cur.next_num_col_states(b)):
+                for state in reversed(cur.next_num_col_states(num_col_cands,
+                    b)):
                     for col_state in reversed(state.next_col_states(b)):
                         stack.append(col_state)
             elif cur.next[-1] == 'having_col':
@@ -625,14 +630,15 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                agg_cands, num_aggs_cands = \
+                agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'having_agg'
                 cur.used_aggs = set()
 
-                for state in reversed(cur.next_num_agg_states(b)):
+                for state in reversed(cur.next_num_agg_states(num_agg_cands,
+                    b)):
                     if state.num_aggs == 0:
                         state.agg_cands = ['none_agg']
                         state.num_aggs = 1
@@ -806,7 +812,8 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()
 
-                for state in reversed(cur.next_num_col_states(b)):
+                for state in reversed(cur.next_num_col_states(num_col_cands,
+                    b)):
                     for col_state in reversed(state.next_col_states(b)):
                         stack.append(col_state)
             elif cur.next[-1] == 'order_by_col':
@@ -823,14 +830,15 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                agg_cands, num_aggs_cands = \
+                agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'order_by_agg'
                 cur.used_aggs = set()
 
-                for state in reversed(cur.next_num_agg_states(b)):
+                for state in reversed(cur.next_num_agg_states(num_agg_cands,
+                    b)):
                     if state.num_aggs == 0:
                         state.agg_cands = ['none_agg']
                         state.num_aggs = 1
