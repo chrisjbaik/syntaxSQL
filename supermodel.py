@@ -283,12 +283,11 @@ class SuperModel(nn.Module):
 
                     if label == 'none':
                         new.next[-1] = 'keyword'
-                        stack.append(new)
                     else:
                         new_pq.left.set_op = to_proto_set_op('none')
                         new_pq.right.set_op = to_proto_set_op('none')
                         new.next = ['left', 'root']
-                        stack.append(new)
+                    stack.append(new)
             elif cur.next[-1] == 'keyword':
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, kw_emb_var, kw_len)

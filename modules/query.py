@@ -431,7 +431,7 @@ def with_updated_join_paths(schema, pq):
             if not subqs:
                 return None
             elif len(subqs) == 1:
-                pq.left = subqs[0]
+                pq.left.CopyFrom(subqs[0])
                 return [pq]
             else:
                 new_pqs = []
@@ -449,7 +449,7 @@ def with_updated_join_paths(schema, pq):
             if not subqs:
                 return None
             elif len(subqs) == 1:
-                pq.right = subqs[0]
+                pq.right.CopyFrom(subqs[0])
                 return [pq]
             else:
                 new_pqs = []
