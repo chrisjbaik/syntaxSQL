@@ -15,9 +15,18 @@ class SearchState(object):
         # store parent to return to it after subquery
         self.parent = None
 
+        # Next keyword to use
+        self.next_kw = None
+        # candidate keywords, in order
+        self.kw_cands = None
+        # used kws for current query
+        self.used_kws = None
+        # number of keywords for current query
+        self.num_kws = None
+
         # next column to use (from col_cands)
         self.next_col = None
-        # candidate columns for current clause
+        # candidate columns for current clause, in order
         self.col_cands = None
         # used candidates for current clause
         self.used_cols = None
@@ -37,6 +46,8 @@ class SearchState(object):
         self.next_op_idx = None
         # ops to use for current clause
         self.iter_ops = None
+        # number of op slots for current col
+        self.num_ops = None
 
         self.query = query
 
@@ -99,6 +110,12 @@ class SearchState(object):
         if self.parent:
             copied.set_parent(self.parent)
 
+        copied.next_kw = self.next_kw
+        copied.kw_cands = self.kw_cands         # will not be modified
+        if self.used_kws is not None:
+            copied.kw_cands = self.kw_cands
+        copied.num_kws = self.num_kws
+
         copied.next_col = self.next_col
         copied.col_cands = self.col_cands       # will not be modified
         if self.used_cols is not None:
@@ -113,13 +130,57 @@ class SearchState(object):
 
         copied.next_op_idx = self.next_op_idx
         copied.iter_ops = self.iter_ops         # will not be modified
+        copied.num_ops = self.num_ops
 
         return copied
 
-    def next_agg_states(self):
+    def next_num_kw_states(self, num_kw_cands, b):
+        states = []
+        for num_kws in num_kw_cands:
+            if b is not None and len(states) >= b:
+                break
+            new = self.copy()
+            new.num_kws = num_kws
+            states.append(new)
+
+        return states
+
+    def next_kw_states(self, b):
+        states = []
+        if len(self.used_kws) < self.num_kws:
+            for kw in self.kw_cands:
+                if b is not None and len(states) >= b:
+                    break
+                if kw in self.used_kws:
+                    continue
+                new = self.copy()
+                new.next_kw = kw
+                states.append(new)
+
+        # if no candidate states, next_kw to None
+        if not states:
+            self.next_kw = None
+            return [self]
+        else:
+            return states
+
+    def next_num_agg_states(self, num_agg_cands, b):
+        states = []
+        for num_aggs in num_agg_cands:
+            if b is not None and len(states) >= b:
+                break
+            new = self.copy()
+            new.num_aggs = num_aggs
+            states.append(new)
+
+        return states
+
+    def next_agg_states(self, b):
         states = []
         if len(self.used_aggs) < self.num_aggs:
             for agg in self.agg_cands:
+                if b is not None and len(states) >= b:
+                    break
                 if agg in self.used_aggs:
                     continue
                 new = self.copy()
@@ -133,10 +194,23 @@ class SearchState(object):
         else:
             return states
 
-    def next_col_states(self):
+    def next_num_col_states(self, num_col_cands, b):
+        states = []
+        for num_cols in num_col_cands:
+            if b is not None and len(states) >= b:
+                break
+            new = self.copy()
+            new.num_cols = num_cols
+            states.append(new)
+
+        return states
+
+    def next_col_states(self, b):
         states = []
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
+                if b is not None and len(states) >= b:
+                    break
                 if col in self.used_cols:
                     continue
                 new = self.copy()
@@ -150,11 +224,24 @@ class SearchState(object):
         else:
             return states
 
-    def next_op_states(self, next, num_ops, op_cands, col_name):
+    def next_num_op_states(self, num_ops_cands, b):
+        states = []
+        for num_ops in num_op_cands:
+            if b is not None and len(states) >= b:
+                break
+            new = self.copy()
+            new.num_ops = num_ops
+            states.append(new)
+
+        return states
+
+    def next_op_states(self, next, num_ops, op_cands, col_name, b):
         states = []
         self.next[-1] = next
         self.next_op_idx = 0
         for ops in permutations(op_cands, num_ops):
+            if b is not None and len(states) >= b:
+                break
             new = self.copy()
 
             for i, op in enumerate(ops):
@@ -166,6 +253,12 @@ class SearchState(object):
             states.append(new)
 
         return states
+
+    def clear_kw_info(self):
+        self.next_kw = None
+        self.kw_cands = None
+        self.used_kws = None
+        self.num_kws = None
 
     def clear_agg_info(self):
         self.next_agg = None
@@ -182,3 +275,4 @@ class SearchState(object):
     def clear_op_info(self):
         self.next_op_idx = None
         self.iter_ops = None
+        self.num_ops = None
