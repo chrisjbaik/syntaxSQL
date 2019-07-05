@@ -438,7 +438,7 @@ def with_updated_join_paths(schema, pq):
                 for subq in subqs:
                     new_pq = ProtoQuery()
                     new_pq.CopyFrom(pq)
-                    new_pq.left = subq
+                    new_pq.left.CopyFrom(subq)
                     new_pqs.append(new_pq)
                 return new_pqs
         should_update_right = join_path_needs_update(schema, pq.right)
@@ -456,7 +456,7 @@ def with_updated_join_paths(schema, pq):
                 for subq in subqs:
                     new_pq = ProtoQuery()
                     new_pq.CopyFrom(pq)
-                    new_pq.right = subq
+                    new_pq.right.CopyFrom(subq)
                     new_pqs.append(new_pq)
                 return new_pqs
 
