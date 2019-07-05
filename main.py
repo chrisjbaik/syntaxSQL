@@ -82,8 +82,8 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('dataset', choices=['spider', 'wikisql'])
-    parser.add_argument('mode', choices=['dev', 'test'])
+    # parser.add_argument('dataset', choices=['spider', 'wikisql'])
+    # parser.add_argument('mode', choices=['dev', 'test'])
 
     parser.add_argument('--config_path', default='../../src/config.ini')
     parser.add_argument('--timeout', default=5, type=int,
@@ -101,18 +101,8 @@ def main():
     config = ConfigParser.RawConfigParser()
     config.read(args.config_path)
 
-    schemas_path = None
-    db_path = None
-    if args.dataset == 'spider':
-        schemas_path = config.get('spider', '{}_tables_path'.format(args.mode))
-        db_path = config.get('spider', '{}_db_path'.format(args.mode))
-    elif args.dataset == 'wikisql':
-        pass  # TODO
-
-    schemas = load_schemas(schemas_path)
     model = load_model(config.get('syntaxsql', 'models_path'),
         config.get('syntaxsql', 'glove_path'), args.toy)
-    db = Database(db_path, args.dataset)
     client = DuoquestClient(int(config.get('duoquest', 'port')),
         config.get('duoquest', 'authkey'))
 
@@ -143,6 +133,19 @@ def main():
                 task = ProtoTask()
                 task.ParseFromString(msg)
 
+                schemas_path = None
+                db_path = None
+                if task.dataset == 'spider':
+                    schemas_path = config.get('spider',
+                        '{}_tables_path'.format(task.mode))
+                    db_path = config.get('spider',
+                        '{}_db_path'.format(task.mode))
+                elif task.dataset == 'wikisql':
+                    pass  # TODO
+
+                schemas = load_schemas(schemas_path)
+                db = Database(db_path, task.dataset)
+
                 tokens_list = list(task.nlq_tokens)
                 nlq = None
                 if len(tokens_list) == 1:
@@ -150,9 +153,9 @@ def main():
                 else:
                     nlq = tokens_list
 
-                mtc = client if task.enable_duoquest else None
+                dqc = client if task.enable_duoquest else None
 
-                sqls = translate(model, db, schemas, mtc, task.db_name, nlq,
+                sqls = translate(model, db, schemas, dqc, task.db_name, nlq,
                     task.n, task.b, timeout=args.timeout, debug=args.debug)
 
                 proto_cands = ProtoCandidates()
