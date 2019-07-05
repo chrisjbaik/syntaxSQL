@@ -224,7 +224,7 @@ class SearchState(object):
         else:
             return states
 
-    def next_num_op_states(self, num_ops_cands, b):
+    def next_num_op_states(self, num_op_cands, b):
         states = []
         for num_ops in num_op_cands:
             if b and len(states) >= b:
