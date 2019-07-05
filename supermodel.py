@@ -293,7 +293,7 @@ class SuperModel(nn.Module):
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, kw_emb_var, kw_len)
                 kw_num_score, kw_score = [x.data.cpu().numpy() for x in score]
-                num_kw_cands = np.argmax(kw_num_score[0])
+                num_kw_cands = list(np.argsort(-kw_num_score[0]))
                 cur.kw_cands = list(np.argsort(-kw_score[0]))
 
                 cur.next[-1] = 'keyword_each'
