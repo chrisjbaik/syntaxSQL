@@ -269,7 +269,7 @@ class SuperModel(nn.Module):
                 if len(cur.next) == 1:
                     score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
                         hs_len, mkw_emb_var, mkw_len)
-                    set_op_cands = np.argsort(-score[0])
+                    set_op_cands = np.argsort(-score[0].data.cpu().numpy())
                 else:
                     cur.history[0].append('root')
                     set_op_cands = [0]
