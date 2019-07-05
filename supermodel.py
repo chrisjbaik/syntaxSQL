@@ -297,7 +297,7 @@ class SuperModel(nn.Module):
                 cur.kw_cands = list(np.argsort(-kw_score[0]))
 
                 cur.next[-1] = 'keyword_each'
-                cur.used_cols = set()
+                cur.used_kws = set()
                 for state in reversed(cur.next_num_kw_states(num_kw_cands, b)):
                     for kw_state in reversed(state.next_kw_states(b)):
                         stack.append(kw_state)
