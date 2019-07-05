@@ -388,9 +388,6 @@ def with_updated_join_paths(schema, pq):
                     subqs = with_updated_join_paths(schema, pred.subquery)
                     if not subqs:
                         return None
-                    elif len(subqs) == 1:
-                        pred.subquery.CopyFrom(subqs[0])
-                        return [pq]
                     else:
                         new_pqs = []
                         for subq in subqs:
@@ -409,9 +406,6 @@ def with_updated_join_paths(schema, pq):
                     subqs = with_updated_join_paths(schema, pred.subquery)
                     if not subqs:
                         return None
-                    elif len(subqs) == 1:
-                        pred.subquery.CopyFrom(subqs[0])
-                        return [pq]
                     else:
                         new_pqs = []
                         for subq in subqs:
@@ -430,9 +424,6 @@ def with_updated_join_paths(schema, pq):
             subqs = with_updated_join_paths(schema, pq.left)
             if not subqs:
                 return None
-            elif len(subqs) == 1:
-                pq.left.CopyFrom(subqs[0])
-                return [pq]
             else:
                 new_pqs = []
                 for subq in subqs:
@@ -448,9 +439,6 @@ def with_updated_join_paths(schema, pq):
             subqs = with_updated_join_paths(schema, pq.right)
             if not subqs:
                 return None
-            elif len(subqs) == 1:
-                pq.right.CopyFrom(subqs[0])
-                return [pq]
             else:
                 new_pqs = []
                 for subq in subqs:
