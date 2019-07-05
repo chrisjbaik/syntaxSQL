@@ -113,7 +113,7 @@ class SearchState(object):
         copied.next_kw = self.next_kw
         copied.kw_cands = self.kw_cands         # will not be modified
         if self.used_kws is not None:
-            copied.kw_cands = self.kw_cands
+            copied.used_kws = set(self.used_kws)
         copied.num_kws = self.num_kws
 
         copied.next_col = self.next_col
