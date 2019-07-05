@@ -137,7 +137,7 @@ class SearchState(object):
     def next_num_kw_states(self, num_kw_cands, b):
         states = []
         for num_kws in num_kw_cands:
-            if b is not None and len(states) >= b:
+            if b and len(states) >= b:
                 break
             new = self.copy()
             new.num_kws = num_kws
@@ -149,7 +149,7 @@ class SearchState(object):
         states = []
         if len(self.used_kws) < self.num_kws:
             for kw in self.kw_cands:
-                if b is not None and len(states) >= b:
+                if b and len(states) >= b:
                     break
                 if kw in self.used_kws:
                     continue
@@ -167,7 +167,7 @@ class SearchState(object):
     def next_num_agg_states(self, num_agg_cands, b):
         states = []
         for num_aggs in num_agg_cands:
-            if b is not None and len(states) >= b:
+            if b and len(states) >= b:
                 break
             new = self.copy()
             new.num_aggs = num_aggs
@@ -179,7 +179,7 @@ class SearchState(object):
         states = []
         if len(self.used_aggs) < self.num_aggs:
             for agg in self.agg_cands:
-                if b is not None and len(states) >= b:
+                if b and len(states) >= b:
                     break
                 if agg in self.used_aggs:
                     continue
@@ -197,7 +197,7 @@ class SearchState(object):
     def next_num_col_states(self, num_col_cands, b):
         states = []
         for num_cols in num_col_cands:
-            if b is not None and len(states) >= b:
+            if b and len(states) >= b:
                 break
             new = self.copy()
             new.num_cols = num_cols
@@ -209,7 +209,7 @@ class SearchState(object):
         states = []
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
-                if b is not None and len(states) >= b:
+                if b and len(states) >= b:
                     break
                 if col in self.used_cols:
                     continue
@@ -227,7 +227,7 @@ class SearchState(object):
     def next_num_op_states(self, num_ops_cands, b):
         states = []
         for num_ops in num_op_cands:
-            if b is not None and len(states) >= b:
+            if b and len(states) >= b:
                 break
             new = self.copy()
             new.num_ops = num_ops
@@ -240,7 +240,7 @@ class SearchState(object):
         self.next[-1] = next
         self.next_op_idx = 0
         for ops in permutations(op_cands, num_ops):
-            if b is not None and len(states) >= b:
+            if b and len(states) >= b:
                 break
             new = self.copy()
 
