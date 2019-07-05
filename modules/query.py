@@ -298,9 +298,9 @@ def generate_sql_str(pq, schema, alias_prefix=None):
             set_op_str = 'EXCEPT'
 
         return u'{} {} {}'.format(
-            generate_sql_str(pq.left),
+            generate_sql_str(pq.left, schema),
             set_op_str,
-            generate_sql_str(pq.right, alias_prefix=set_op_str[0])
+            generate_sql_str(pq.right, schema, alias_prefix=set_op_str[0])
         )
 
     from_clause, aliases = from_clause_str(pq, schema, alias_prefix)
