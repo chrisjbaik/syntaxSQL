@@ -234,6 +234,7 @@ class SuperModel(nn.Module):
             if len(results) >= n:
                 break
             if timeout and time.time() > end_time:
+                print('Timed out.')
                 break
 
             cur = stack.pop()
