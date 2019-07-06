@@ -1,5 +1,5 @@
 from itertools import permutations
-from query import Query
+from query import Query, join_path_needs_update, with_updated_join_paths
 from query_pb2 import TRUE
 
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
@@ -55,6 +55,26 @@ class SearchState(object):
             history = [['root']] * 2
         self.history = history
 
+    def set_subquery(self, pq, next, set_pq):
+        if next[0] == 'left':
+            self.set_subquery(pq.left, next[1:], set_pq)
+        elif next[0] == 'right':
+            self.set_subquery(pq.right, next[1:], set_pq)
+        elif next[0] == 'where_op' and \
+            len(next) > 1 and isinstance(next[1], int):
+            pred = pq.where.predicates[next[1]]
+            if pred.has_subquery != TRUE:
+                raise Exception('No subquery at {}'.format(next[1]))
+            self.set_subquery(pred.subquery, next[2:], set_pq)
+        elif next[0] == 'having_op' and \
+            len(next) > 1 and isinstance(next[1], int):
+            pred = pq.having.predicates[next[1]]
+            if pred.has_subquery != TRUE:
+                raise Exception('No subquery at {}'.format(next[1]))
+            self.set_subquery(pred.subquery, next[2:], set_pq)
+        else:
+            pq.CopyFrom(set_pq)
+
     # next is array, e.g. [left, select, ...]
     # returns smallest subquery ProtoQuery object
     def find_protoquery(self, pq, next):
@@ -81,18 +101,20 @@ class SearchState(object):
     def update_join_paths(self):
         states = []
 
-        pqs = self.query.with_updated_join_paths()
-        if pqs is None:
-            return []
-        elif len(pqs) == 1:
-            self.query = Query(self.query.schema, pqs[0])
-            states.append(self)
-        else:
-            for pq in pqs:
-                new = self.copy(query=Query(self.query.schema, pq))
-                states.append(new)
+        pq = cur.find_protoquery(self.query.pq, self.next)
 
-        return states
+        needs_update = join_path_needs_update(self.query.schema, pq)
+        if needs_update is None:
+            return None, False
+        elif needs_update:
+            new_pqs = with_updated_join_paths(self.query.schema, pq)
+            for new_pq in new_pqs:
+                new = self.copy()
+                new.set_subquery(self.query.pq, self.next, new_pq)
+                states.append(new)
+            return states, True
+        else:
+            return self, False
 
     def set_parent(self, parent):
         # link parent history, query with current values

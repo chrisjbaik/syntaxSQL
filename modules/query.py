@@ -3,6 +3,14 @@ import traceback
 from query_pb2 import *
 from schema import JoinEdge
 
+def to_str_tribool(proto_tribool):
+    if proto_tribool == UNKNOWN:
+        return None
+    elif proto_tribool == TRUE:
+        return True
+    else:
+        return False
+
 def to_proto_tribool(boolval):
     if boolval is None:
         return UNKNOWN
@@ -377,98 +385,19 @@ def join_path_needs_update(schema, pq):
         return None
 
 def with_updated_join_paths(schema, pq):
-    # Prioritize subqueries.
-    if pq.has_where == TRUE:
-        for i, pred in enumerate(pq.where.predicates):
-            if pred.has_subquery:
-                should_update_s = join_path_needs_update(schema, pred.subquery)
-                if should_update_s is None:
-                    return None
-                elif should_update_s:
-                    subqs = with_updated_join_paths(schema, pred.subquery)
-                    if not subqs:
-                        return None
-                    else:
-                        new_pqs = []
-                        for subq in subqs:
-                            new_pq = ProtoQuery()
-                            new_pq.CopyFrom(pq)
-                            new_pq.where.predicates[i].subquery.CopyFrom(subq)
-                            new_pqs.append(new_pq)
-                        return new_pqs
-    if pq.has_having == TRUE:
-        for i, pred in enumerate(pq.having.predicates):
-            if pred.has_subquery:
-                should_update_s = join_path_needs_update(schema, pred.subquery)
-                if should_update_s is None:
-                    return None
-                elif should_update_s:
-                    subqs = with_updated_join_paths(schema, pred.subquery)
-                    if not subqs:
-                        return None
-                    else:
-                        new_pqs = []
-                        for subq in subqs:
-                            new_pq = ProtoQuery()
-                            new_pq.CopyFrom(pq)
-                            new_pq.having.predicates[i].subquery.CopyFrom(subq)
-                            new_pqs.append(new_pq)
-                        return new_pqs
-
-    # Then set op children.
-    if pq.set_op != NO_SET_OP:
-        should_update_left = join_path_needs_update(schema, pq.left)
-        if should_update_left is None:
-            return None
-        elif should_update_left:
-            subqs = with_updated_join_paths(schema, pq.left)
-            if not subqs:
-                return None
-            else:
-                new_pqs = []
-                for subq in subqs:
-                    new_pq = ProtoQuery()
-                    new_pq.CopyFrom(pq)
-                    new_pq.left.CopyFrom(subq)
-                    new_pqs.append(new_pq)
-                return new_pqs
-        should_update_right = join_path_needs_update(schema, pq.right)
-        if should_update_right is None:
-            return None
-        elif should_update_right:
-            subqs = with_updated_join_paths(schema, pq.right)
-            if not subqs:
-                return None
-            else:
-                new_pqs = []
-                for subq in subqs:
-                    new_pq = ProtoQuery()
-                    new_pq.CopyFrom(pq)
-                    new_pq.right.CopyFrom(subq)
-                    new_pqs.append(new_pq)
-                return new_pqs
-
-    # Then the main query.
-    should_update = join_path_needs_update(schema, pq)
-    if should_update is None:
+    try:
+        jps = schema.get_join_paths(get_tables(schema, pq))
+    except Exception as e:
+        traceback.print_exc()
         return None
-    elif should_update:
-        try:
-            jps = schema.get_join_paths(get_tables(schema, pq))
-        except Exception as e:
-            traceback.print_exc()
-            return None
 
-        new_pqs = []
-        for jp in jps:
-            new_pq = ProtoQuery()
-            new_pq.CopyFrom(pq)
-            set_proto_from(new_pq, jp)
-            new_pqs.append(new_pq)
-        return new_pqs
-    else:
-        # If no change, return current query
-        return [pq]
+    new_pqs = []
+    for jp in jps:
+        new_pq = ProtoQuery()
+        new_pq.CopyFrom(pq)
+        set_proto_from(new_pq, jp)
+        new_pqs.append(new_pq)
+    return new_pqs
 
 def set_proto_from(pq, jp):
     # reset from clause
@@ -524,9 +453,6 @@ class Query(object):
         # self.having = None
         # self.order_by = None
         # self.limit = None
-
-    def with_updated_join_paths(self):
-        return with_updated_join_paths(self.schema, self.pq)
 
     def copy(self):
         new_query = Query(self.schema)

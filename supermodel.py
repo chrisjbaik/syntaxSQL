@@ -238,21 +238,21 @@ class SuperModel(nn.Module):
 
             cur = stack.pop()
 
+            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
+
             # update join path if needed
-            states = cur.update_join_paths()
-            if len(states) == 0:    # if error
+            states, updated = cur.update_join_paths(cur_pq)
+
+            if states is None:      # if error
                 continue
-            elif len(states) == 1:
-                cur = states[0]
-            else:                   # if multiple possible join paths
+
+            if updated:             # if join paths updated, push new states
                 stack.extend(reversed(states))
                 continue
 
             # check if Duoquest says to prune it
             if client and client.should_prune(cur.query):
                 continue
-
-            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             if debug:
                 self.print_stack(stack)
@@ -303,6 +303,12 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'keyword_each':
                 if cur.next_kw is None:
                     cur.next[-1] = 'select'
+                    if not to_str_tribool(cur_pq.has_where):
+                        cur_pq.has_where = to_proto_tribool(False)
+                    if not to_str_tribool(cur_pq.has_group_by):
+                        cur_pq.has_group_by = to_proto_tribool(False)
+                    if not to_str_tribool(cur_pq.has_order_by):
+                        cur_pq.has_order_by = to_proto_tribool(False)
                     cur.clear_kw_info()
                     stack.append(cur)
                     continue
