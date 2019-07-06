@@ -234,7 +234,7 @@ class SuperModel(nn.Module):
             if len(results) >= n:
                 break
             if timeout and time.time() > end_time:
-                print('Timed out.')
+                print('Timed out. Returned {} results.'.format(len(results)))
                 break
 
             cur = stack.pop()
@@ -478,9 +478,6 @@ class SuperModel(nn.Module):
                     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
-
-                # cur_pq.where.append(col_name)
-                # cur_pq.where.append(NEW_WHERE_OPS[op])
 
                 cur.next_op_idx += 1
                 # only allow subquery of depth 1
