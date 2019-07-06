@@ -107,7 +107,12 @@ class SearchState(object):
         if needs_update is None:
             return None, False
         elif needs_update:
-            new_pqs = with_updated_join_paths(self.query.schema, pq)
+            try:
+                new_pqs = with_updated_join_paths(self.query.schema, pq)
+            except Exception as e:
+                print(traceback.format_exc())
+                return None, False
+
             for new_pq in new_pqs:
                 new = self.copy()
                 new.set_subquery(self.query.pq, self.next, new_pq)

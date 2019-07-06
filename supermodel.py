@@ -238,21 +238,23 @@ class SuperModel(nn.Module):
 
             cur = stack.pop()
 
-            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
-
             # update join path if needed
             states, updated = cur.update_join_paths()
 
             if states is None:      # if error
                 continue
 
-            if updated:             # if join paths updated, push new states
-                stack.extend(reversed(states))
-                continue
+            if updated:             # if join paths updated
+                # push all but first state to stack
+                stack.extend(reversed(states[1:]))
+                # execute the first state now
+                cur = states[0]
 
             # check if Duoquest says to prune it
             if client and client.should_prune(cur.query):
                 continue
+
+            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             if debug:
                 self.print_stack(stack)

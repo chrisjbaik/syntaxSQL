@@ -385,12 +385,8 @@ def join_path_needs_update(schema, pq):
         return None
 
 def with_updated_join_paths(schema, pq):
-    try:
-        jps = schema.get_join_paths(get_tables(schema, pq))
-    except Exception as e:
-        traceback.print_exc()
-        return None
-
+    jps = schema.get_join_paths(get_tables(schema, pq))
+    
     new_pqs = []
     for jp in jps:
         new_pq = ProtoQuery()
