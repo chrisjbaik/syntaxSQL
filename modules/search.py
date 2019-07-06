@@ -101,7 +101,7 @@ class SearchState(object):
     def update_join_paths(self):
         states = []
 
-        pq = cur.find_protoquery(self.query.pq, self.next)
+        pq = self.find_protoquery(self.query.pq, self.next)
 
         needs_update = join_path_needs_update(self.query.schema, pq)
         if needs_update is None:
