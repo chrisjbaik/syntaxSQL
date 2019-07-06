@@ -352,7 +352,7 @@ def get_tables(schema, pq):
             tbl = schema.get_col(col_id).table
             if tbl:
                 tables.add(tbl)
-    if pq.has_having == TRUE:g
+    if pq.has_having == TRUE:
         for pred in pq.having.predicates:
             tbl = schema.get_col(pred.col_id).table
             if tbl:
