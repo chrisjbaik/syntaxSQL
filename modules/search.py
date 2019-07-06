@@ -84,7 +84,6 @@ class SearchState(object):
             return self.find_protoquery(pq.right, next[1:])
         elif next[0] == 'where_op' and \
             len(next) > 1 and isinstance(next[1], int):
-            # TODO: next is index of predicate, _NOT_ old-style predicate
             pred = pq.where.predicates[next[1]]
             if pred.has_subquery != TRUE:
                 raise Exception('No subquery at {}'.format(next[1]))
