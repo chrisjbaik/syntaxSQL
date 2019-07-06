@@ -241,7 +241,7 @@ class SuperModel(nn.Module):
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             # update join path if needed
-            states, updated = cur.update_join_paths(cur_pq)
+            states, updated = cur.update_join_paths()
 
             if states is None:      # if error
                 continue
