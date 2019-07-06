@@ -115,7 +115,7 @@ class SearchState(object):
 
             for new_pq in new_pqs:
                 new = self.copy()
-                new.set_subquery(self.query.pq, self.next, new_pq)
+                new.set_subquery(new.query.pq, self.next, new_pq)
                 states.append(new)
             return states, True
         else:
