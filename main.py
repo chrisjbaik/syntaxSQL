@@ -86,7 +86,7 @@ def main():
     # parser.add_argument('mode', choices=['dev', 'test'])
 
     parser.add_argument('--config_path', default='../../src/config.ini')
-    parser.add_argument('--timeout', default=0, type=int,
+    parser.add_argument('--timeout', default=20, type=int,
         help='Timeout if search does not terminate')
     parser.add_argument('--toy', action='store_true',
         help='Use toy word embedding set to save load time')
