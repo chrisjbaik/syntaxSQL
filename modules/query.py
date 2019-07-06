@@ -248,10 +248,15 @@ def having_clause_str(pq, schema, aliases):
         if i != 0:
             having_exprs.append(to_str_logical_op(pq.having.logical_op))
 
-        having_col = u'{}({})'.format(
-            to_str_agg(pred.agg),
-            schema.get_aliased_col(aliases, pred.col_id)
-        )
+        if pred.has_agg:
+            having_col = u'{}({})'.format(
+                to_str_agg(pred.agg),
+                schema.get_aliased_col(aliases, pred.col_id)
+            )
+        else:
+            having_col = u'{}'.format(
+                schema.get_aliased_col(aliases, pred.col_id)
+            )
 
         having_val = None
         if pred.has_subquery:
@@ -347,7 +352,7 @@ def get_tables(schema, pq):
             tbl = schema.get_col(col_id).table
             if tbl:
                 tables.add(tbl)
-    if pq.has_having == TRUE:
+    if pq.has_having == TRUE:g
         for pred in pq.having.predicates:
             tbl = schema.get_col(pred.col_id).table
             if tbl:

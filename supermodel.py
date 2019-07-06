@@ -473,6 +473,7 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(cur.next_col, tables)
                 op = cur.iter_ops[cur.next_op_idx]
 
+                # TODO: explore both root and terminal states
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
                     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
