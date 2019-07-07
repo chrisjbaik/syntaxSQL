@@ -188,7 +188,8 @@ def test_old_and_new(data, model, db, schemas, n, b, debug=False):
         new = translate(model, db, schemas, dqc, task['db_id'],
             task['question_toks'], n, b, debug=debug, fake_literals=True)
 
-        if new and old and new[0] == old[0]:
+        if new and old and \
+            re.sub('w[0-9]+(t[0-9]+)', '\g<1>', new[0].lower()) == old[0].lower():
             correct += 1
             print('Correct!\n')
         else:
