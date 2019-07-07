@@ -179,7 +179,7 @@ def main():
             listener.close()
 
 def new_to_old(new):
-    re.sub('(w[0-9]+|I|E|U)(t[0-9]+)', '\g<2>', new)
+    return re.sub('(w[0-9]+|I|E|U)(t[0-9]+)', '\g<2>', new)
 
 def test_old_and_new(data, model, db, schemas, n, b, debug=False):
     correct = 0
