@@ -1274,13 +1274,16 @@ class SuperModel(nn.Module):
         ret = []
         limit = ""
         if sql[-1] == True:
-            limit = "limit 1"
+            limit = "LIMIT 1"
         for i in range(0,len(sql),4):
             if sql[i+1] == "none_agg" or not isinstance(sql[i+1],basestring): #DEBUG-ed 20180817
                 ret.append("{} {}".format(self.gen_col(sql[i],table,table_alias_dict), sql[i+2]))
             else:
                 ret.append("{}({}) {}".format(sql[i+1], self.gen_col(sql[i], table, table_alias_dict),sql[i+2]))
-        return "order by {} {}".format(",".join(ret),limit)
+        clause = "ORDER BY {}".format(",".join(ret))
+        if limit:
+            clause += " {}".format(limit)
+        return clause
 
     def gen_having(self,sql,table,table_alias_dict):
         ret = []
