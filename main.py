@@ -188,7 +188,7 @@ def test_old_and_new(data, model, db, schemas, n, b):
         new = translate(model, db, schemas, dqc, task['db_id'],
             task['question_toks'], n, b)
 
-        if new[0] == old[0]:
+        if new and old and new[0] == old[0]:
             correct += 1
             print('Correct!\n')
         else:
