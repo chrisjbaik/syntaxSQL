@@ -1268,7 +1268,7 @@ class SuperModel(nn.Module):
             else:
                 where_item = u"{} {} '{}'".format(col,op,val)
             ret.append(where_item)
-        return u"where {}".format(u" {} ".format(andor).join(ret))
+        return u"WHERE {}".format(u" {} ".format(andor).join(ret))
 
     def gen_orderby(self,sql,table,table_alias_dict):
         ret = []
