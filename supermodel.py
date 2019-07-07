@@ -502,11 +502,18 @@ class SuperModel(nn.Module):
                     substate.next.append('keyword')
                     stack.append(substate)
                 else:
-                    cands = find_literal_candidates(q_seq[0], db, tables,
-                        cur.next_col, lit_cache, b,
-                        like=NEW_WHERE_OPS[op] == 'like')
+                    if fake_literals:
+                        # fake literals is to compare with old impl
+                        if NEW_WHERE_OPS[op] == 'between':
+                            cands = ['terminal', 'terminal']
+                        else:
+                            cands = ['terminal']
+                    else:
+                        cands = find_literal_candidates(q_seq[0], db, tables,
+                            cur.next_col, lit_cache, b,
+                            like=NEW_WHERE_OPS[op] == 'like')
 
-                    if not cands and not fake_literals:
+                    if not cands:
                         col = schema.get_col(cur.next_col)
                         tbl_name = col.table.syn_name if col.table else ''
                         print('Warning: no literals for {}.{} {}'.format(
@@ -517,9 +524,6 @@ class SuperModel(nn.Module):
                         continue
 
                     if NEW_WHERE_OPS[op] == 'between':
-                        # fake literals is to compare with old impl
-                        if fake_literals and len(cands) < 2:
-                            cands = ['terminal', 'terminal']
                         for x, y in pairwise(cands):
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
@@ -535,9 +539,6 @@ class SuperModel(nn.Module):
 
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
-                        # fake literals is to compare with old impl
-                        if fake_literals and len(cands) == 0:
-                            cands = ['terminal']
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
@@ -550,9 +551,6 @@ class SuperModel(nn.Module):
                         new_pq.where.predicates.append(pred)
                         stack.append(new)
                     else:
-                        # fake literals is to compare with old impl
-                        if fake_literals and len(cands) == 0:
-                            cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
@@ -741,11 +739,18 @@ class SuperModel(nn.Module):
                     if cur.next_agg != 'none_agg':
                         literal_agg = AGG_OPS[cur.next_agg]
 
-                    cands = find_literal_candidates(q_seq[0], db, tables,
-                        cur.next_col, lit_cache, b, agg=literal_agg,
-                        like=NEW_WHERE_OPS[op] == 'like')
+                    if fake_literals:
+                        # fake literals is to compare with old impl
+                        if NEW_WHERE_OPS[op] == 'between':
+                            cands = ['terminal', 'terminal']
+                        else:
+                            cands = ['terminal']
+                    else:
+                        cands = find_literal_candidates(q_seq[0], db, tables,
+                            cur.next_col, lit_cache, b, agg=literal_agg,
+                            like=NEW_WHERE_OPS[op] == 'like')
 
-                    if not cands and not fake_literals:
+                    if not cands:
                         col = schema.get_col(cur.next_col)
                         tbl_name = col.table.syn_name if col.table else ''
                         print('Warning: no literals for {}.{} {}'.format(
@@ -756,9 +761,6 @@ class SuperModel(nn.Module):
                         continue
 
                     if NEW_WHERE_OPS[op] == 'between':
-                        # fake literals is to compare with old impl
-                        if fake_literals and len(cands) < 2:
-                            cands = ['terminal', 'terminal']
                         for x, y in pairwise(cands):
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
@@ -779,9 +781,6 @@ class SuperModel(nn.Module):
 
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
-                        # fake literals is to compare with old impl
-                        if fake_literals and len(cands) == 0:
-                            cands = ['terminal']
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
@@ -799,9 +798,6 @@ class SuperModel(nn.Module):
                         new_pq.having.predicates.append(pred)
                         stack.append(new)
                     else:
-                        # fake literals is to compare with old impl
-                        if fake_literals and not len(cands) == 0:
-                            cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
