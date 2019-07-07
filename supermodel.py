@@ -1207,9 +1207,13 @@ class SuperModel(nn.Module):
     def gen_col(self,col,table,table_alias_dict):
         colname = table["column_names_original"][col[2]][1]
         table_idx = table["column_names_original"][col[2]][0]
+
+        if colname != '*':
+            colname = "\"{}\"".format(colname)
+
         if table_idx not in table_alias_dict:
-            return "\"{}\"".format(colname)
-        return "T{}.\"{}\"".format(table_alias_dict[table_idx],colname)
+            return colname
+        return "T{}.{}".format(table_alias_dict[table_idx],colname)
 
     def gen_group_by(self,sql,kw,table,table_alias_dict):
         ret = []
