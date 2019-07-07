@@ -508,9 +508,9 @@ class SuperModel(nn.Module):
 
                     if not cands:
                         col = schema.get_col(cur.next_col)
-                        table = col.table if col.table else ''
+                        tbl_name = col.table.syn_name if col.table else ''
                         print('Warning: no literals for {}.{} {}'.format(
-                            col.table.syn_name,
+                            tbl_name,
                             col.syn_name,
                             NEW_WHERE_OPS[op]
                         ))
@@ -746,9 +746,9 @@ class SuperModel(nn.Module):
 
                     if not cands:
                         col = schema.get_col(cur.next_col)
-                        table = col.table if col.table else ''
+                        tbl_name = col.table.syn_name if col.table else ''
                         print('Warning: no literals for {}.{} {}'.format(
-                            col.table.syn_name,
+                            tbl_name,
                             col.syn_name,
                             NEW_WHERE_OPS[op]
                         ))
