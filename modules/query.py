@@ -149,6 +149,12 @@ def from_clause_str(pq, schema, alias_prefix):
 
     tables = map(lambda x: schema.get_table(x), pq.from_clause.edge_map.keys())
     tbl = min(tables, key=lambda x: x.syn_name)
+
+    # single table case, no aliases
+    if len(tables) == 1:
+        join_exprs.append(u'{}'.format(tbl.syn_name))
+        return u' '.join(join_exprs), aliases
+
     alias = gen_alias(len(aliases) + 1, alias_prefix)
     aliases[tbl.syn_name] = alias
     join_exprs.append(u'{} AS {}'.format(tbl.syn_name, alias))

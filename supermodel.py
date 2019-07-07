@@ -1460,7 +1460,7 @@ class SuperModel(nn.Module):
         table_alias_dict,from_clause = self.gen_from(candidate_tables,table)
         ret = []
         if "select" in sql:
-            select_clause = self.gen_select(sql["select"],"select",table,table_alias_dict)
+            select_clause = self.gen_select(sql["select"],"SELECT",table,table_alias_dict)
             if len(select_clause) > 0:
                 ret.append(select_clause)
             else:
