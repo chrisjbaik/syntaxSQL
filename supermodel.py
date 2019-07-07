@@ -1237,7 +1237,7 @@ class SuperModel(nn.Module):
                 ret.append("{}({})".format(sql[i+1], self.gen_col(sql[i], table, table_alias_dict)))
             # for agg in sql[i+1]:
             #     ret.append("{}({})".format(agg,gen_col(sql[i],table,table_alias_dict)))
-        return "{} {}".format(kw,",".join(ret))
+        return "{} {}".format(kw,", ".join(ret))
 
     def gen_where(self,sql,table,table_alias_dict):
         if len(sql) == 0:
