@@ -1335,9 +1335,9 @@ class SuperModel(nn.Module):
         ret = ""
         if len(candidate_tables) <= 1:
             if len(candidate_tables) == 1:
-                ret = "from {}".format(table["table_names_original"][list(candidate_tables)[0]])
+                ret = "FROM {}".format(table["table_names_original"][list(candidate_tables)[0]])
             else:
-                ret = "from {}".format(table["table_names_original"][0])
+                ret = "FROM {}".format(table["table_names_original"][0])
             #TODO: temporarily settings
             return {},ret
         # print("candidate:{}".format(candidate_tables))
@@ -1393,7 +1393,7 @@ class SuperModel(nn.Module):
         start = candidate_tables[0]
         table_alias_dict[start] = idx
         idx += 1
-        ret = "from {} as T1".format(table["table_names_original"][start])
+        ret = "FROM {} as T1".format(table["table_names_original"][start])
         try:
             for end in candidate_tables[1:]:
                 if end in table_alias_dict:
