@@ -2,6 +2,7 @@ import argparse
 import ConfigParser
 import json
 from multiprocessing.connection import Listener
+import re
 import torch
 import traceback
 
