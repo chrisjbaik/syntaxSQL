@@ -506,6 +506,15 @@ class SuperModel(nn.Module):
                         cur.next_col, lit_cache, b,
                         like=NEW_WHERE_OPS[op] == 'like')
 
+                    if not cands:
+                        col = schema.get_col(cur.next_col)
+                        table = col.table if col.table else ''
+                        print('Warning: no literals for {}.{} {}'.format(
+                            col.table.syn_name,
+                            col.syn_name,
+                            NEW_WHERE_OPS[op]
+                        ))
+
                     if NEW_WHERE_OPS[op] == 'between':
                         # default options to not degrade performance
                         # if len(cands) < 2:
@@ -528,18 +537,17 @@ class SuperModel(nn.Module):
                         # default options to not degrade performance
                         # if len(cands) == 0:
                         #     cands = ['terminal']
-                        if cands:
-                            new = cur.copy()
-                            new_pq = new.find_protoquery(new.query.pq,
-                                cur.next)
+                        new = cur.copy()
+                        new_pq = new.find_protoquery(new.query.pq,
+                            cur.next)
 
-                            pred = Predicate()
-                            pred.col_id = cur.next_col
-                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                            pred.has_subquery = to_proto_tribool(False)
-                            pred.value.extend(cands)
-                            new_pq.where.predicates.append(pred)
-                            stack.append(new)
+                        pred = Predicate()
+                        pred.col_id = cur.next_col
+                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        pred.has_subquery = to_proto_tribool(False)
+                        pred.value.extend(cands)
+                        new_pq.where.predicates.append(pred)
+                        stack.append(new)
                     else:
                         # default options to not degrade performance
                         # if len(cands) == 0:
@@ -736,6 +744,15 @@ class SuperModel(nn.Module):
                         cur.next_col, lit_cache, b, agg=literal_agg,
                         like=NEW_WHERE_OPS[op] == 'like')
 
+                    if not cands:
+                        col = schema.get_col(cur.next_col)
+                        table = col.table if col.table else ''
+                        print('Warning: no literals for {}.{} {}'.format(
+                            col.table.syn_name,
+                            col.syn_name,
+                            NEW_WHERE_OPS[op]
+                        ))
+
                     if NEW_WHERE_OPS[op] == 'between':
                         # default options to not degrade performance
                         # if len(cands) < 2:
@@ -763,23 +780,22 @@ class SuperModel(nn.Module):
                         # default options to not degrade performance
                         # if len(cands) == 0:
                         #     cands = ['terminal']
-                        if cands:
-                            new = cur.copy()
-                            new_pq = new.find_protoquery(new.query.pq,
-                                cur.next)
+                        new = cur.copy()
+                        new_pq = new.find_protoquery(new.query.pq,
+                            cur.next)
 
-                            pred = Predicate()
-                            pred.col_id = cur.next_col
-                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                            pred.has_subquery = to_proto_tribool(False)
-                            pred.value.extend(cands)
-                            if cur.next_agg == 'none_agg':
-                                pred.has_agg = to_proto_tribool(False)
-                            else:
-                                pred.has_agg = to_proto_tribool(True)
-                                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                            new_pq.having.predicates.append(pred)
-                            stack.append(new)
+                        pred = Predicate()
+                        pred.col_id = cur.next_col
+                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        pred.has_subquery = to_proto_tribool(False)
+                        pred.value.extend(cands)
+                        if cur.next_agg == 'none_agg':
+                            pred.has_agg = to_proto_tribool(False)
+                        else:
+                            pred.has_agg = to_proto_tribool(True)
+                            pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        new_pq.having.predicates.append(pred)
+                        stack.append(new)
                     else:
                         # default options to not degrade performance
                         # if len(cands) == 0:
