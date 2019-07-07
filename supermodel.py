@@ -459,7 +459,7 @@ class SuperModel(nn.Module):
                 stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
             elif cur.next[-1] == 'where_op_num':
                 stack.extend(reversed(cur.next_op_states('where_op',
-                    state.num_ops, op_cands, col_name, b)))
+                    cur.num_ops, op_cands, col_name, b)))
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
@@ -703,7 +703,7 @@ class SuperModel(nn.Module):
                 stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
             elif cur.next[-1] == 'having_op_num':
                 stack.extend(reversed(cur.next_op_states('having_op',
-                    state.num_ops, op_cands, col_name, b)))
+                    cur.num_ops, op_cands, col_name, b)))
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'having_agg'
