@@ -32,13 +32,19 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
     like=False):
     tbl_name, col_name, col_type = get_col_info(schema, col_id)
     if agg == 'count' or col_type == 'number':
-        cands = []
-        for tok in nlq_toks:
-            val = to_number(tok)
-            if val is not None:
-                cands.append(val)
-        cands.sort()        # ascending for between queries
-        return list(map(lambda x: str(x), cands))
+        cached = cache.get('_num')
+        if cached:
+            return cached
+        else:
+            cands = []
+            for tok in nlq_toks:
+                val = to_number(tok)
+                if val is not None:
+                    cands.append(val)
+            cands.sort()        # ascending for between queries
+            lits = list(map(lambda x: str(x), cands))
+            cache.set('_num', lits)
+            return lits
     else:
         cached = cache.get(col_id)
         if cached:
