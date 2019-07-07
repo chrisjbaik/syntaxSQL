@@ -299,11 +299,13 @@ class SuperModel(nn.Module):
                 num_kw_cands = list(np.argsort(-kw_num_score[0]))
                 cur.kw_cands = list(np.argsort(-kw_score[0]))
 
+                cur.next[-1] = 'keyword_num'
+
+                stack.extend(reversed(cur.next_num_kw_states(num_kw_cands, b)))
+            elif cur.next[-1] == 'keyword_num':
                 cur.next[-1] = 'keyword_each'
                 cur.used_kws = set()
-                for state in reversed(cur.next_num_kw_states(num_kw_cands, b)):
-                    for kw_state in reversed(state.next_kw_states(b)):
-                        stack.append(kw_state)
+                stack.extend(reversed(cur.next_kw_states(b)))
             elif cur.next[-1] == 'keyword_each':
                 if cur.next_kw is None:
                     cur.next[-1] = 'select'
@@ -329,8 +331,7 @@ class SuperModel(nn.Module):
                         cur_kw))
                 cur.used_kws.add(cur.next_kw)
 
-                for state in reversed(cur.next_kw_states(b)):
-                    stack.append(state)
+                stack.extend(reversed(cur.next_kw_states(b)))
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
@@ -340,14 +341,12 @@ class SuperModel(nn.Module):
                     self.get_col_cands(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
+                cur.next[-1] = 'select_col_num'
+                stack.extend(reversed(cur.next_num_col_states(num_col_cands,b)))
+            elif cur.next[-1] == 'select_col_num':
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
-
-                for state in reversed(cur.next_num_col_states(num_col_cands,
-                    b)):
-                    for col_state in reversed(state.next_col_states(b,
-                        select=True)):
-                        stack.append(col_state)
+                stack.extend(reversed(cur.next_col_states(b, select=True)))
             elif cur.next[-1] == 'select_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
@@ -379,22 +378,18 @@ class SuperModel(nn.Module):
                         state_pq.select.append(agg_col)
                         # cur_pq.select.append('none_agg')
 
-                        for col_state in reversed(state.next_col_states(b,
-                            select=True)):
-                            stack.append(col_state)
+                        stack.extend(reversed(state.next_col_states(b,
+                            select=True)))
                     else:
                         state.next[-1] = 'select_agg'
                         state.agg_cands = agg_cands
                         state.used_aggs = set()
-
-                        for agg_state in reversed(state.next_agg_states(b)):
-                            stack.append(agg_state)
+                        stack.extend(reversed(state.next_agg_states(b)))
             elif cur.next[-1] == 'select_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'select_col'
                     cur.clear_agg_info()
-                    for state in reversed(cur.next_col_states(b, select=True)):
-                        stack.append(state)
+                    stack.extend(reversed(cur.next_col_states(b, select=True)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -413,8 +408,7 @@ class SuperModel(nn.Module):
 
                 cur.used_aggs.add(cur.next_agg)
 
-                for state in reversed(cur.next_agg_states(b)):
-                    stack.append(state)
+                stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'where':
                 if cur_pq.has_where != to_proto_tribool(True):
                     cur.next[-1] = 'group_by'
@@ -436,13 +430,13 @@ class SuperModel(nn.Module):
                 cur_pq.where.logical_op = to_proto_logical_op(andor_cond)
                 # cur_pq.where.append(andor_cond)
 
+                cur.next[-1] = 'where_col_num'
+                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
+                    b)))
+            elif cur.next[-1] == 'where_col_num':
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
-
-                for state in reversed(cur.next_num_col_states(num_col_cands,
-                    b)):
-                    for col_state in reversed(state.next_col_states(b)):
-                        stack.append(col_state)
+                stack.extend(reversed(state.next_col_states(b)))
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
@@ -461,16 +455,16 @@ class SuperModel(nn.Module):
                     self.get_op_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                for state in reversed(cur.next_num_op_states(op_num_cands, b)):
-                    for op_state in reversed(state.next_op_states('where_op',
-                        state.num_ops, op_cands, col_name, b)):
-                            stack.append(op_state)
+                cur.next[-1] = 'where_op_num'
+                stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
+            elif cur.next[-1] == 'where_op_num':
+                stack.extend(reversed(state.next_op_states('where_op',
+                    state.num_ops, op_cands, col_name, b)))
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
                     cur.clear_op_info()
-                    for state in reversed(cur.next_col_states(b)):
-                        stack.append(state)
+                    stack.extend(reversed(cur.next_col_states(b)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -580,13 +574,14 @@ class SuperModel(nn.Module):
                     self.get_col_cands(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
+                cur.next[-1] = 'group_by_col_num'
+
+                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
+                    b)))
+            elif cur.next[-1] == 'group_by_col_num':
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
-
-                for state in reversed(cur.next_num_col_states(num_col_cands,
-                    b)):
-                    for col_state in reversed(state.next_col_states(b)):
-                        stack.append(col_state)
+                stack.extend(reversed(state.next_col_states(b)))
             elif cur.next[-1] == 'group_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'having'
@@ -609,8 +604,7 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                for state in reversed(cur.next_col_states(b)):
-                    stack.append(state)
+                stack.extend(reversed(cur.next_col_states(b)))
             elif cur.next[-1] == 'having':
                 if cur_pq.has_having != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
@@ -625,13 +619,14 @@ class SuperModel(nn.Module):
                     self.get_col_cands(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
+                cur.next[-1] = 'having_col_num'
+
+                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
+                    b)))
+            elif cur.next[-1] == 'having_col_num':
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
-
-                for state in reversed(cur.next_num_col_states(num_col_cands,
-                    b)):
-                    for col_state in reversed(state.next_col_states(b)):
-                        stack.append(col_state)
+                stack.extend(reversed(state.next_col_states(b)))
             elif cur.next[-1] == 'having_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'order_by'
@@ -661,14 +656,12 @@ class SuperModel(nn.Module):
                     else:
                         state.agg_cands = agg_cands
 
-                    for agg_state in reversed(state.next_agg_states(b)):
-                        stack.append(agg_state)
+                    stack.extend(reversed(state.next_agg_states(b)))
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
                     cur.clear_agg_info()
-                    for state in reversed(cur.next_col_states(b)):
-                        stack.append(state)
+                    stack.extend(reversed(cur.next_col_states(b)))
                     continue
 
                 if cur.next_agg != 'none_agg':
@@ -683,16 +676,16 @@ class SuperModel(nn.Module):
                     self.get_op_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                for state in reversed(cur.next_num_op_states(op_num_cands, b)):
-                    for op_state in reversed(state.next_op_states('having_op',
-                        state.num_ops, op_cands, col_name, b)):
-                        stack.append(op_state)
+                cur.next[-1] == 'having_op_num'
+                stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
+            elif cur.next[-1] == 'having_op_num':
+                stack.extend(reversed(state.next_op_states('having_op',
+                    state.num_ops, op_cands, col_name, b)))
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'having_agg'
                     cur.clear_op_info()
-                    for state in reversed(cur.next_agg_states(b)):
-                        stack.append(state)
+                    stack.extend(reversed(cur.next_agg_states(b)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -832,13 +825,13 @@ class SuperModel(nn.Module):
                     self.get_col_cands(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
+                cur.next[-1] = 'order_by_col_num'
+                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
+                    b)))
+            elif cur.next[-1] == 'order_by_col_num':
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()
-
-                for state in reversed(cur.next_num_col_states(num_col_cands,
-                    b)):
-                    for col_state in reversed(state.next_col_states(b)):
-                        stack.append(col_state)
+                stack.extend(reversed(state.next_col_states(b)))
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'finish'
@@ -868,14 +861,12 @@ class SuperModel(nn.Module):
                     else:
                         state.agg_cands = agg_cands
 
-                    for agg_state in reversed(state.next_agg_states(b)):
-                        stack.append(agg_state)
+                    stack.extend(reversed(state.next_agg_states(b)))
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'
                     cur.clear_agg_info()
-                    for state in reversed(cur.next_col_states(b)):
-                        stack.append(state)
+                    stack.extend(reversed(cur.next_col_states(b)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -916,8 +907,7 @@ class SuperModel(nn.Module):
                 if cur_pq.has_limit == to_proto_tribool(None):
                     cur_pq.has_limit = to_proto_tribool(has_limit)
 
-                for state in reversed(cur.next_agg_states(b)):
-                    stack.append(state)
+                stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'finish':
                 # redirect to parent if subquery
                 if cur.parent:
