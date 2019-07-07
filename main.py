@@ -80,7 +80,7 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
 
     return results
 
-def get_dataset_paths(dataset, mode):
+def get_dataset_paths(config, dataset, mode):
     schemas_path = None
     db_path = None
     if dataset == 'spider':
@@ -126,7 +126,7 @@ def main():
 
     if args.test_path:
         schemas_path, db_path = \
-            get_dataset_paths('spider', 'dev')
+            get_dataset_paths(config, 'spider', 'dev')
         schemas = load_schemas(schemas_path)
         db = Database(db_path, 'spider')
         data = json.load(open(args.test_path))
@@ -151,7 +151,7 @@ def main():
                 task.ParseFromString(msg)
 
                 schemas_path, db_path = \
-                    get_dataset_paths(task.dataset, task.mode)
+                    get_dataset_paths(config, task.dataset, task.mode)
 
                 schemas = load_schemas(schemas_path)
                 db = Database(db_path, task.dataset)
