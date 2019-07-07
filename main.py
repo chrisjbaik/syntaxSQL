@@ -130,7 +130,7 @@ def main():
         schemas = load_schemas(schemas_path)
         db = Database(db_path, 'spider')
         data = json.load(open(args.test_path))
-        test_old_and_new(data, model, db, schemas, 10, 1)
+        test_old_and_new(data, model, db, schemas, 10, 1, debug=args.debug)
         exit()
 
     while True:
@@ -177,7 +177,7 @@ def main():
         finally:
             listener.close()
 
-def test_old_and_new(data, model, db, schemas, n, b):
+def test_old_and_new(data, model, db, schemas, n, b, debug=False):
     correct = 0
     for i, task in enumerate(data):
         print('{}/{} || {}, {}'.format(i+1, len(data), task['db_id'],
@@ -186,7 +186,7 @@ def test_old_and_new(data, model, db, schemas, n, b):
         old = translate(model, db, schemas, dqc, task['db_id'],
             task['question_toks'], n, b, _old=True)
         new = translate(model, db, schemas, dqc, task['db_id'],
-            task['question_toks'], n, b)
+            task['question_toks'], n, b, debug=debug)
 
         if new and old and new[0] == old[0]:
             correct += 1
