@@ -1415,7 +1415,8 @@ class SuperModel(nn.Module):
             #         idx += 1
         # visited = set()
         candidate_tables = list(candidate_tables)
-        start = min(candidate_tables, key=lambda x: table['table_names_original'][x])
+        candidate_tables.sort(key=lambda x: table["table_names_original"][x])
+        start = candidate_tables[0]
         table_alias_dict[start] = idx
         idx += 1
         ret = "FROM {} AS t1".format(table["table_names_original"][start])
