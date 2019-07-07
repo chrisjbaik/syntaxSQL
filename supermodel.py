@@ -436,7 +436,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'where_col_num':
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
-                stack.extend(reversed(state.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b)))
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
@@ -458,7 +458,7 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'where_op_num'
                 stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
             elif cur.next[-1] == 'where_op_num':
-                stack.extend(reversed(state.next_op_states('where_op',
+                stack.extend(reversed(cur.next_op_states('where_op',
                     state.num_ops, op_cands, col_name, b)))
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
@@ -581,7 +581,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'group_by_col_num':
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
-                stack.extend(reversed(state.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b)))
             elif cur.next[-1] == 'group_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'having'
@@ -626,7 +626,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'having_col_num':
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
-                stack.extend(reversed(state.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b)))
             elif cur.next[-1] == 'having_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'order_by'
@@ -679,7 +679,7 @@ class SuperModel(nn.Module):
                 cur.next[-1] == 'having_op_num'
                 stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
             elif cur.next[-1] == 'having_op_num':
-                stack.extend(reversed(state.next_op_states('having_op',
+                stack.extend(reversed(cur.next_op_states('having_op',
                     state.num_ops, op_cands, col_name, b)))
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
@@ -831,7 +831,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'order_by_col_num':
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()
-                stack.extend(reversed(state.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b)))
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'finish'
