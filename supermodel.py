@@ -242,7 +242,7 @@ class SuperModel(nn.Module):
             # update join path if needed
             states, updated = cur.update_join_paths()
 
-            if states is None:      # if error
+            if states is None:      # if error)
                 continue
 
             if updated:             # if join paths updated
@@ -258,6 +258,7 @@ class SuperModel(nn.Module):
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             if debug:
+                print('Updated join paths: {}'.format(updated))
                 self.print_stack(stack)
                 print('* - {}'.format(cur.next))
                 # print('\nDICT:\n{}'.format(cur_pq.as_dict()))

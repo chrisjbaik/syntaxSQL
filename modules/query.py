@@ -385,7 +385,7 @@ def join_path_needs_update(schema, pq):
     elif tables_in_cur_jp >= tables:
         return False
     else:
-        return None
+        raise Exception('Current join path cannot be extended.')
 
 def with_updated_join_paths(schema, pq):
     jps = schema.get_join_paths(get_tables(schema, pq))

@@ -103,10 +103,13 @@ class SearchState(object):
 
         pq = self.find_protoquery(self.query.pq, self.next)
 
-        needs_update = join_path_needs_update(self.query.schema, pq)
-        if needs_update is None:
+        try:
+            needs_update = join_path_needs_update(self.query.schema, pq)
+        except Exception as e:
+            print(traceback.format_exc())
             return None, False
-        elif needs_update:
+
+        if needs_update:
             try:
                 new_pqs = with_updated_join_paths(self.query.schema, pq)
             except Exception as e:
