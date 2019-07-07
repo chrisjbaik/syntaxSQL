@@ -56,7 +56,7 @@ def load_model(models_path, glove_path, toy=False):
     return model
 
 def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
-    _old=False, debug=False):
+    _old=False, debug=False, fake_literals=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -73,7 +73,7 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
         cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, client, n, b,
-            timeout=timeout, debug=debug)
+            timeout=timeout, debug=debug, fake_literals=fake_literals)
 
         for cq in cqs:
             results.append(generate_sql_str(cq.pq, cq.schema))
@@ -186,7 +186,7 @@ def test_old_and_new(data, model, db, schemas, n, b, debug=False):
         old = translate(model, db, schemas, dqc, task['db_id'],
             task['question_toks'], n, b, _old=True)
         new = translate(model, db, schemas, dqc, task['db_id'],
-            task['question_toks'], n, b, debug=debug)
+            task['question_toks'], n, b, debug=debug, fake_literals=True)
 
         if new and old and new[0] == old[0]:
             correct += 1

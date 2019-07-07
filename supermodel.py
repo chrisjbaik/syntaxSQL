@@ -197,7 +197,7 @@ class SuperModel(nn.Module):
             print('  - {}'.format(item.next))
 
     def dfs_beam_search(self, db, q_seq, history, tables, client, n, b,
-        timeout=None, debug=False):
+        timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
 
@@ -506,7 +506,7 @@ class SuperModel(nn.Module):
                         cur.next_col, lit_cache, b,
                         like=NEW_WHERE_OPS[op] == 'like')
 
-                    if not cands:
+                    if not cands and not fake_literals:
                         col = schema.get_col(cur.next_col)
                         tbl_name = col.table.syn_name if col.table else ''
                         print('Warning: no literals for {}.{} {}'.format(
@@ -514,11 +514,12 @@ class SuperModel(nn.Module):
                             col.syn_name,
                             NEW_WHERE_OPS[op]
                         ))
+                        continue
 
                     if NEW_WHERE_OPS[op] == 'between':
-                        # default options to not degrade performance
-                        # if len(cands) < 2:
-                        #     cands = ['terminal', 'terminal']
+                        # fake literals is to compare with old impl
+                        if fake_literals and len(cands) < 2:
+                            cands = ['terminal', 'terminal']
                         for x, y in pairwise(cands):
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
@@ -534,9 +535,9 @@ class SuperModel(nn.Module):
 
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
-                        # default options to not degrade performance
-                        # if len(cands) == 0:
-                        #     cands = ['terminal']
+                        # fake literals is to compare with old impl
+                        if fake_literals and len(cands) == 0:
+                            cands = ['terminal']
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
@@ -549,9 +550,9 @@ class SuperModel(nn.Module):
                         new_pq.where.predicates.append(pred)
                         stack.append(new)
                     else:
-                        # default options to not degrade performance
-                        # if len(cands) == 0:
-                        #     cands = ['terminal']
+                        # fake literals is to compare with old impl
+                        if fake_literals and len(cands) == 0:
+                            cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
@@ -744,7 +745,7 @@ class SuperModel(nn.Module):
                         cur.next_col, lit_cache, b, agg=literal_agg,
                         like=NEW_WHERE_OPS[op] == 'like')
 
-                    if not cands:
+                    if not cands and not fake_literals:
                         col = schema.get_col(cur.next_col)
                         tbl_name = col.table.syn_name if col.table else ''
                         print('Warning: no literals for {}.{} {}'.format(
@@ -752,11 +753,12 @@ class SuperModel(nn.Module):
                             col.syn_name,
                             NEW_WHERE_OPS[op]
                         ))
+                        continue
 
                     if NEW_WHERE_OPS[op] == 'between':
-                        # default options to not degrade performance
-                        # if len(cands) < 2:
-                        #     cands = ['terminal', 'terminal']
+                        # fake literals is to compare with old impl
+                        if fake_literals and len(cands) < 2:
+                            cands = ['terminal', 'terminal']
                         for x, y in pairwise(cands):
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
@@ -777,9 +779,9 @@ class SuperModel(nn.Module):
 
                             stack.append(new)
                     elif NEW_WHERE_OPS[op] in ('in', 'not in'):
-                        # default options to not degrade performance
-                        # if len(cands) == 0:
-                        #     cands = ['terminal']
+                        # fake literals is to compare with old impl
+                        if fake_literals and len(cands) == 0:
+                            cands = ['terminal']
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
@@ -797,9 +799,9 @@ class SuperModel(nn.Module):
                         new_pq.having.predicates.append(pred)
                         stack.append(new)
                     else:
-                        # default options to not degrade performance
-                        # if len(cands) == 0:
-                        #     cands = ['terminal']
+                        # fake literals is to compare with old impl
+                        if fake_literals and not len(cands) == 0:
+                            cands = ['terminal']
                         for literal in cands:
                             new = cur.copy()
                             new_pq = new.find_protoquery(new.query.pq,
