@@ -470,71 +470,80 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(cur.next_col, tables)
                 op = cur.iter_ops[cur.next_op_idx]
 
-                # TODO: explore both root and terminal states
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
                     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
-                cur.next_op_idx += 1
+                states = []
+
+                new = cur.copy()
+                new.next[-1] = 'where_op_terminal'
+                states.append(new)
+
                 # only allow subquery of depth 1
-                if label == 'root' and cur.parent is None:
-                    cur.history[0].append('root')
-                    cur.history[0].append('none')
-                    subquery_idx = len(cur_pq.where.predicates)
+                if cur.parent is None:
+                    new = cur.copy()
+                    new.next[-1] = 'where_op_subquery'
+                    states.append(new)
 
-                    pred = Predicate()
-                    pred.col_id = cur.next_col
-                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                    pred.has_subquery = to_proto_tribool(True)
-                    pred.subquery.set_op = to_proto_set_op('none')
-                    cur_pq.where.predicates.append(pred)
-                    # cur_pq.where.append(subquery)
-
-                    substate = cur.copy()
-                    substate.set_parent(cur)
-                    substate.next.append(subquery_idx)
-                    substate.next.append('keyword')
-                    stack.append(substate)
+                if label == 'root':
+                    # if root comes first, return states as is
+                    stack.extend(states)
                 else:
-                    if fake_literals:
-                        # fake literals is to compare with old impl
-                        if NEW_WHERE_OPS[op] == 'between':
-                            cands = ['terminal', 'terminal']
-                        else:
-                            cands = ['terminal']
-                    else:
-                        cands = find_literal_candidates(q_seq[0], db, tables,
-                            cur.next_col, lit_cache, b,
-                            like=NEW_WHERE_OPS[op] == 'like')
+                    stack.extend(reversed(states))
+            elif cur.next[-1] == 'where_op_subquery':
+                op = cur.iter_ops[cur.next_op_idx]
 
-                    if not cands:
-                        col = schema.get_col(cur.next_col)
-                        tbl_name = col.table.syn_name if col.table else ''
-                        print('Warning: no literals for {}.{} {}'.format(
-                            tbl_name,
-                            col.syn_name,
-                            NEW_WHERE_OPS[op]
-                        ))
-                        continue
+                cur.history[0].append('root')
+                cur.history[0].append('none')
+                subquery_idx = len(cur_pq.where.predicates)
 
+                pred = Predicate()
+                pred.col_id = cur.next_col
+                pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                pred.has_subquery = to_proto_tribool(True)
+                pred.subquery.set_op = to_proto_set_op('none')
+                cur_pq.where.predicates.append(pred)
+                # cur_pq.where.append(subquery)
+
+                cur.next_op_idx += 1
+                cur.next[-1] = 'where_op'
+
+                substate = cur.copy()
+                substate.set_parent(cur)
+                substate.next.append(subquery_idx)
+                substate.next.append('keyword')
+                stack.append(substate)
+            elif cur.next[-1] == 'where_op_terminal':
+                op = cur.iter_ops[cur.next_op_idx]
+                cur.next_op_idx += 1
+                cur.next[-1] = 'where_op'
+
+                if fake_literals:
+                    # fake literals is to compare with old impl
                     if NEW_WHERE_OPS[op] == 'between':
-                        for x, y in pairwise(cands):
-                            new = cur.copy()
-                            new_pq = new.find_protoquery(new.query.pq,
-                                cur.next)
+                        cands = ['terminal', 'terminal']
+                    else:
+                        cands = ['terminal']
+                else:
+                    cands = find_literal_candidates(q_seq[0], db, tables,
+                        cur.next_col, lit_cache, b,
+                        like=NEW_WHERE_OPS[op] == 'like')
 
-                            pred = Predicate()
-                            pred.col_id = cur.next_col
-                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                            pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(x)
-                            pred.value.append(y)
-                            new_pq.where.predicates.append(pred)
+                if not cands:
+                    col = schema.get_col(cur.next_col)
+                    tbl_name = col.table.syn_name if col.table else ''
+                    print('Warning: no literals for {}.{} {}'.format(
+                        tbl_name,
+                        col.syn_name,
+                        NEW_WHERE_OPS[op]
+                    ))
+                    continue
 
-                            stack.append(new)
-                    elif NEW_WHERE_OPS[op] in ('in', 'not in'):
+                if NEW_WHERE_OPS[op] == 'between':
+                    for x, y in pairwise(cands):
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
@@ -543,23 +552,37 @@ class SuperModel(nn.Module):
                         pred.col_id = cur.next_col
                         pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         pred.has_subquery = to_proto_tribool(False)
-                        pred.value.extend(cands)
+                        pred.value.append(x)
+                        pred.value.append(y)
                         new_pq.where.predicates.append(pred)
+
                         stack.append(new)
-                    else:
-                        for literal in cands:
-                            new = cur.copy()
-                            new_pq = new.find_protoquery(new.query.pq,
-                                cur.next)
+                elif NEW_WHERE_OPS[op] in ('in', 'not in'):
+                    new = cur.copy()
+                    new_pq = new.find_protoquery(new.query.pq,
+                        cur.next)
 
-                            pred = Predicate()
-                            pred.col_id = cur.next_col
-                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                            pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(literal)
-                            new_pq.where.predicates.append(pred)
+                    pred = Predicate()
+                    pred.col_id = cur.next_col
+                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                    pred.has_subquery = to_proto_tribool(False)
+                    pred.value.extend(cands)
+                    new_pq.where.predicates.append(pred)
+                    stack.append(new)
+                else:
+                    for literal in cands:
+                        new = cur.copy()
+                        new_pq = new.find_protoquery(new.query.pq,
+                            cur.next)
 
-                            stack.append(new)
+                        pred = Predicate()
+                        pred.col_id = cur.next_col
+                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        pred.has_subquery = to_proto_tribool(False)
+                        pred.value.append(literal)
+                        new_pq.where.predicates.append(pred)
+
+                        stack.append(new)
             elif cur.next[-1] == 'group_by':
                 if cur_pq.has_group_by != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
@@ -697,85 +720,83 @@ class SuperModel(nn.Module):
                 label = np.argmax(score[0].data.cpu().numpy())
                 label = ROOT_TERM_OPS[label]
 
-                # cur_pq.having.append(col_name)
-                # if cur.next_agg == 'none_agg':
-                #     cur_pq.having.append('none_agg')
-                # else:
-                #     cur_pq.having.append(AGG_OPS[cur.next_agg])
-                # cur_pq.having.append(NEW_WHERE_OPS[op])
+                states = []
+
+                new = cur.copy()
+                new.next[-1] = 'having_op_terminal'
+                states.append(new)
+
+                # only allow subquery of depth 1
+                if cur.parent is None:
+                    new = cur.copy()
+                    new.next[-1] = 'having_op_subquery'
+                    states.append(new)
+
+                if label == 'root':
+                    # if root comes first, return states as is
+                    stack.extend(states)
+                else:
+                    stack.extend(reversed(states))
+            elif cur.next[-1] == 'having_op_subquery':
+                op = cur.iter_ops[cur.next_op_idx]
+
+                cur.history[0].append('root')
+                cur.history[0].append('none')
+                subquery_idx = len(cur_pq.having.predicates)
+                # cur_pq.having.append(subquery)
+
+                pred = Predicate()
+                pred.col_id = cur.next_col
+                pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                pred.has_subquery = to_proto_tribool(True)
+                pred.subquery.set_op = to_proto_set_op('none')
+                if cur.next_agg == 'none_agg':
+                    pred.has_agg = to_proto_tribool(False)
+                else:
+                    pred.has_agg = to_proto_tribool(True)
+                    pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                cur_pq.having.predicates.append(pred)
 
                 cur.next_op_idx += 1
-                # only allow subquery of depth 1
-                if label == 'root' and cur.parent is None:
-                    cur.history[0].append('root')
-                    cur.history[0].append('none')
-                    subquery_idx = len(cur_pq.having.predicates)
-                    # cur_pq.having.append(subquery)
+                cur.next[-1] = 'having_op'
 
-                    pred = Predicate()
-                    pred.col_id = cur.next_col
-                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                    pred.has_subquery = to_proto_tribool(True)
-                    pred.subquery.set_op = to_proto_set_op('none')
-                    if cur.next_agg == 'none_agg':
-                        pred.has_agg = to_proto_tribool(False)
-                    else:
-                        pred.has_agg = to_proto_tribool(True)
-                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                    cur_pq.having.predicates.append(pred)
+                substate = cur.copy()
+                substate.set_parent(cur)
+                substate.next.append(subquery_idx)
+                substate.next.append('keyword')
+                stack.append(substate)
+            elif cur.next[-1] == 'having_op_terminal':
+                op = cur.iter_ops[cur.next_op_idx]
+                cur.next_op_idx += 1
+                cur.next[-1] = 'having_op'
 
-                    substate = cur.copy()
-                    substate.set_parent(cur)
-                    substate.next.append(subquery_idx)
-                    substate.next.append('keyword')
-                    stack.append(substate)
-                else:
-                    literal_agg = None
-                    if cur.next_agg != 'none_agg':
-                        literal_agg = AGG_OPS[cur.next_agg]
+                literal_agg = None
+                if cur.next_agg != 'none_agg':
+                    literal_agg = AGG_OPS[cur.next_agg]
 
-                    if fake_literals:
-                        # fake literals is to compare with old impl
-                        if NEW_WHERE_OPS[op] == 'between':
-                            cands = ['terminal', 'terminal']
-                        else:
-                            cands = ['terminal']
-                    else:
-                        cands = find_literal_candidates(q_seq[0], db, tables,
-                            cur.next_col, lit_cache, b, agg=literal_agg,
-                            like=NEW_WHERE_OPS[op] == 'like')
-
-                    if not cands:
-                        col = schema.get_col(cur.next_col)
-                        tbl_name = col.table.syn_name if col.table else ''
-                        print('Warning: no literals for {}.{} {}'.format(
-                            tbl_name,
-                            col.syn_name,
-                            NEW_WHERE_OPS[op]
-                        ))
-                        continue
-
+                if fake_literals:
+                    # fake literals is to compare with old impl
                     if NEW_WHERE_OPS[op] == 'between':
-                        for x, y in pairwise(cands):
-                            new = cur.copy()
-                            new_pq = new.find_protoquery(new.query.pq,
-                                cur.next)
+                        cands = ['terminal', 'terminal']
+                    else:
+                        cands = ['terminal']
+                else:
+                    cands = find_literal_candidates(q_seq[0], db, tables,
+                        cur.next_col, lit_cache, b, agg=literal_agg,
+                        like=NEW_WHERE_OPS[op] == 'like')
 
-                            pred = Predicate()
-                            pred.col_id = cur.next_col
-                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                            pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(x)
-                            pred.value.append(y)
-                            if cur.next_agg == 'none_agg':
-                                pred.has_agg = to_proto_tribool(False)
-                            else:
-                                pred.has_agg = to_proto_tribool(True)
-                                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                            new_pq.having.predicates.append(pred)
+                if not cands:
+                    col = schema.get_col(cur.next_col)
+                    tbl_name = col.table.syn_name if col.table else ''
+                    print('Warning: no literals for {}.{} {}'.format(
+                        tbl_name,
+                        col.syn_name,
+                        NEW_WHERE_OPS[op]
+                    ))
+                    continue
 
-                            stack.append(new)
-                    elif NEW_WHERE_OPS[op] in ('in', 'not in'):
+                if NEW_WHERE_OPS[op] == 'between':
+                    for x, y in pairwise(cands):
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
@@ -784,33 +805,52 @@ class SuperModel(nn.Module):
                         pred.col_id = cur.next_col
                         pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         pred.has_subquery = to_proto_tribool(False)
-                        pred.value.extend(cands)
+                        pred.value.append(x)
+                        pred.value.append(y)
                         if cur.next_agg == 'none_agg':
                             pred.has_agg = to_proto_tribool(False)
                         else:
                             pred.has_agg = to_proto_tribool(True)
                             pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
                         new_pq.having.predicates.append(pred)
+
                         stack.append(new)
+                elif NEW_WHERE_OPS[op] in ('in', 'not in'):
+                    new = cur.copy()
+                    new_pq = new.find_protoquery(new.query.pq,
+                        cur.next)
+
+                    pred = Predicate()
+                    pred.col_id = cur.next_col
+                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                    pred.has_subquery = to_proto_tribool(False)
+                    pred.value.extend(cands)
+                    if cur.next_agg == 'none_agg':
+                        pred.has_agg = to_proto_tribool(False)
                     else:
-                        for literal in cands:
-                            new = cur.copy()
-                            new_pq = new.find_protoquery(new.query.pq,
-                                cur.next)
+                        pred.has_agg = to_proto_tribool(True)
+                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                    new_pq.having.predicates.append(pred)
+                    stack.append(new)
+                else:
+                    for literal in cands:
+                        new = cur.copy()
+                        new_pq = new.find_protoquery(new.query.pq,
+                            cur.next)
 
-                            pred = Predicate()
-                            pred.col_id = cur.next_col
-                            pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                            pred.has_subquery = to_proto_tribool(False)
-                            pred.value.append(literal)
-                            if cur.next_agg == 'none_agg':
-                                pred.has_agg = to_proto_tribool(False)
-                            else:
-                                pred.has_agg = to_proto_tribool(True)
-                                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                            new_pq.having.predicates.append(pred)
+                        pred = Predicate()
+                        pred.col_id = cur.next_col
+                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        pred.has_subquery = to_proto_tribool(False)
+                        pred.value.append(literal)
+                        if cur.next_agg == 'none_agg':
+                            pred.has_agg = to_proto_tribool(False)
+                        else:
+                            pred.has_agg = to_proto_tribool(True)
+                            pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        new_pq.having.predicates.append(pred)
 
-                            stack.append(new)
+                        stack.append(new)
             elif cur.next[-1] == 'order_by':
                 if cur_pq.has_order_by != to_proto_tribool(True):
                     cur.next[-1] = 'finish'
