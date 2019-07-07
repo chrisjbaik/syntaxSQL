@@ -345,7 +345,8 @@ class SuperModel(nn.Module):
 
                 for state in reversed(cur.next_num_col_states(num_col_cands,
                     b)):
-                    for col_state in reversed(state.next_col_states(b)):
+                    for col_state in reversed(state.next_col_states(b,
+                        select=True)):
                         stack.append(col_state)
             elif cur.next[-1] == 'select_col':
                 if cur.next_col is None:
@@ -378,7 +379,8 @@ class SuperModel(nn.Module):
                         state_pq.select.append(agg_col)
                         # cur_pq.select.append('none_agg')
 
-                        for col_state in reversed(state.next_col_states(b)):
+                        for col_state in reversed(state.next_col_states(b,
+                            select=True)):
                             stack.append(col_state)
                     else:
                         state.next[-1] = 'select_agg'
@@ -391,7 +393,7 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'select_col'
                     cur.clear_agg_info()
-                    for state in reversed(cur.next_col_states(b)):
+                    for state in reversed(cur.next_col_states(b, select=True)):
                         stack.append(state)
                     continue
 

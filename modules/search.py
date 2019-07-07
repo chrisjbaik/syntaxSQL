@@ -235,8 +235,15 @@ class SearchState(object):
 
         return states
 
-    def next_col_states(self, b):
+    def next_col_states(self, b, select=False):
         states = []
+
+        # because we enforce ordering of projection columns,
+        # when we activate Duoquest it's necessary to at least allow enough
+        # possible states to do all permutations (i.e. orderings) of columns
+        if select:
+            b = max(b, self.num_cols)
+
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
                 if b and len(states) >= b:
