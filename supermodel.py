@@ -1496,7 +1496,7 @@ class SuperModel(nn.Module):
             if len(where_clause) > 0:
                 ret.append(where_clause)
         if "groupBy" in sql: ## DEBUG-ed order
-            groupby_clause = self.gen_group_by(sql["groupBy"],"group by",table,table_alias_dict)
+            groupby_clause = self.gen_group_by(sql["groupBy"],"GROUP BY",table,table_alias_dict)
             if len(groupby_clause) > 0:
                 ret.append(groupby_clause)
         if "orderBy" in sql and len(sql["orderBy"]) > 0:
