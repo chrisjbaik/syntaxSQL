@@ -1231,7 +1231,7 @@ class SuperModel(nn.Module):
 
         if table_idx not in table_alias_dict:
             return colname
-        return "T{}.{}".format(table_alias_dict[table_idx],colname)
+        return "t{}.{}".format(table_alias_dict[table_idx],colname)
 
     def gen_group_by(self,sql,kw,table,table_alias_dict):
         ret = []
@@ -1415,10 +1415,10 @@ class SuperModel(nn.Module):
             #         idx += 1
         # visited = set()
         candidate_tables = list(candidate_tables)
-        start = candidate_tables[0]
+        start = min(candidate_tables, key=lambda x: table['table_names_original'][x])
         table_alias_dict[start] = idx
         idx += 1
-        ret = "FROM {} as T1".format(table["table_names_original"][start])
+        ret = "FROM {} AS t1".format(table["table_names_original"][start])
         try:
             for end in candidate_tables[1:]:
                 if end in table_alias_dict:
@@ -1428,7 +1428,7 @@ class SuperModel(nn.Module):
                 if not path:
                     table_alias_dict[end] = idx
                     idx += 1
-                    ret = "{} join {} as T{}".format(ret, table["table_names_original"][end],
+                    ret = "{} JOIN {} AS t{}".format(ret, table["table_names_original"][end],
                                                                       table_alias_dict[end],
                                                                       )
                     continue
@@ -1438,7 +1438,7 @@ class SuperModel(nn.Module):
                         continue
                     table_alias_dict[node] = idx
                     idx += 1
-                    ret = "{} join {} as T{} on T{}.{} = T{}.{}".format(ret, table["table_names_original"][node],
+                    ret = "{} JOIN {} AS t{} ON t{}.{} = t{}.{}".format(ret, table["table_names_original"][node],
                                                                       table_alias_dict[node],
                                                                       table_alias_dict[prev_table],
                                                                       table["column_names_original"][acol][1],
