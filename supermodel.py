@@ -529,7 +529,7 @@ class SuperModel(nn.Module):
                     else:
                         cands = ['terminal']
                 else:
-                    cands = find_literal_candidates(q_seq[0], db, tables,
+                    cands = find_literal_candidates(q_seq[0], db, schema,
                         cur.next_col, lit_cache, b,
                         like=NEW_WHERE_OPS[op] == 'like')
 
