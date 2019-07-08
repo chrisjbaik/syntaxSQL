@@ -1,7 +1,7 @@
 import traceback
 from itertools import permutations
 from query import Query, join_path_needs_update, with_updated_join_paths
-from query_pb2 import TRUE, UNKNOWN
+from query_pb2 import TRUE, UNKNOWN, AggregatedColumn
 
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
 
