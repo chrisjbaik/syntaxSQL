@@ -30,7 +30,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
 
     if agg == 'count' or col.type == 'number':
         cached = cache.get('_num')
-        if cached:
+        if cached is not None:
             return cached
         else:
             cands = []
@@ -43,7 +43,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
             cache.set('_num', lits)
     else:
         cached = cache.get(col_id)
-        if cached:
+        if cached is not None:
             return cached
         else:
             lits = find_string_literals(nlq_toks, db, schema.db_id,
