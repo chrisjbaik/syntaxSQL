@@ -106,7 +106,7 @@ class SearchState(object):
         try:
             needs_update = join_path_needs_update(self.query.schema, pq)
         except Exception as e:
-            print(traceback.format_exc())
+            # print(traceback.format_exc())
             return None, False
 
         if needs_update:
