@@ -20,18 +20,15 @@ def to_number(tok):
         except Exception:
             return None
 
-def get_col_info(schema, col_id):
-    col_type = schema['column_types'][col_id]
-    col_name = schema['column_names_original'][col_id][1]
-    tbl_id = schema['column_names_original'][col_id][0]
-    tbl_name = schema['table_names_original'][tbl_id]
-
-    return tbl_name, col_name, col_type
-
 def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
     like=False):
-    tbl_name, col_name, col_type = get_col_info(schema, col_id)
-    if agg == 'count' or col_type == 'number':
+    col = schema.get_col(col_id)
+
+    # no literals for *
+    if col.syn_name == '*':
+        return []
+
+    if agg == 'count' or col.type == 'number':
         cached = cache.get('_num')
         if cached:
             return cached
@@ -44,16 +41,21 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
             cands.sort()        # ascending for between queries
             lits = list(map(lambda x: str(x), cands))
             cache.set('_num', lits)
-            return lits
     else:
         cached = cache.get(col_id)
         if cached:
             return cached
         else:
-            lits = find_string_literals(nlq_toks, db, schema['db_id'], tbl_name,
-                col_name, b, like=like)
+            lits = find_string_literals(nlq_toks, db, schema.db_id,
+                col.table.syn_name, col.syn_name, b, like=like)
             cache.set(col_id, lits)
-            return lits
+
+    if not lits:
+        print('Warning: no literals for {}.{}'.format(
+            col.table.syn_name, col.syn_name
+        ))
+
+    return lits
 
 def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
     d = TreebankWordDetokenizer()
