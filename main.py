@@ -170,7 +170,7 @@ def main():
                     task.n, task.b, timeout=args.timeout, debug=args.debug)
                 if dqc:
                     no_dq_sqls = translate(model, db, schemas, None,
-                        task.db_name, nlq, task.n, task.b)
+                        task.db_name, nlq, task.n, task.b, timeout=args.timeout)
                     if no_dq_sqls and not sqls:
                         print('Failed!')
                         break
