@@ -1,7 +1,7 @@
 import traceback
 from itertools import permutations
 from query import Query, join_path_needs_update, with_updated_join_paths
-from query_pb2 import TRUE
+from query_pb2 import TRUE, UNKNOWN
 
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
 
@@ -235,14 +235,40 @@ class SearchState(object):
 
         return states
 
-    def next_col_states(self, b, select=False):
+    def next_select_col_states(self, b, client):
         states = []
 
-        # because we enforce ordering of projection columns,
-        # when we activate Duoquest it's necessary to at least allow enough
-        # possible states to do all permutations (i.e. orderings) of columns
-        if select:
-            b = max(b, self.num_cols)
+        if len(self.used_cols) < self.num_cols:
+            for col in self.col_cands:
+                if b and len(states) >= b:
+                    break
+                if col in self.used_cols:
+                    continue
+
+                new = self.copy()
+                new.next_col = col
+
+                agg_col = AggregatedColumn()
+                agg_col.col_id = new.next_col
+                agg_col.has_agg = UNKNOWN
+                new_pq = new.find_protoquery(new.query.pq, new.next)
+                new_pq.select.append(agg_col)
+
+                if client and client.should_prune(new.query):
+                    continue
+
+                states.append(new)
+
+        # if no candidate states, next_col to None
+        if not states:
+            self.next_col = None
+            return [self]
+        else:
+            return states
+
+
+    def next_col_states(self, b):
+        states = []
 
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:

@@ -347,7 +347,8 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'select_col_num':
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
-                stack.extend(reversed(cur.next_col_states(b, select=True)))
+                stack.extend(reversed(cur.next_select_col_states(b, client)))
+                # stack.extend(reversed(cur.next_col_states(b, select=True)))
             elif cur.next[-1] == 'select_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
@@ -371,16 +372,20 @@ class SuperModel(nn.Module):
                 for state in reversed(cur.next_num_agg_states(num_agg_cands,
                     b)):
                     if state.num_aggs == 0:
-                        agg_col = AggregatedColumn()
-                        agg_col.col_id = state.next_col
-                        agg_col.has_agg = to_proto_tribool(False)
                         state_pq = state.find_protoquery(state.query.pq,
                             state.next)
-                        state_pq.select.append(agg_col)
+                        state_pq.select[-1].has_agg = to_proto_tribool(False)
+                        # agg_col = AggregatedColumn()
+                        # agg_col.col_id = state.next_col
+                        # agg_col.has_agg = to_proto_tribool(False)
+                        # state_pq.select.append(agg_col)
                         # cur_pq.select.append('none_agg')
 
-                        stack.extend(reversed(state.next_col_states(b,
-                            select=True)))
+                        stack.extend(
+                            reversed(state.next_select_col_states(b, client))
+                        )
+                        # stack.extend(reversed(state.next_col_states(b,
+                        #     select=True)))
                     else:
                         state.next[-1] = 'select_agg'
                         state.agg_cands = agg_cands
@@ -390,20 +395,32 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'select_col'
                     cur.clear_agg_info()
-                    stack.extend(reversed(cur.next_col_states(b, select=True)))
+                    stack.extend(
+                        reversed(cur.next_select_col_states(b, client))
+                    )
+                    # stack.extend(reversed(cur.next_col_states(b, select=True)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
                 if len(cur.used_aggs) > 0:
                     cur.history[0].append(col_name)
                     # cur_pq.select.append(col_name)
+                    agg_col = AggregatedColumn()
+                    agg_col.col_id = cur.next_col
+                    agg_col.has_agg = to_proto_tribool(True)
+                    agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                    cur_pq.select.append(agg_col)
+                else:
+                    cur_pq.select[-1].has_agg = to_proto_tribool(True)
+                    cur_pq.select[-1].agg = to_proto_agg(AGG_OPS[cur.next_agg])
+
                 cur.history[0].append(AGG_OPS[cur.next_agg])
 
-                agg_col = AggregatedColumn()
-                agg_col.col_id = cur.next_col
-                agg_col.has_agg = to_proto_tribool(True)
-                agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                cur_pq.select.append(agg_col)
+                # agg_col = AggregatedColumn()
+                # agg_col.col_id = cur.next_col
+                # agg_col.has_agg = to_proto_tribool(True)
+                # agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                # cur_pq.select.append(agg_col)
 
                 # cur_pq.select.append(AGG_OPS[cur.next_agg])
 
