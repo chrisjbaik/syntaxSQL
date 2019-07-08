@@ -173,7 +173,7 @@ def main():
                         task.db_name, nlq, task.n, task.b)
                     if no_dq_sqls and not sqls:
                         print('Failed!')
-                        exit()
+                        break
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:
