@@ -168,12 +168,6 @@ def main():
 
                 sqls = translate(model, db, schemas, dqc, task.db_name, nlq,
                     task.n, task.b, timeout=args.timeout, debug=args.debug)
-                if dqc:
-                    no_dq_sqls = translate(model, db, schemas, None,
-                        task.db_name, nlq, task.n, task.b, timeout=args.timeout)
-                    if no_dq_sqls and not sqls:
-                        print('Failed!')
-                        break
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:
