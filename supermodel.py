@@ -196,7 +196,7 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def dfs_beam_search(self, db, q_seq, history, tables, client, n, b,
+    def dfs_beam_search(self, task_id, db, q_seq, history, tables, client, n, b,
         timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
@@ -230,6 +230,8 @@ class SuperModel(nn.Module):
         # timeout to prevent infinite recursion
         if timeout:
             end_time = time.time() + timeout
+
+        print('Running task {}...'.format(task_id))
 
         while stack:
             if len(results) >= n:
@@ -352,6 +354,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'select_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
+                    cur_pq.done_select = True
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
@@ -430,6 +433,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'where':
                 if cur_pq.has_where != to_proto_tribool(True):
                     cur.next[-1] = 'group_by'
+                    cur_pq.done_where = True
                     stack.append(cur)
                     continue
                 cur.history[0].append('where')
@@ -458,6 +462,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
+                    cur_pq.done_where = True
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
@@ -597,6 +602,8 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'group_by':
                 if cur_pq.has_group_by != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
+                    cur_pq.done_group_by = True
+                    cur_pq.done_having = True
                     stack.append(cur)
                     continue
                 cur.history[0].append('groupBy')
@@ -619,6 +626,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'group_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'having'
+                    cur_pq.done_group_by = True
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
@@ -642,6 +650,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'having':
                 if cur_pq.has_having != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
+                    cur_pq.done_having = True
                     stack.append(cur)
                     continue
                 cur.history[0].append('having')
@@ -664,6 +673,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'having_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'order_by'
+                    cur_pq.done_having = True
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
@@ -858,6 +868,8 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'order_by':
                 if cur_pq.has_order_by != to_proto_tribool(True):
                     cur.next[-1] = 'finish'
+                    cur_pq.done_order_by = True
+                    cur_pq.done_limit = True
                     stack.append(cur)
                     continue
                 cur.history[0].append('orderBy')
@@ -879,6 +891,8 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'finish'
+                    cur_pq.done_order_by = True
+                    cur_pq.done_limit = True
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
@@ -973,6 +987,9 @@ class SuperModel(nn.Module):
 
         if client:
             client.close()
+
+        print
+
         return results
 
 

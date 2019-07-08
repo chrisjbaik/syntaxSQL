@@ -56,7 +56,7 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
+def translate(id, model, db, schemas, client, db_name, nlq, n, b, timeout=None,
     _old=False, debug=False, fake_literals=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
@@ -73,8 +73,8 @@ def translate(model, db, schemas, client, db_name, nlq, n, b, timeout=None,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.dfs_beam_search(db, [tokens] * 2, [], schema, client, n, b,
-            timeout=timeout, debug=debug, fake_literals=fake_literals)
+        cqs = model.dfs_beam_search(id, db, [tokens] * 2, [], schema, client, n,
+            b, timeout=timeout, debug=debug, fake_literals=fake_literals)
 
         for cq in cqs:
             results.append(generate_sql_str(cq.pq, cq.schema))
@@ -166,8 +166,8 @@ def main():
 
                 dqc = client if task.enable_duoquest else None
 
-                sqls = translate(model, db, schemas, dqc, task.db_name, nlq,
-                    task.n, task.b, timeout=args.timeout, debug=args.debug)
+                sqls = translate(task.id, model, db, schemas, dqc, task.db_name,
+                    nlq, task.n, task.b, timeout=args.timeout, debug=args.debug)
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:
@@ -187,9 +187,9 @@ def test_old_and_new(data, model, db, schemas, n, b, debug=False):
         print('{}/{} || {}, {}'.format(i+1, len(data), task['db_id'],
             task['question_toks']))
         dqc = None
-        old = translate(model, db, schemas, dqc, task['db_id'],
+        old = translate(i+1, model, db, schemas, dqc, task['db_id'],
             task['question_toks'], n, b, _old=True)
-        new = translate(model, db, schemas, dqc, task['db_id'],
+        new = translate(i+1, model, db, schemas, dqc, task['db_id'],
             task['question_toks'], n, b, debug=debug, fake_literals=True)
 
         if new and old and new_to_old(new[0]).lower() == old[0].lower():
