@@ -204,7 +204,8 @@ class SuperModel(nn.Module):
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
         col_seq = to_batch_tables(tables, B, self.table_type)
-        col_emb_var, col_name_len, col_len = self.embed_layer.gen_col_batch(col_seq)
+        col_emb_var, col_name_len, col_len = self.embed_layer.gen_col_batch(
+            col_seq)
 
         mkw_emb_var = self.embed_layer.gen_word_list_embedding(["none",
             "except", "intersect", "union"],(B))
