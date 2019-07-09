@@ -694,11 +694,13 @@ class SuperModel(nn.Module):
 
                 for state in reversed(cur.next_num_agg_states(num_agg_cands,
                     b)):
+                    # do not permit HAVING without aggs
                     if state.num_aggs == 0:
-                        state.agg_cands = ['none_agg']
-                        state.num_aggs = 1
-                    else:
-                        state.agg_cands = agg_cands
+                        continue
+                        # state.agg_cands = ['none_agg']
+                        # state.num_aggs = 1
+
+                    state.agg_cands = agg_cands
 
                     stack.extend(reversed(state.next_agg_states(b)))
             elif cur.next[-1] == 'having_agg':
@@ -708,11 +710,10 @@ class SuperModel(nn.Module):
                     stack.extend(reversed(cur.next_col_states(b)))
                     continue
 
-                if cur.next_agg != 'none_agg':
-                    col_name = index_to_column_name(cur.next_col, tables)
-                    if len(cur.used_aggs) > 0:
-                        cur.history[0].append(col_name)
-                    cur.history[0].append(AGG_OPS[cur.next_agg])
+                col_name = index_to_column_name(cur.next_col, tables)
+                if len(cur.used_aggs) > 0:
+                    cur.history[0].append(col_name)
+                cur.history[0].append(AGG_OPS[cur.next_agg])
 
                 cur.used_aggs.add(cur.next_agg)
 
@@ -771,11 +772,8 @@ class SuperModel(nn.Module):
                 pred.op = to_proto_op(NEW_WHERE_OPS[op])
                 pred.has_subquery = to_proto_tribool(True)
                 pred.subquery.set_op = to_proto_set_op('none')
-                if cur.next_agg == 'none_agg':
-                    pred.has_agg = to_proto_tribool(False)
-                else:
-                    pred.has_agg = to_proto_tribool(True)
-                    pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                pred.has_agg = to_proto_tribool(True)
+                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
                 cur_pq.having.predicates.append(pred)
 
                 cur.next_op_idx += 1
@@ -791,9 +789,7 @@ class SuperModel(nn.Module):
                 cur.next_op_idx += 1
                 cur.next[-1] = 'having_op'
 
-                literal_agg = None
-                if cur.next_agg != 'none_agg':
-                    literal_agg = AGG_OPS[cur.next_agg]
+                literal_agg = AGG_OPS[cur.next_agg]
 
                 if fake_literals:
                     # fake literals is to compare with old impl
@@ -821,11 +817,8 @@ class SuperModel(nn.Module):
                         pred.has_subquery = to_proto_tribool(False)
                         pred.value.append(x)
                         pred.value.append(y)
-                        if cur.next_agg == 'none_agg':
-                            pred.has_agg = to_proto_tribool(False)
-                        else:
-                            pred.has_agg = to_proto_tribool(True)
-                            pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        pred.has_agg = to_proto_tribool(True)
+                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
                         new_pq.having.predicates.append(pred)
 
                         stack.append(new)
@@ -839,11 +832,8 @@ class SuperModel(nn.Module):
                     pred.op = to_proto_op(NEW_WHERE_OPS[op])
                     pred.has_subquery = to_proto_tribool(False)
                     pred.value.extend(cands)
-                    if cur.next_agg == 'none_agg':
-                        pred.has_agg = to_proto_tribool(False)
-                    else:
-                        pred.has_agg = to_proto_tribool(True)
-                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                    pred.has_agg = to_proto_tribool(True)
+                    pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
                     new_pq.having.predicates.append(pred)
                     stack.append(new)
                 else:
@@ -857,11 +847,8 @@ class SuperModel(nn.Module):
                         pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         pred.has_subquery = to_proto_tribool(False)
                         pred.value.append(literal)
-                        if cur.next_agg == 'none_agg':
-                            pred.has_agg = to_proto_tribool(False)
-                        else:
-                            pred.has_agg = to_proto_tribool(True)
-                            pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        pred.has_agg = to_proto_tribool(True)
+                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
                         new_pq.having.predicates.append(pred)
 
                         stack.append(new)
