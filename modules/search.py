@@ -241,7 +241,8 @@ class SearchState(object):
         # For select, need to ensure that activating Duoquest does not degrade
         # performance beneath the set-based inference for SyntaxSQL. Hence,
         # we generate at least this many candidates at each beam search.
-        b = self.num_cols + b
+        if client:
+            b = max(b, self.num_cols)
 
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
