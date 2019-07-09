@@ -350,7 +350,6 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
                 stack.extend(reversed(cur.next_select_col_states(b, client)))
-                # stack.extend(reversed(cur.next_col_states(b, select=True)))
             elif cur.next[-1] == 'select_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
@@ -364,8 +363,6 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                # cur_pq.select.append(col_name)
-
                 cur.used_cols.add(cur.next_col)
 
                 agg_cands, num_agg_cands = \
@@ -378,17 +375,10 @@ class SuperModel(nn.Module):
                         state_pq = state.find_protoquery(state.query.pq,
                             state.next)
                         state_pq.select[-1].has_agg = to_proto_tribool(False)
-                        # agg_col = AggregatedColumn()
-                        # agg_col.col_id = state.next_col
-                        # agg_col.has_agg = to_proto_tribool(False)
-                        # state_pq.select.append(agg_col)
-                        # cur_pq.select.append('none_agg')
 
                         stack.extend(
                             reversed(state.next_select_col_states(b, client))
                         )
-                        # stack.extend(reversed(state.next_col_states(b,
-                        #     select=True)))
                     else:
                         state.next[-1] = 'select_agg'
                         state.agg_cands = agg_cands
@@ -401,13 +391,12 @@ class SuperModel(nn.Module):
                     stack.extend(
                         reversed(cur.next_select_col_states(b, client))
                     )
-                    # stack.extend(reversed(cur.next_col_states(b, select=True)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
                 if len(cur.used_aggs) > 0:
                     cur.history[0].append(col_name)
-                    # cur_pq.select.append(col_name)
+
                     agg_col = AggregatedColumn()
                     agg_col.col_id = cur.next_col
                     agg_col.has_agg = to_proto_tribool(True)
@@ -418,14 +407,6 @@ class SuperModel(nn.Module):
                     cur_pq.select[-1].agg = to_proto_agg(AGG_OPS[cur.next_agg])
 
                 cur.history[0].append(AGG_OPS[cur.next_agg])
-
-                # agg_col = AggregatedColumn()
-                # agg_col.col_id = cur.next_col
-                # agg_col.has_agg = to_proto_tribool(True)
-                # agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                # cur_pq.select.append(agg_col)
-
-                # cur_pq.select.append(AGG_OPS[cur.next_agg])
 
                 cur.used_aggs.add(cur.next_agg)
 

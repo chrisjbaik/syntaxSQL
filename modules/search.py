@@ -256,7 +256,6 @@ class SearchState(object):
 
                 agg_col = AggregatedColumn()
                 agg_col.col_id = new.next_col
-                agg_col.has_agg = UNKNOWN
                 new_pq = new.find_protoquery(new.query.pq, new.next)
                 new_pq.select.append(agg_col)
 
