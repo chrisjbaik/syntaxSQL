@@ -238,6 +238,11 @@ class SearchState(object):
     def next_select_col_states(self, b, client):
         states = []
 
+        # For select, need to ensure that activating Duoquest does not degrade
+        # performance beneath the set-based inference for SyntaxSQL. Hence,
+        # we generate at least this many candidates at each beam search.
+        b = self.num_cols + b
+
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
                 if b and len(states) >= b:
