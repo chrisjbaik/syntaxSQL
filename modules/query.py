@@ -216,7 +216,7 @@ def where_clause_str(pq, schema, aliases):
             where_exprs.append(to_str_logical_op(pq.where.logical_op))
 
         where_val = None
-        if pred.has_subquery:
+        if pred.has_subquery == TRUE:
             where_val = u'({})'.format(
                 generate_sql_str(pred.subquery, schema,
                     alias_prefix='w{}'.format(i))
@@ -254,18 +254,15 @@ def having_clause_str(pq, schema, aliases):
         if i != 0:
             having_exprs.append(to_str_logical_op(pq.having.logical_op))
 
-        if pred.has_agg:
-            having_col = u'{}({})'.format(
-                to_str_agg(pred.agg),
-                schema.get_aliased_col(aliases, pred.col_id)
-            )
-        else:
-            having_col = u'{}'.format(
-                schema.get_aliased_col(aliases, pred.col_id)
-            )
+        assert(pred.has_agg == TRUE)
+
+        having_col = u'{}({})'.format(
+            to_str_agg(pred.agg),
+            schema.get_aliased_col(aliases, pred.col_id)
+        )
 
         having_val = None
-        if pred.has_subquery:
+        if pred.has_subquery == TRUE:
             having_val = '({})'.format(
                 generate_sql_str(pred.subquery, schema,
                     alias_prefix='h{}'.format(i))
