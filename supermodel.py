@@ -344,8 +344,13 @@ class SuperModel(nn.Module):
                     self.get_col_cands(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
+                # for subqueries, can only have 1 projected column
+                if cur.parent:
+                    num_col_cands = [1]
+
                 cur.next[-1] = 'select_col_num'
-                stack.extend(reversed(cur.next_num_col_states(num_col_cands,b)))
+                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
+                    b)))
             elif cur.next[-1] == 'select_col_num':
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
@@ -368,6 +373,10 @@ class SuperModel(nn.Module):
                 agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
+
+                # for subqueries, can only have 1 projected column
+                if cur.parent:
+                    num_agg_cands = [1]
 
                 for state in reversed(cur.next_num_agg_states(num_agg_cands,
                     b)):

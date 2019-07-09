@@ -224,7 +224,7 @@ class SearchState(object):
         else:
             return states
 
-    def next_num_col_states(self, num_col_cands, b):
+    def next_num_col_states(self, num_col_cands, b, select=False):
         states = []
         for num_cols in num_col_cands:
             if b and len(states) >= b:
