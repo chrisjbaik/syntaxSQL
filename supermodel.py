@@ -948,6 +948,7 @@ class SuperModel(nn.Module):
 
                 cur.used_aggs.add(cur.next_agg)
 
+                # TODO: beam searchify order by dir
                 score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
                     np.full(B, cur.next_col, dtype=np.int64))
