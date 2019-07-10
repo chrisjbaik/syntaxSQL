@@ -566,6 +566,7 @@ class SuperModel(nn.Module):
                         # pred.col_id = cur.next_col
                         # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         # pred.has_subquery = to_proto_tribool(False)
+                        pred = new_pq.where.predicates[pred_idx]
                         pred.value.append(x)
                         pred.value.append(y)
                         # new_pq.where.predicates.append(pred)
@@ -580,6 +581,7 @@ class SuperModel(nn.Module):
                     # pred.col_id = cur.next_col
                     # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                     # pred.has_subquery = to_proto_tribool(False)
+                    pred = new_pq.where.predicates[pred_idx]
                     pred.value.extend(cands)
                     # new_pq.where.predicates.append(pred)
                     stack.append(new)
@@ -593,6 +595,7 @@ class SuperModel(nn.Module):
                         # pred.col_id = cur.next_col
                         # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         # pred.has_subquery = to_proto_tribool(False)
+                        pred = new_pq.where.predicates[pred_idx]
                         pred.value.append(literal)
                         # new_pq.where.predicates.append(pred)
 
@@ -820,6 +823,7 @@ class SuperModel(nn.Module):
                         # pred.col_id = cur.next_col
                         # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         # pred.has_subquery = to_proto_tribool(False)
+                        pred = new_pq.where.predicates[pred_idx]
                         pred.value.append(x)
                         pred.value.append(y)
                         # pred.has_agg = to_proto_tribool(True)
@@ -836,6 +840,7 @@ class SuperModel(nn.Module):
                     # pred.col_id = cur.next_col
                     # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                     # pred.has_subquery = to_proto_tribool(False)
+                    pred = new_pq.where.predicates[pred_idx]
                     pred.value.extend(cands)
                     # pred.has_agg = to_proto_tribool(True)
                     # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
@@ -851,6 +856,7 @@ class SuperModel(nn.Module):
                         # pred.col_id = cur.next_col
                         # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                         # pred.has_subquery = to_proto_tribool(False)
+                        pred = new_pq.where.predicates[pred_idx]
                         pred.value.append(literal)
                         # pred.has_agg = to_proto_tribool(True)
                         # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
