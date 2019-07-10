@@ -246,7 +246,7 @@ class SearchState(object):
 
         # order by position in col_cands, then original order in select
         sorted_select = sorted(enumerate(cur_pq.select),
-            key=lambda (i, x): (self.col_cands.index(x), i))
+            key=lambda (i, x): (self.col_cands.index(x.col_id), i))
 
         for agg_col in sorted_select:
             col_name = schema.get_col(agg_col.col_id).sem_name
