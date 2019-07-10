@@ -242,7 +242,7 @@ class SearchState(object):
     def get_select_history(self, schema):
         history = [list(self.history[0])] * 2
 
-        cur_pq = new.find_protoquery(self.query.pq, self.next)
+        cur_pq = self.find_protoquery(self.query.pq, self.next)
 
         # order by position in col_cands, then original order in select
         sorted_select = sorted(enumerate(cur_pq.select),
