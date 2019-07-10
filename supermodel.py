@@ -359,7 +359,7 @@ class SuperModel(nn.Module):
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
                     cur_pq.done_select = True
-                    cur.history = cur.get_select_history(schema)
+                    cur.history = cur.get_select_history(tables)
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
@@ -369,7 +369,7 @@ class SuperModel(nn.Module):
                 # hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                 #     cur.history)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
-                    cur.get_select_history(schema))
+                    cur.get_select_history(tables))
 
                 cur.used_cols.add(cur.next_col)
 

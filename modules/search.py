@@ -6,6 +6,12 @@ from query_pb2 import TRUE, UNKNOWN, AggregatedColumn
 AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
 
+def index_to_column_name(index, table):
+    column_name = table["column_names"][index][1]
+    table_index = table["column_names"][index][0]
+    table_name = table["table_names"][table_index]
+    return table_name, column_name, index
+
 class SearchState(object):
     def __init__(self, next, query, history=None):
         # a chain of keys storing next item to infer, e.g.:
@@ -239,7 +245,7 @@ class SearchState(object):
         return states
 
     # get history while inferring select (updated all at once at the end)
-    def get_select_history(self, schema):
+    def get_select_history(self, tables):
         history = [list(self.history[0])] * 2
 
         cur_pq = self.find_protoquery(self.query.pq, self.next)
@@ -249,7 +255,7 @@ class SearchState(object):
             key=lambda (i, x): (self.col_cands.index(x.col_id), i))
 
         for i, agg_col in sorted_select:
-            col_name = schema.get_col(agg_col.col_id).sem_name
+            col_name = index_to_column_name(agg_col.col_id, tables)
             history[0].append(col_name)
 
             if agg_col.has_agg == TRUE:
