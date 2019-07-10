@@ -248,7 +248,7 @@ class SearchState(object):
         sorted_select = sorted(enumerate(cur_pq.select),
             key=lambda (i, x): (self.col_cands.index(x.col_id), i))
 
-        for agg_col in sorted_select:
+        for i, agg_col in sorted_select:
             col_name = schema.get_col(agg_col.col_id).sem_name
             history[0].append(col_name)
 
