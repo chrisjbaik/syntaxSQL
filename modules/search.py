@@ -1,6 +1,7 @@
 import traceback
 from itertools import permutations
-from query import Query, join_path_needs_update, with_updated_join_paths
+from query import Query, join_path_needs_update, with_updated_join_paths, \
+    to_proto_op, to_proto_tribool, to_proto_agg
 from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate
 
 AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')
