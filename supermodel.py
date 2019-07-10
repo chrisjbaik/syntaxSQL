@@ -359,14 +359,17 @@ class SuperModel(nn.Module):
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
                     cur_pq.done_select = True
+                    cur.history = cur.get_select_history(schema)
                     cur.clear_col_info()
                     stack.append(cur)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
-                cur.history[0].append(col_name)
+                # cur.history[0].append(col_name)
+                # hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
+                #     cur.history)
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
-                    cur.history)
+                    cur.get_select_history(schema))
 
                 cur.used_cols.add(cur.next_col)
 
@@ -404,7 +407,7 @@ class SuperModel(nn.Module):
 
                 col_name = index_to_column_name(cur.next_col, tables)
                 if len(cur.used_aggs) > 0:
-                    cur.history[0].append(col_name)
+                    # cur.history[0].append(col_name)
 
                     agg_col = AggregatedColumn()
                     agg_col.col_id = cur.next_col
@@ -415,7 +418,7 @@ class SuperModel(nn.Module):
                     cur_pq.select[-1].has_agg = to_proto_tribool(True)
                     cur_pq.select[-1].agg = to_proto_agg(AGG_OPS[cur.next_agg])
 
-                cur.history[0].append(AGG_OPS[cur.next_agg])
+                # cur.history[0].append(AGG_OPS[cur.next_agg])
 
                 cur.used_aggs.add(cur.next_agg)
 
@@ -472,7 +475,7 @@ class SuperModel(nn.Module):
                 stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
             elif cur.next[-1] == 'where_op_num':
                 stack.extend(reversed(cur.next_op_states('where_op',
-                    cur.num_ops, op_cands, col_name, b)))
+                    cur.num_ops, op_cands, col_name, b, client)))
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
@@ -508,17 +511,18 @@ class SuperModel(nn.Module):
                     stack.extend(reversed(states))
             elif cur.next[-1] == 'where_op_subquery':
                 op = cur.iter_ops[cur.next_op_idx]
+                pred_idx = cur.next_op_offset + cur.next_op_idx
+                pred = cur_pq.where.predicates[pred_idx]
 
                 cur.history[0].append('root')
                 cur.history[0].append('none')
-                subquery_idx = len(cur_pq.where.predicates)
 
-                pred = Predicate()
-                pred.col_id = cur.next_col
-                pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                # pred = Predicate()
+                # pred.col_id = cur.next_col
+                # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                 pred.has_subquery = to_proto_tribool(True)
                 pred.subquery.set_op = to_proto_set_op('none')
-                cur_pq.where.predicates.append(pred)
+                # cur_pq.where.predicates.append(pred)
                 # cur_pq.where.append(subquery)
 
                 cur.next_op_idx += 1
@@ -526,11 +530,15 @@ class SuperModel(nn.Module):
 
                 substate = cur.copy()
                 substate.set_parent(cur)
-                substate.next.append(subquery_idx)
+                substate.next.append(pred_idx)
                 substate.next.append('keyword')
                 stack.append(substate)
             elif cur.next[-1] == 'where_op_terminal':
                 op = cur.iter_ops[cur.next_op_idx]
+                pred_idx = cur.next_op_offset + cur.next_op_idx
+                pred = cur_pq.where.predicates[pred_idx]
+                pred.has_subquery = to_proto_tribool(False)
+
                 cur.next_op_idx += 1
                 cur.next[-1] = 'where_op'
 
@@ -554,13 +562,13 @@ class SuperModel(nn.Module):
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
 
-                        pred = Predicate()
-                        pred.col_id = cur.next_col
-                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        pred.has_subquery = to_proto_tribool(False)
+                        # pred = Predicate()
+                        # pred.col_id = cur.next_col
+                        # pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        # pred.has_subquery = to_proto_tribool(False)
                         pred.value.append(x)
                         pred.value.append(y)
-                        new_pq.where.predicates.append(pred)
+                        # new_pq.where.predicates.append(pred)
 
                         stack.append(new)
                 elif NEW_WHERE_OPS[op] in ('in', 'not in'):
@@ -568,12 +576,12 @@ class SuperModel(nn.Module):
                     new_pq = new.find_protoquery(new.query.pq,
                         cur.next)
 
-                    pred = Predicate()
-                    pred.col_id = cur.next_col
-                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                    pred.has_subquery = to_proto_tribool(False)
+                    # pred = Predicate()
+                    # pred.col_id = cur.next_col
+                    # pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                    # pred.has_subquery = to_proto_tribool(False)
                     pred.value.extend(cands)
-                    new_pq.where.predicates.append(pred)
+                    # new_pq.where.predicates.append(pred)
                     stack.append(new)
                 else:
                     for literal in cands:
@@ -581,12 +589,12 @@ class SuperModel(nn.Module):
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
 
-                        pred = Predicate()
-                        pred.col_id = cur.next_col
-                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        pred.has_subquery = to_proto_tribool(False)
+                        # pred = Predicate()
+                        # pred.col_id = cur.next_col
+                        # pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        # pred.has_subquery = to_proto_tribool(False)
                         pred.value.append(literal)
-                        new_pq.where.predicates.append(pred)
+                        # new_pq.where.predicates.append(pred)
 
                         stack.append(new)
             elif cur.next[-1] == 'group_by':
@@ -715,7 +723,7 @@ class SuperModel(nn.Module):
                 stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
             elif cur.next[-1] == 'having_op_num':
                 stack.extend(reversed(cur.next_op_states('having_op',
-                    cur.num_ops, op_cands, col_name, b)))
+                    cur.num_ops, op_cands, col_name, b, client)))
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'having_agg'
@@ -751,20 +759,23 @@ class SuperModel(nn.Module):
                     stack.extend(reversed(states))
             elif cur.next[-1] == 'having_op_subquery':
                 op = cur.iter_ops[cur.next_op_idx]
+                pred_idx = cur.next_op_offset + cur.next_op_idx
+                pred = cur_pq.having.predicates[pred_idx]
 
                 cur.history[0].append('root')
                 cur.history[0].append('none')
-                subquery_idx = len(cur_pq.having.predicates)
+
+                # subquery_idx = len(cur_pq.having.predicates)
                 # cur_pq.having.append(subquery)
 
-                pred = Predicate()
-                pred.col_id = cur.next_col
-                pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                # pred = Predicate()
+                # pred.col_id = cur.next_col
+                # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                 pred.has_subquery = to_proto_tribool(True)
                 pred.subquery.set_op = to_proto_set_op('none')
-                pred.has_agg = to_proto_tribool(True)
-                pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                cur_pq.having.predicates.append(pred)
+                # pred.has_agg = to_proto_tribool(True)
+                # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                # cur_pq.having.predicates.append(pred)
 
                 cur.next_op_idx += 1
                 cur.next[-1] = 'having_op'
@@ -776,6 +787,10 @@ class SuperModel(nn.Module):
                 stack.append(substate)
             elif cur.next[-1] == 'having_op_terminal':
                 op = cur.iter_ops[cur.next_op_idx]
+                pred_idx = cur.next_op_offset + cur.next_op_idx
+                pred = cur_pq.having.predicates[pred_idx]
+                pred.has_subquery = to_proto_tribool(False)
+
                 cur.next_op_idx += 1
                 cur.next[-1] = 'having_op'
 
@@ -801,15 +816,15 @@ class SuperModel(nn.Module):
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
 
-                        pred = Predicate()
-                        pred.col_id = cur.next_col
-                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        pred.has_subquery = to_proto_tribool(False)
+                        # pred = Predicate()
+                        # pred.col_id = cur.next_col
+                        # pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        # pred.has_subquery = to_proto_tribool(False)
                         pred.value.append(x)
                         pred.value.append(y)
-                        pred.has_agg = to_proto_tribool(True)
-                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                        new_pq.having.predicates.append(pred)
+                        # pred.has_agg = to_proto_tribool(True)
+                        # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        # new_pq.having.predicates.append(pred)
 
                         stack.append(new)
                 elif NEW_WHERE_OPS[op] in ('in', 'not in'):
@@ -817,14 +832,14 @@ class SuperModel(nn.Module):
                     new_pq = new.find_protoquery(new.query.pq,
                         cur.next)
 
-                    pred = Predicate()
-                    pred.col_id = cur.next_col
-                    pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                    pred.has_subquery = to_proto_tribool(False)
+                    # pred = Predicate()
+                    # pred.col_id = cur.next_col
+                    # pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                    # pred.has_subquery = to_proto_tribool(False)
                     pred.value.extend(cands)
-                    pred.has_agg = to_proto_tribool(True)
-                    pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                    new_pq.having.predicates.append(pred)
+                    # pred.has_agg = to_proto_tribool(True)
+                    # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                    # new_pq.having.predicates.append(pred)
                     stack.append(new)
                 else:
                     for literal in cands:
@@ -832,14 +847,14 @@ class SuperModel(nn.Module):
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
 
-                        pred = Predicate()
-                        pred.col_id = cur.next_col
-                        pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        pred.has_subquery = to_proto_tribool(False)
+                        # pred = Predicate()
+                        # pred.col_id = cur.next_col
+                        # pred.op = to_proto_op(NEW_WHERE_OPS[op])
+                        # pred.has_subquery = to_proto_tribool(False)
                         pred.value.append(literal)
-                        pred.has_agg = to_proto_tribool(True)
-                        pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                        new_pq.having.predicates.append(pred)
+                        # pred.has_agg = to_proto_tribool(True)
+                        # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                        # new_pq.having.predicates.append(pred)
 
                         stack.append(new)
             elif cur.next[-1] == 'order_by':

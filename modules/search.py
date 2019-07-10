@@ -3,6 +3,7 @@ from itertools import permutations
 from query import Query, join_path_needs_update, with_updated_join_paths
 from query_pb2 import TRUE, UNKNOWN, AggregatedColumn
 
+AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
 
 class SearchState(object):
@@ -45,6 +46,8 @@ class SearchState(object):
 
         # index of next op to use from iter_ops
         self.next_op_idx = None
+        # offset of next_op_idx in complete list of predicates
+        self.next_op_offset = None
         # ops to use for current clause
         self.iter_ops = None
         # number of op slots for current col
@@ -235,6 +238,25 @@ class SearchState(object):
 
         return states
 
+    # get history while inferring select (updated all at once at the end)
+    def get_select_history(self, schema):
+        history = [list(self.history[0])] * 2
+
+        cur_pq = new.find_protoquery(self.query.pq, self.next)
+
+        # order by position in col_cands, then original order in select
+        sorted_select = sorted(enumerate(cur_pq.select),
+            key=lambda i, x: (self.col_cands.index(x), i))
+
+        for agg_col in sorted_select:
+            col_name = schema.get_col(agg_col.col_id).sem_name
+            history[0].append(col_name)
+
+            if agg_col.has_agg == TRUE:
+                history[0].append(AGG_OPS[agg_col.agg])
+
+        return history
+
     def next_select_col_states(self, b, client):
         states = []
 
@@ -303,19 +325,45 @@ class SearchState(object):
 
         return states
 
-    def next_op_states(self, next, num_ops, op_cands, col_name, b):
+    def next_op_states(self, next, num_ops, op_cands, col_name, b, client):
         states = []
         self.next[-1] = next
         self.next_op_idx = 0
+
+        cur_pq = self.find_protoquery(self.query.pq, self.next)
+        if next.startswith('where'):
+            self.next_op_offset = len(cur_pq.where.predicates)
+        elif next.startswith('having'):
+            self.next_op_offset = len(cur_pq.having.predicates)
+        else:
+            raise Exception('Unknown next: {}'.format(next))
+
         for ops in permutations(op_cands, num_ops):
             if b and len(states) >= b:
                 break
             new = self.copy()
 
+            new_pq = new.find_protoquery(new.query.pq, new.next)
+
             for i, op in enumerate(ops):
                 if i != 0:
                     new.history[0].append(col_name)
                 new.history[0].append(NEW_WHERE_OPS[op])
+
+                pred = Predicate()
+                pred.col_id = new.next_col
+                pred.op = to_proto_op(NEW_WHERE_OPS[op])
+
+                if next.startswith('where'):
+                    pred.has_agg = to_proto_tribool(False)
+                    new_pq.where.predicates.append(pred)
+                elif next.startswith('having'):
+                    pred.has_agg = to_proto_tribool(True)
+                    pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
+                    new_pq.having.predicates.append(pred)
+
+            if client and client.should_prune(new.query):
+                continue
 
             new.iter_ops = ops
             states.append(new)
@@ -342,5 +390,6 @@ class SearchState(object):
 
     def clear_op_info(self):
         self.next_op_idx = None
+        self.next_op_offset = None
         self.iter_ops = None
         self.num_ops = None
