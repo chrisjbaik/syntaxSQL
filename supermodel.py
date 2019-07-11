@@ -242,9 +242,11 @@ class SuperModel(nn.Module):
 
             cur = stack.pop()
 
+            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
+
             # update join path if needed, but only after we've finished select
-            if cur.done_select:
-                states, updated = cur.update_join_paths()
+            if cur_pq.done_select:
+                states, updated = cur.update_join_paths(cur_pq)
 
                 if states is None:      # if error)
                     continue
@@ -258,8 +260,6 @@ class SuperModel(nn.Module):
             # check if Duoquest says to prune it
             if client and client.should_prune(cur.query):
                 continue
-
-            cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             if debug:
                 print('Updated join paths: {}'.format(updated))
