@@ -1,7 +1,7 @@
 import traceback
 from itertools import permutations
 from query import Query, join_path_needs_update, with_updated_join_paths, \
-    to_proto_op, to_proto_tribool, to_proto_agg
+    to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg
 from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate
 
 AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')
@@ -259,7 +259,7 @@ class SearchState(object):
             history[0].append(col_name)
 
             if agg_col.has_agg == TRUE:
-                history[0].append(AGG_OPS[agg_col.agg])
+                history[0].append(to_str_agg(agg_col.agg))
 
         return history
 
