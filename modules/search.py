@@ -219,7 +219,7 @@ class SearchState(object):
 
         if len(self.used_aggs) < self.num_aggs:
             for agg in self.agg_cands:
-                if b and len(states) >= b:
+                if not client and b and len(states) >= b:
                     break
                 if agg in self.used_aggs:
                     continue
@@ -309,12 +309,12 @@ class SearchState(object):
         # For select, need to ensure that activating Duoquest does not degrade
         # performance beneath the set-based inference for SyntaxSQL. Hence,
         # we generate at least this many candidates at each beam search.
-        if client:
-            b = max(b, self.num_cols)
+        # if client:
+        #     b = max(b, self.num_cols)
 
         if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
-                if b and len(states) >= b:
+                if not client and b and len(states) >= b:
                     break
                 if col in self.used_cols:
                     continue
