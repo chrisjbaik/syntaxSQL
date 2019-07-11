@@ -257,12 +257,14 @@ class SuperModel(nn.Module):
                     # execute the first state now
                     cur = states[0]
 
+                if debug:
+                    print('Updated join paths: {}'.format(updated))
+
             # check if Duoquest says to prune it
             if client and client.should_prune(cur.query):
                 continue
 
             if debug:
-                print('Updated join paths: {}'.format(updated))
                 self.print_stack(stack)
                 print('* - {}'.format(cur.next))
                 # print('\nDICT:\n{}'.format(cur_pq.as_dict()))
