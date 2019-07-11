@@ -398,7 +398,8 @@ class SuperModel(nn.Module):
                         state.next[-1] = 'select_agg'
                         state.agg_cands = agg_cands
                         state.used_aggs = set()
-                        stack.extend(reversed(state.next_agg_states(b)))
+                        stack.extend(
+                            reversed(state.next_select_agg_states(b, client)))
             elif cur.next[-1] == 'select_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'select_col'
@@ -408,24 +409,19 @@ class SuperModel(nn.Module):
                     )
                     continue
 
-                col_name = index_to_column_name(cur.next_col, tables)
-                if len(cur.used_aggs) > 0:
-                    # cur.history[0].append(col_name)
+                # if len(cur.used_aggs) > 0:
+                #     agg_col = AggregatedColumn()
+                #     agg_col.col_id = cur.next_col
+                #     agg_col.has_agg = to_proto_tribool(True)
+                #     agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                #     cur_pq.select.append(agg_col)
+                # else:
+                #     cur_pq.select[-1].has_agg = to_proto_tribool(True)
+                #     cur_pq.select[-1].agg = to_proto_agg(AGG_OPS[cur.next_agg])
+                #
+                # cur.used_aggs.add(cur.next_agg)
 
-                    agg_col = AggregatedColumn()
-                    agg_col.col_id = cur.next_col
-                    agg_col.has_agg = to_proto_tribool(True)
-                    agg_col.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                    cur_pq.select.append(agg_col)
-                else:
-                    cur_pq.select[-1].has_agg = to_proto_tribool(True)
-                    cur_pq.select[-1].agg = to_proto_agg(AGG_OPS[cur.next_agg])
-
-                # cur.history[0].append(AGG_OPS[cur.next_agg])
-
-                cur.used_aggs.add(cur.next_agg)
-
-                stack.extend(reversed(cur.next_agg_states(b)))
+                stack.extend(reversed(cur.next_select_agg_states(b, client)))
             elif cur.next[-1] == 'where':
                 if cur_pq.has_where != to_proto_tribool(True):
                     cur.next[-1] = 'group_by'

@@ -214,6 +214,46 @@ class SearchState(object):
 
         return states
 
+    def next_select_agg_states(self, b, client):
+        states = []
+
+        if len(self.used_aggs) < self.num_aggs:
+            for agg in self.agg_cands:
+                if b and len(states) >= b:
+                    break
+                if agg in self.used_aggs:
+                    continue
+
+                new = self.copy()
+                new_pq = new.find_protoquery(new.query.pq, new.next)
+
+                new.next_agg = agg
+
+                if len(new.used_aggs) > 0:
+                    agg_col = AggregatedColumn()
+                    agg_col.col_id = new.next_col
+                    agg_col.has_agg = to_proto_tribool(True)
+                    agg_col.agg = to_proto_agg(AGG_OPS[new.next_agg])
+                    new_pq.select.append(agg_col)
+                else:
+                    new_pq.select[-1].has_agg = to_proto_tribool(True)
+                    new_pq.select[-1].agg = to_proto_agg(AGG_OPS[new.next_agg])
+
+                new.used_aggs.append(new.next_agg)
+
+                if client and client.should_prune(new.query):
+                    continue
+
+                states.append(new)
+
+        # if no candidate states, next_agg to None
+        if not states:
+            self.next_agg = None
+            return [self]
+        else:
+            return states
+
+
     def next_agg_states(self, b):
         states = []
         if len(self.used_aggs) < self.num_aggs:
@@ -280,11 +320,12 @@ class SearchState(object):
                     continue
 
                 new = self.copy()
+                new_pq = new.find_protoquery(new.query.pq, new.next)
+
                 new.next_col = col
 
                 agg_col = AggregatedColumn()
                 agg_col.col_id = new.next_col
-                new_pq = new.find_protoquery(new.query.pq, new.next)
                 new_pq.select.append(agg_col)
 
                 if client and client.should_prune(new.query):
