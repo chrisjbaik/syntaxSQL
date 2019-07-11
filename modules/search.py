@@ -248,8 +248,9 @@ class SearchState(object):
 
         # if no candidate states, next_agg to None and set to no agg
         if not states:
-            cur_pq = self.find_protoquery(self.query.pq, self.next)
-            cur_pq.select[-1].has_agg = to_proto_tribool(False)
+            if len(cur.used_aggs) == 0:
+                cur_pq = self.find_protoquery(self.query.pq, self.next)
+                cur_pq.select[-1].has_agg = to_proto_tribool(False)
             self.next_agg = None
             return [self]
         else:
