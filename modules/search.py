@@ -227,17 +227,15 @@ class SearchState(object):
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, new.next)
 
-                new.next_agg = agg
-
                 if len(new.used_aggs) > 0:
                     agg_col = AggregatedColumn()
                     agg_col.col_id = new.next_col
                     agg_col.has_agg = to_proto_tribool(True)
-                    agg_col.agg = to_proto_agg(AGG_OPS[new.next_agg])
+                    agg_col.agg = to_proto_agg(AGG_OPS[agg])
                     new_pq.select.append(agg_col)
                 else:
                     new_pq.select[-1].has_agg = to_proto_tribool(True)
-                    new_pq.select[-1].agg = to_proto_agg(AGG_OPS[new.next_agg])
+                    new_pq.select[-1].agg = to_proto_agg(AGG_OPS[agg])
 
                 new.used_aggs.add(new.next_agg)
 
@@ -246,12 +244,7 @@ class SearchState(object):
 
                 states.append(new)
 
-        # if no candidate states, next_agg to None
-        if not states:
-            self.next_agg = None
-            return [self]
-        else:
-            return states
+        return states
 
 
     def next_agg_states(self, b):
