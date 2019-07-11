@@ -239,7 +239,7 @@ class SearchState(object):
                     new_pq.select[-1].has_agg = to_proto_tribool(True)
                     new_pq.select[-1].agg = to_proto_agg(AGG_OPS[new.next_agg])
 
-                new.used_aggs.append(new.next_agg)
+                new.used_aggs.add(new.next_agg)
 
                 if client and client.should_prune(new.query):
                     continue
