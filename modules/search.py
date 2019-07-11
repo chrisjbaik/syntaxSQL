@@ -227,6 +227,8 @@ class SearchState(object):
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, new.next)
 
+                new.next_agg = agg
+
                 if len(new.used_aggs) > 0:
                     agg_col = AggregatedColumn()
                     agg_col.col_id = new.next_col
