@@ -197,7 +197,7 @@ class SuperModel(nn.Module):
             print('  - {}'.format(item.next))
 
     def dfs_beam_search(self, task_id, db, q_seq, history, tables, client, n, b,
-        timeout=None, debug=False, fake_literals=False):
+        tsq_level, timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
 
@@ -933,24 +933,16 @@ class SuperModel(nn.Module):
 
                 cur.used_aggs.add(cur.next_agg)
 
-                # TODO: beam searchify order by dir
                 score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
                     np.full(B, cur.next_col, dtype=np.int64))
-                label = np.argmax(score[0].data.cpu().numpy())
+                self.dir_limit_cands = np.argsort(-score[0].data.cpu().numpy())
 
-                dec_asc, has_limit = DEC_ASC_OPS[label]
-                cur.history[0].append(dec_asc)
-
-                ordered_col.dir = to_proto_dir(dec_asc)
-                cur_pq.order_by.append(ordered_col)
-
-                # cur_pq.order_by.append(dec_asc)
-                # cur_pq.order_by.append(has_limit)
-
-                if cur_pq.has_limit == to_proto_tribool(None):
-                    cur_pq.has_limit = to_proto_tribool(has_limit)
-
+                cur.next[-1] = 'order_by_dir'
+                stack.extend(
+                    reversed(cur.next_dir_states(tsq_level, ordered_col,
+                        b, client)))
+            elif cur.next[-1] == 'order_by_dir':
                 stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'finish':
                 # redirect to parent if subquery

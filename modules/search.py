@@ -1,11 +1,12 @@
 import traceback
 from itertools import permutations
 from query import Query, join_path_needs_update, with_updated_join_paths, \
-    to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg
-from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate
+    to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg, to_proto_dir
+from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate, OrderedColumn
 
 AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
+DIR_LIMIT_OPS = (("asc",True),("asc",False),("desc",True),("desc",False))
 
 def index_to_column_name(index, table):
     column_name = table["column_names"][index][1]
@@ -59,6 +60,9 @@ class SearchState(object):
         self.iter_ops = None
         # number of op slots for current col
         self.num_ops = None
+
+        # candidates for order by dir and limit presence
+        self.dir_limit_cands = None
 
         self.query = query
 
@@ -256,6 +260,35 @@ class SearchState(object):
         else:
             return states
 
+    def next_dir_limit_states(self, tsq_level, ordered_col, b, client):
+        states = []
+
+        can_prune_order = (client and tsq_level in ('default', 'no_range'))
+
+        for dir_limit in self.dir_limit_cands:
+            if not can_prune_order and b and len(states) >= b:
+                break
+            new = self.copy()
+            new_oc = OrderedColumn()
+            new_oc.CopyFrom(ordered_col)
+
+            new_pq = self.find_protoquery(new.query.pq, new.next)
+
+            dir, has_limit = DIR_LIMIT_OPS[dir_limit]
+            new.history[0].append(dir)
+
+            new_oc.dir = to_proto_dir(dir)
+            new_pq.order_by.append(new_oc)
+
+            if new_pq.has_limit == UNKNOWN:
+                new_pq.has_limit = to_proto_tribool(has_limit)
+
+            if can_prune_order and client.should_prune(new.query):
+                continue
+
+            states.append(new)
+
+        return states
 
     def next_agg_states(self, b):
         states = []
