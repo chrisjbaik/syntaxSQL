@@ -175,6 +175,8 @@ class SearchState(object):
         copied.iter_ops = self.iter_ops         # will not be modified
         copied.num_ops = self.num_ops
 
+        copied.dir_limit_cands = self.dir_limit_cands  # will not be modified
+
         return copied
 
     def next_num_kw_states(self, num_kw_cands, b):

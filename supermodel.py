@@ -943,6 +943,7 @@ class SuperModel(nn.Module):
                     reversed(cur.next_dir_limit_states(tsq_level, ordered_col,
                         b, client)))
             elif cur.next[-1] == 'order_by_dir':
+                cur.dir_limit_cands = None
                 stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'finish':
                 # redirect to parent if subquery
