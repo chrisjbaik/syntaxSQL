@@ -322,7 +322,7 @@ class SearchState(object):
 
         return states
 
-    def next_num_col_states(self, num_col_cands, b, client):
+    def next_num_col_states(self, num_col_cands, b):
         states = []
         for num_cols in num_col_cands:
             if b and len(states) >= b:
