@@ -940,7 +940,7 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'order_by_dir'
                 stack.extend(
-                    reversed(cur.next_dir_states(tsq_level, ordered_col,
+                    reversed(cur.next_dir_limit_states(tsq_level, ordered_col,
                         b, client)))
             elif cur.next[-1] == 'order_by_dir':
                 stack.extend(reversed(cur.next_agg_states(b)))
