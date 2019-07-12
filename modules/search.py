@@ -311,7 +311,18 @@ class SearchState(object):
         else:
             return states
 
-    def next_num_col_states(self, num_col_cands, b, select=False):
+    def next_select_num_col_states(self, num_col_cands, b, client):
+        states = []
+        for num_cols in num_col_cands:
+            if not client and b and len(states) >= b:
+                break
+            new = self.copy()
+            new.num_cols = num_cols
+            states.append(new)
+
+        return states
+
+    def next_num_col_states(self, num_col_cands, b, client):
         states = []
         for num_cols in num_col_cands:
             if b and len(states) >= b:

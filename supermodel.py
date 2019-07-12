@@ -352,8 +352,9 @@ class SuperModel(nn.Module):
                     num_col_cands = [1]
 
                 cur.next[-1] = 'select_col_num'
-                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
-                    b)))
+                stack.extend(
+                    reversed(cur.next_select_num_col_states(num_col_cands,
+                        b, client)))
             elif cur.next[-1] == 'select_col_num':
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
