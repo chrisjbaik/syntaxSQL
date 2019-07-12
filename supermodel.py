@@ -944,6 +944,7 @@ class SuperModel(nn.Module):
                         b, client)))
             elif cur.next[-1] == 'order_by_dir':
                 cur.dir_limit_cands = None
+                cur.next[-1] = 'order_by_agg'
                 stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'finish':
                 # redirect to parent if subquery
