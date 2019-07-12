@@ -936,7 +936,7 @@ class SuperModel(nn.Module):
                 score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
                     np.full(B, cur.next_col, dtype=np.int64))
-                self.dir_limit_cands = np.argsort(-score[0].data.cpu().numpy())
+                cur.dir_limit_cands = np.argsort(-score[0].data.cpu().numpy())
 
                 cur.next[-1] = 'order_by_dir'
                 stack.extend(
