@@ -385,8 +385,8 @@ class SuperModel(nn.Module):
                 if cur.parent:
                     num_agg_cands = [1]
 
-                for state in reversed(cur.next_num_agg_states(num_agg_cands,
-                    b)):
+                for state in reversed(cur.next_select_num_agg_states(
+                    num_agg_cands, b)):
                     if state.num_aggs == 0:
                         state_pq = state.find_protoquery(state.query.pq,
                             state.next)
