@@ -264,14 +264,14 @@ class SearchState(object):
                 states.append(new)
 
         # if no candidate states, next_agg to None and set to no agg
-        if not states:
-            if len(self.used_aggs) == 0:
-                cur_pq = self.find_protoquery(self.query.pq, self.next)
-                cur_pq.select[-1].has_agg = to_proto_tribool(False)
-            self.next_agg = None
-            return [self]
-        else:
-            return states
+        # if not states:
+        #     if len(self.used_aggs) == 0:
+        #         cur_pq = self.find_protoquery(self.query.pq, self.next)
+        #         cur_pq.select[-1].has_agg = to_proto_tribool(False)
+        #     self.next_agg = None
+        #     return [self]
+        # else:
+        return states
 
     def next_dir_limit_states(self, tsq_level, ordered_col, b, client):
         states = []
