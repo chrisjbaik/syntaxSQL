@@ -369,7 +369,7 @@ class SearchState(object):
         # if client:
         #     b = max(b, self.num_cols)
 
-        if len(self.used_cols) == self.num_cols
+        if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
         elif len(self.used_cols) < self.num_cols:
