@@ -234,7 +234,14 @@ class SearchState(object):
     def next_select_agg_states(self, b, client):
         states = []
 
-        if len(self.used_aggs) < self.num_aggs:
+        if len(self.used_aggs) == self.num_aggs:
+            if len(self.used_aggs) == 0:
+                cur_pq = self.find_protoquery(self.query.pq, self.next)
+                cur_pq.select[-1].has_agg = to_proto_tribool(False)
+            self.next_agg = None
+            return [self]
+        elif len(self.used_aggs) < self.num_aggs:
+            states = []
             for agg in self.agg_cands:
                 if not client and b and len(states) >= b:
                     break
@@ -262,16 +269,9 @@ class SearchState(object):
                     continue
 
                 states.append(new)
-
-        # if no candidate states, next_agg to None and set to no agg
-        # if not states:
-        #     if len(self.used_aggs) == 0:
-        #         cur_pq = self.find_protoquery(self.query.pq, self.next)
-        #         cur_pq.select[-1].has_agg = to_proto_tribool(False)
-        #     self.next_agg = None
-        #     return [self]
-        # else:
-        return states
+            return states
+        else:
+            raise Exception('Exceeded number of aggs.')
 
     def next_dir_limit_states(self, tsq_level, ordered_col, b, client):
         states = []
@@ -304,8 +304,11 @@ class SearchState(object):
         return states
 
     def next_agg_states(self, b):
-        states = []
-        if len(self.used_aggs) < self.num_aggs:
+        if len(self.used_aggs) == self.num_aggs:
+            self.next_agg = None
+            return [self]
+        elif len(self.used_aggs) < self.num_aggs:
+            states = []
             for agg in self.agg_cands:
                 if b and len(states) >= b:
                     break
@@ -314,13 +317,9 @@ class SearchState(object):
                 new = self.copy()
                 new.next_agg = agg
                 states.append(new)
-
-        # if no candidate states, next_agg to None
-        if not states:
-            self.next_agg = None
-            return [self]
-        else:
             return states
+        else:
+            raise Exception('Exceeded number of aggs.')
 
     def next_select_num_col_states(self, num_col_cands, b, client):
         states = []
@@ -364,15 +363,18 @@ class SearchState(object):
         return history
 
     def next_select_col_states(self, b, client):
-        states = []
-
         # For select, need to ensure that activating Duoquest does not degrade
         # performance beneath the set-based inference for SyntaxSQL. Hence,
         # we generate at least this many candidates at each beam search.
         # if client:
         #     b = max(b, self.num_cols)
 
-        if len(self.used_cols) < self.num_cols:
+        if len(self.used_cols) == self.num_cols
+            self.next_col = None
+            return [self]
+        elif len(self.used_cols) < self.num_cols:
+            states = []
+
             for col in self.col_cands:
                 if not client and b and len(states) >= b:
                     break
@@ -393,18 +395,17 @@ class SearchState(object):
 
                 states.append(new)
 
-        # if no candidate states, next_col to None
-        if not states:
-            self.next_col = None
-            return [self]
-        else:
             return states
-
+        else:
+            raise Exception('Exceeded number of columns.')
 
     def next_col_states(self, b):
-        states = []
+        if len(self.used_cols) == self.num_cols:
+            self.next_col = None
+            return [self]
+        elif len(self.used_cols) < self.num_cols:
+            states = []
 
-        if len(self.used_cols) < self.num_cols:
             for col in self.col_cands:
                 if b and len(states) >= b:
                     break
@@ -413,13 +414,9 @@ class SearchState(object):
                 new = self.copy()
                 new.next_col = col
                 states.append(new)
-
-        # if no candidate states, next_col to None
-        if not states:
-            self.next_col = None
-            return [self]
-        else:
             return states
+        else:
+            raise Exception('Exceeded number of columns.')
 
     def next_num_op_states(self, num_op_cands, b):
         states = []
