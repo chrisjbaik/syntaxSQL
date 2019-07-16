@@ -100,8 +100,6 @@ def main():
     # parser.add_argument('mode', choices=['dev', 'test'])
 
     parser.add_argument('--config_path', default='../../src/config.ini')
-    parser.add_argument('--timeout', default=5, type=int,
-        help='Timeout if search does not terminate')
     parser.add_argument('--toy', action='store_true',
         help='Use toy word embedding set to save load time')
     parser.add_argument('--debug', action='store_true',
@@ -168,7 +166,7 @@ def main():
                 dqc = client if task.tsq_level != 'no_duoquest' else None
 
                 sqls = translate(task.id, model, db, schemas, dqc, task.db_name,
-                    nlq, task.n, task.b, task.tsq_level, timeout=args.timeout,
+                    nlq, task.n, task.b, task.tsq_level, timeout=task.timeout,
                     debug=args.debug)
 
                 proto_cands = ProtoCandidates()
