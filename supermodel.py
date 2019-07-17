@@ -391,6 +391,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'select_agg_num':
                 if cur.num_aggs == 0:
                     cur.next[-1] = 'select_col'
+                    cur.clear_agg_info()
                     stack.extend(
                         reversed(cur.next_select_col_states(b, client))
                     )
