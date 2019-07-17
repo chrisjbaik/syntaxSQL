@@ -392,6 +392,7 @@ class SuperModel(nn.Module):
                 if cur.num_aggs == 0:
                     cur_pq.select[-1].has_agg = to_proto_tribool(False)
 
+                    cur.next[-1] = 'select_col'
                     stack.extend(
                         reversed(cur.next_select_col_states(b, client))
                     )
