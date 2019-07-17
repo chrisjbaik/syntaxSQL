@@ -385,22 +385,22 @@ class SuperModel(nn.Module):
                 if cur.parent:
                     num_agg_cands = [1]
 
-                for state in reversed(cur.next_select_num_agg_states(
-                    num_agg_cands, b, client)):
-                    if state.num_aggs == 0:
-                        state_pq = state.find_protoquery(state.query.pq,
-                            state.next)
-                        state_pq.select[-1].has_agg = to_proto_tribool(False)
+                cur.next[-1] = 'select_agg_num'
+                stack.extend(reversed(cur.next_select_num_agg_states(
+                    num_agg_cands, b, client)))
+            elif cur.next[-1] == 'select_agg_num':
+                if cur.num_aggs == 0:
+                    cur_pq.select[-1].has_agg = to_proto_tribool(False)
 
-                        stack.extend(
-                            reversed(state.next_select_col_states(b, client))
-                        )
-                    else:
-                        state.next[-1] = 'select_agg'
-                        state.agg_cands = agg_cands
-                        state.used_aggs = set()
-                        stack.extend(
-                            reversed(state.next_select_agg_states(b, client)))
+                    stack.extend(
+                        reversed(cur.next_select_col_states(b, client))
+                    )
+                else:
+                    cur.next[-1] = 'select_agg'
+                    cur.agg_cands = agg_cands
+                    cur.used_aggs = set()
+                    stack.extend(
+                        reversed(cur.next_select_agg_states(b, client)))
             elif cur.next[-1] == 'select_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'select_col'
