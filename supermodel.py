@@ -353,7 +353,7 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'select_col_num'
                 stack.extend(
-                    reversed(cur.next_select_num_col_states(num_col_cands,
+                    reversed(cur.next_num_col_states('select', num_col_cands,
                         b, client)))
             elif cur.next[-1] == 'select_col_num':
                 cur.next[-1] = 'select_col'
@@ -432,8 +432,8 @@ class SuperModel(nn.Module):
                 # cur_pq.where.append(andor_cond)
 
                 cur.next[-1] = 'where_col_num'
-                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
-                    b)))
+                stack.extend(reversed(cur.next_num_col_states('where',
+                    num_col_cands, b, client)))
             elif cur.next[-1] == 'where_col_num':
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
@@ -458,7 +458,8 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'where_op_num'
-                stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
+                stack.extend(reversed(cur.next_num_op_states('where',
+                    op_num_cands, b, client)))
             elif cur.next[-1] == 'where_op_num':
                 stack.extend(reversed(cur.next_op_states('where_op',
                     cur.num_ops, op_cands, col_name, b, client)))
@@ -604,8 +605,8 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'group_by_col_num'
 
-                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
-                    b)))
+                stack.extend(reversed(cur.next_num_col_states('group_by',
+                    num_col_cands, b, client)))
             elif cur.next[-1] == 'group_by_col_num':
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
@@ -651,8 +652,8 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'having_col_num'
 
-                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
-                    b)))
+                stack.extend(reversed(cur.next_num_col_states('having',
+                    num_col_cands, b, client)))
             elif cur.next[-1] == 'having_col_num':
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
@@ -709,7 +710,8 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] == 'having_op_num'
-                stack.extend(reversed(cur.next_num_op_states(op_num_cands, b)))
+                stack.extend(reversed(cur.next_num_op_states('having',
+                    op_num_cands, b, client)))
             elif cur.next[-1] == 'having_op_num':
                 stack.extend(reversed(cur.next_op_states('having_op',
                     cur.num_ops, op_cands, col_name, b, client)))
@@ -866,8 +868,8 @@ class SuperModel(nn.Module):
                         col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'order_by_col_num'
-                stack.extend(reversed(cur.next_num_col_states(num_col_cands,
-                    b)))
+                stack.extend(reversed(cur.next_num_col_states('order_by',
+                    num_col_cands, b, client)))
             elif cur.next[-1] == 'order_by_col_num':
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()

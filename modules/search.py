@@ -332,7 +332,7 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of aggs.')
 
-    def next_select_num_col_states(self, num_col_cands, b, client):
+    def next_num_col_states(self, clause, num_col_cands, b, client):
         states = []
         for num_cols in num_col_cands:
             if not client and b and len(states) >= b:
@@ -341,22 +341,23 @@ class SearchState(object):
             new.num_cols = num_cols
 
             new_pq = self.find_protoquery(new.query.pq, new.next)
-            new_pq.min_select_cols = num_cols
+
+            if clause == 'select':
+                new_pq.min_select_cols = num_cols
+            elif clause == 'where':
+                new_pq.min_where_preds = num_cols
+            elif clause == 'group_by':
+                new_pq.min_group_by_cols = num_cols
+            elif clause == 'having':
+                new_pq.min_having_preds = num_cols
+            elif clause == 'order_by':
+                new_pq.min_order_by_cols = num_cols
+            else:
+                raise Exception('Unknown clause: {}'.format(clause))
 
             if client and client.should_prune(new.query):
                 continue
 
-            states.append(new)
-
-        return states
-
-    def next_num_col_states(self, num_col_cands, b):
-        states = []
-        for num_cols in num_col_cands:
-            if b and len(states) >= b:
-                break
-            new = self.copy()
-            new.num_cols = num_cols
             states.append(new)
 
         return states
@@ -431,13 +432,28 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_num_op_states(self, num_op_cands, b):
+    def next_num_op_states(self, clause, num_op_cands, b, client):
         states = []
         for num_ops in num_op_cands:
-            if b and len(states) >= b:
+            if not client and b and len(states) >= b:
                 break
             new = self.copy()
             new.num_ops = num_ops
+
+            new_pq = self.find_protoquery(new.query.pq, new.next)
+
+            if clause == 'where':
+                new_pq.min_where_preds = len(new_pq.where.predicates) + \
+                    (num_ops - 1) + (new.num_cols - len(new.used_cols))
+            elif clause == 'having':
+                new_pq.min_having_preds = len(new_pq.having.predicates) + \
+                    (num_ops - 1) + (new.num_cols - len(new.used_cols))
+            else:
+                raise Exception('Unknown clause: {}'.format(clause))
+
+            if client and client.should_prune(new.query):
+                continue
+
             states.append(new)
 
         return states
