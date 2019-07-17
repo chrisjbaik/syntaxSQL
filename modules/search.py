@@ -216,6 +216,14 @@ class SearchState(object):
                 break
             new = self.copy()
             new.num_aggs = num_aggs
+
+            if new.num_aggs == 0:
+                new_pq = self.find_protoquery(new.query.pq, new.next)
+                new_pq.select[-1].has_agg = to_proto_tribool(False)
+
+                if client and client.should_prune(new.query):
+                    continue
+
             states.append(new)
 
         return states
