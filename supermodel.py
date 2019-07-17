@@ -375,8 +375,6 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.get_select_history(tables))
 
-                cur.used_cols.add(cur.next_col)
-
                 agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)

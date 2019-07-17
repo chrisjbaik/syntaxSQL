@@ -217,12 +217,15 @@ class SearchState(object):
             new = self.copy()
             new.num_aggs = num_aggs
 
+            new_pq = self.find_protoquery(new.query.pq, new.next)
+            new_pq.min_select_cols = len(new_pq.select) + \
+                (max(num_aggs, 1) - 1) + (new.num_cols - len(new.used_cols))
+
             if new.num_aggs == 0:
-                new_pq = self.find_protoquery(new.query.pq, new.next)
                 new_pq.select[-1].has_agg = to_proto_tribool(False)
 
-                if client and client.should_prune(new.query):
-                    continue
+            if client and client.should_prune(new.query):
+                continue
 
             states.append(new)
 
@@ -336,6 +339,13 @@ class SearchState(object):
                 break
             new = self.copy()
             new.num_cols = num_cols
+
+            new_pq = self.find_protoquery(new.query.pq, new.next)
+            new_pq.min_select_cols = num_cols
+
+            if client and client.should_prune(new.query):
+                continue
+
             states.append(new)
 
         return states
@@ -371,12 +381,6 @@ class SearchState(object):
         return history
 
     def next_select_col_states(self, b, client):
-        # For select, need to ensure that activating Duoquest does not degrade
-        # performance beneath the set-based inference for SyntaxSQL. Hence,
-        # we generate at least this many candidates at each beam search.
-        # if client:
-        #     b = max(b, self.num_cols)
-
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
@@ -393,6 +397,7 @@ class SearchState(object):
                 new_pq = new.find_protoquery(new.query.pq, new.next)
 
                 new.next_col = col
+                new.used_cols.add(col)
 
                 agg_col = AggregatedColumn()
                 agg_col.col_id = new.next_col
