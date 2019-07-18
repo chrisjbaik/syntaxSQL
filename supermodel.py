@@ -256,6 +256,7 @@ class SuperModel(nn.Module):
                     stack.extend(reversed(states[1:]))
                     # execute the first state now
                     cur = states[0]
+                    cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
                 if debug:
                     print('Updated join paths: {}'.format(updated))
@@ -950,7 +951,7 @@ class SuperModel(nn.Module):
                 stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'finish':
                 cur_pq.done_query = True
-                
+
                 # redirect to parent if subquery
                 if cur.parent:
                     stack.append(cur.parent)
