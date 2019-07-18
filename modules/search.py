@@ -179,10 +179,10 @@ class SearchState(object):
 
         return copied
 
-    def next_num_kw_states(self, num_kw_cands, b):
+    def next_num_kw_states(self, num_kw_cands, b, client):
         states = []
         for num_kws in num_kw_cands:
-            if b and len(states) >= b:
+            if not client and b and len(states) >= b:
                 break
             new = self.copy()
             new.num_kws = num_kws
@@ -190,16 +190,21 @@ class SearchState(object):
 
         return states
 
-    def next_kw_states(self, b):
+    def next_kw_states(self, b, client):
         states = []
         if len(self.used_kws) < self.num_kws:
             for kw in self.kw_cands:
-                if b and len(states) >= b:
+                if not client and b and len(states) >= b:
                     break
                 if kw in self.used_kws:
                     continue
                 new = self.copy()
                 new.next_kw = kw
+
+                new_pq = self.find_protoquery(new.query.pq, new.next)
+                if client and client.should_prune(new.query):
+                    continue
+
                 states.append(new)
 
         # if no candidate states, next_kw to None

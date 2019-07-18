@@ -307,11 +307,12 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'keyword_num'
 
-                stack.extend(reversed(cur.next_num_kw_states(num_kw_cands, b)))
+                stack.extend(
+                    reversed(cur.next_num_kw_states(num_kw_cands, b, client)))
             elif cur.next[-1] == 'keyword_num':
                 cur.next[-1] = 'keyword_each'
                 cur.used_kws = set()
-                stack.extend(reversed(cur.next_kw_states(b)))
+                stack.extend(reversed(cur.next_kw_states(b, client)))
             elif cur.next[-1] == 'keyword_each':
                 if cur.next_kw is None:
                     cur.next[-1] = 'select'
@@ -337,7 +338,7 @@ class SuperModel(nn.Module):
                         cur_kw))
                 cur.used_kws.add(cur.next_kw)
 
-                stack.extend(reversed(cur.next_kw_states(b)))
+                stack.extend(reversed(cur.next_kw_states(b, client)))
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
