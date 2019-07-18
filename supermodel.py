@@ -959,7 +959,7 @@ class SuperModel(nn.Module):
                     stack.append(cur)
                     continue
 
-                cur.query.done_query = True
+                cur_pq.done_query = True
                 if client:
                     if client.is_verified(cur.query):
                         results.append(cur.query)
