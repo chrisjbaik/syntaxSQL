@@ -949,6 +949,8 @@ class SuperModel(nn.Module):
                 cur.next[-1] = 'order_by_agg'
                 stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'finish':
+                cur_pq.done_query = True
+                
                 # redirect to parent if subquery
                 if cur.parent:
                     stack.append(cur.parent)
@@ -959,7 +961,6 @@ class SuperModel(nn.Module):
                     stack.append(cur)
                     continue
 
-                cur_pq.done_query = True
                 if client:
                     if client.is_verified(cur.query):
                         results.append(cur.query)
