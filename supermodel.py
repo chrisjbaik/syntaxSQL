@@ -963,8 +963,11 @@ class SuperModel(nn.Module):
                     continue
 
                 if client:
-                    if client.is_verified(cur.query):
+                    verified, answer_found = client.is_verified(cur.query):
+                    if verified:
                         results.append(cur.query)
+                    if answer_found:
+                        break
                 else:
                     results.append(cur.query)
 

@@ -29,7 +29,7 @@ class DuoquestClient(object):
         msg = self.conn.recv_bytes()
         response = ProtoResult()
         response.ParseFromString(msg)
-        return (response.results[0] == TRUE)
+        return (response.results[0] == TRUE), response.answer_found
 
     def close(self):
         self.conn.send_bytes(b'close')
