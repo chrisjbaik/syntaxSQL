@@ -21,6 +21,16 @@ class DuoquestClient(object):
         response.ParseFromString(msg)
         return (response.results[0] == FALSE)
 
+    def is_verified(self, query):
+        protolist = ProtoQueryList()
+        protolist.queries.append(query.pq)
+
+        self.conn.send_bytes(protolist.SerializeToString())
+        msg = self.conn.recv_bytes()
+        response = ProtoResult()
+        response.ParseFromString(msg)
+        return (response.results[0] == TRUE)
+
     def close(self):
         self.conn.send_bytes(b'close')
         self.conn.close()
