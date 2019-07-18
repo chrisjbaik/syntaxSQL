@@ -262,8 +262,8 @@ class SuperModel(nn.Module):
                     print('Updated join paths: {}'.format(updated))
 
             # check if Duoquest says to prune it
-            if client and client.should_prune(cur.query):
-                continue
+            # if client and client.should_prune(cur.query):
+            #     continue
 
             if debug:
                 self.print_stack(stack)
@@ -383,7 +383,7 @@ class SuperModel(nn.Module):
 
                 # for subqueries, can only have 1 projected column
                 if cur.parent:
-                    num_agg_cands = [1]
+                    num_agg_cands = [0, 1]
 
                 cur.next[-1] = 'select_agg_num'
                 stack.extend(reversed(cur.next_select_num_agg_states(
