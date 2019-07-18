@@ -383,7 +383,8 @@ class SuperModel(nn.Module):
 
                 # for subqueries, can only have 1 projected column
                 if cur.parent:
-                    num_agg_cands = [0, 1]
+                    num_agg_cands = list(filter(lambda x: x in (0, 1),
+                        num_agg_cands))
 
                 cur.next[-1] = 'select_agg_num'
                 stack.extend(reversed(cur.next_select_num_agg_states(
