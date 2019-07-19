@@ -705,7 +705,7 @@ class SuperModel(nn.Module):
                     self.get_op_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
-                cur.next[-1] == 'having_op_num'
+                cur.next[-1] = 'having_op_num'
                 stack.extend(reversed(cur.next_num_op_states('having',
                     op_num_cands, b, client)))
             elif cur.next[-1] == 'having_op_num':
