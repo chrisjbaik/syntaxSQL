@@ -377,7 +377,7 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.get_select_history(tables))
 
-                agg_cands, num_agg_cands = \
+                cur.agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
@@ -387,7 +387,7 @@ class SuperModel(nn.Module):
                         num_agg_cands))
 
                 cur.next[-1] = 'select_agg_num'
-                stack.extend(reversed(cur.next_select_num_agg_states(
+                stack.extend(reversed(cur.next_num_agg_states('select',
                     num_agg_cands, b, client)))
             elif cur.next[-1] == 'select_agg_num':
                 if cur.num_aggs == 0:
@@ -398,8 +398,6 @@ class SuperModel(nn.Module):
                     )
                 else:
                     cur.next[-1] = 'select_agg'
-                    cur.agg_cands = agg_cands
-                    cur.used_aggs = set()
                     stack.extend(
                         reversed(cur.next_select_agg_states(b, client)))
             elif cur.next[-1] == 'select_agg':
@@ -676,24 +674,19 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                agg_cands, num_agg_cands = \
+                cur.agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
+                # cannot have HAVING without aggs
+                num_agg_cands = list(filter(lambda x: x == 0, num_agg_cands))
+
+                cur.next[-1] = 'having_agg_num'
+                stack.extend(reversed(cur.next_num_agg_states('having',
+                    num_agg_cands, b, client)))
+            elif cur.next[-1] == 'having_agg_num':
                 cur.next[-1] = 'having_agg'
-                cur.used_aggs = set()
-
-                for state in reversed(cur.next_num_agg_states(num_agg_cands,
-                    b)):
-                    # do not permit HAVING without aggs
-                    if state.num_aggs == 0:
-                        continue
-                        # state.agg_cands = ['none_agg']
-                        # state.num_aggs = 1
-
-                    state.agg_cands = agg_cands
-
-                    stack.extend(reversed(state.next_agg_states(b)))
+                stack.extend(reversed(state.next_agg_states(b, client)))
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
@@ -893,22 +886,19 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                agg_cands, num_agg_cands = \
+                cur.agg_cands, num_agg_cands = \
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
+                cur.next[-1] = 'order_by_agg_num'
+                stack.extend(reversed(cur.next_num_agg_states('order_by',
+                    num_agg_cands, b, client)))
+            elif cur.next[-1] == 'order_by_agg_num':
+                if cur.num_aggs == 0:
+                    cur.agg_cands = ['none_agg']
+                    cur.num_aggs = 1
                 cur.next[-1] = 'order_by_agg'
-                cur.used_aggs = set()
-
-                for state in reversed(cur.next_num_agg_states(num_agg_cands,
-                    b)):
-                    if state.num_aggs == 0:
-                        state.agg_cands = ['none_agg']
-                        state.num_aggs = 1
-                    else:
-                        state.agg_cands = agg_cands
-
-                    stack.extend(reversed(state.next_agg_states(b)))
+                stack.extend(reversed(state.next_agg_states(b)))
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'

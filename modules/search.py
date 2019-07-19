@@ -214,20 +214,21 @@ class SearchState(object):
         else:
             return states
 
-    def next_select_num_agg_states(self, num_agg_cands, b, client):
+    def next_num_agg_states(self, clause, num_agg_cands, b, client):
         states = []
         for num_aggs in num_agg_cands:
             if not client and b and len(states) >= b:
                 break
             new = self.copy()
             new.num_aggs = num_aggs
+            new.used_aggs = set()
 
-            new_pq = self.find_protoquery(new.query.pq, new.next)
-            new_pq.min_select_cols = len(new_pq.select) + \
-                (max(num_aggs, 1) - 1) + (new.num_cols - len(new.used_cols))
-
-            if new.num_aggs == 0:
-                new_pq.select[-1].has_agg = to_proto_tribool(False)
+            if clause == 'select':
+                new_pq = self.find_protoquery(new.query.pq, new.next)
+                new_pq.min_select_cols = len(new_pq.select) + \
+                    (max(num_aggs, 1) - 1) + (new.num_cols - len(new.used_cols))
+                if new.num_aggs == 0:
+                    new_pq.select[-1].has_agg = to_proto_tribool(False)
 
             if client and client.should_prune(new.query):
                 continue
