@@ -324,13 +324,13 @@ def generate_sql_str(pq, schema, alias_prefix=None):
     clauses = []
     clauses.append(select_clause_str(pq, schema, aliases))
     clauses.append(from_clause)
-    if pq.has_where == TRUE:
+    if pq.has_where == TRUE and pq.where.predicates:
         clauses.append(where_clause_str(pq, schema, aliases))
-    if pq.has_group_by == TRUE:
+    if pq.has_group_by == TRUE and pq.group_by:
         clauses.append(group_by_clause_str(pq, schema, aliases))
-    if pq.has_having == TRUE:
+    if pq.has_having == TRUE and pq.having.predicates:
         clauses.append(having_clause_str(pq, schema, aliases))
-    if pq.has_order_by == TRUE:
+    if pq.has_order_by == TRUE and pq.order_by:
         clauses.append(order_by_clause_str(pq, schema, aliases))
     if pq.has_limit == TRUE:
         clauses.append(limit_clause_str(pq))
