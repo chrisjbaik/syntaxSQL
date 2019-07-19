@@ -898,7 +898,7 @@ class SuperModel(nn.Module):
                     cur.agg_cands = ['none_agg']
                     cur.num_aggs = 1
                 cur.next[-1] = 'order_by_agg'
-                stack.extend(reversed(state.next_agg_states(b)))
+                stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'
