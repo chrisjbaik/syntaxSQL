@@ -196,7 +196,7 @@ class SuperModel(nn.Module):
         for item in stack:
             print('  - {}'.format(item.next))
 
-    def dfs_beam_search(self, task_id, db, q_seq, history, tables, client, n, b,
+    def enumerate(self, task_id, db, q_seq, history, tables, client, n, b,
         tsq_level, timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
@@ -793,50 +793,24 @@ class SuperModel(nn.Module):
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
-
-                        # pred = Predicate()
-                        # pred.col_id = cur.next_col
-                        # pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        # pred.has_subquery = to_proto_tribool(False)
-                        pred = new_pq.where.predicates[pred_idx]
+                        pred = new_pq.having.predicates[pred_idx]
                         pred.value.append(x)
                         pred.value.append(y)
-                        # pred.has_agg = to_proto_tribool(True)
-                        # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                        # new_pq.having.predicates.append(pred)
-
                         stack.append(new)
                 elif NEW_WHERE_OPS[op] in ('in', 'not in'):
                     new = cur.copy()
                     new_pq = new.find_protoquery(new.query.pq,
                         cur.next)
-
-                    # pred = Predicate()
-                    # pred.col_id = cur.next_col
-                    # pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                    # pred.has_subquery = to_proto_tribool(False)
-                    pred = new_pq.where.predicates[pred_idx]
+                    pred = new_pq.having.predicates[pred_idx]
                     pred.value.extend(cands)
-                    # pred.has_agg = to_proto_tribool(True)
-                    # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                    # new_pq.having.predicates.append(pred)
                     stack.append(new)
                 else:
                     for literal in cands:
                         new = cur.copy()
                         new_pq = new.find_protoquery(new.query.pq,
                             cur.next)
-
-                        # pred = Predicate()
-                        # pred.col_id = cur.next_col
-                        # pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                        # pred.has_subquery = to_proto_tribool(False)
-                        pred = new_pq.where.predicates[pred_idx]
+                        pred = new_pq.having.predicates[pred_idx]
                         pred.value.append(literal)
-                        # pred.has_agg = to_proto_tribool(True)
-                        # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                        # new_pq.having.predicates.append(pred)
-
                         stack.append(new)
             elif cur.next[-1] == 'order_by':
                 if cur_pq.has_order_by != to_proto_tribool(True):

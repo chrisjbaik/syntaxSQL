@@ -73,7 +73,7 @@ def translate(id, model, db, schemas, client, db_name, nlq, n, b, tsq_level,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.dfs_beam_search(id, db, [tokens] * 2, [], schema, client, n,
+        cqs = model.enumerate(id, db, [tokens] * 2, [], schema, client, n,
             b, tsq_level, timeout=timeout, debug=debug,
             fake_literals=fake_literals)
 
