@@ -686,7 +686,7 @@ class SuperModel(nn.Module):
                     num_agg_cands, b, client)))
             elif cur.next[-1] == 'having_agg_num':
                 cur.next[-1] = 'having_agg'
-                stack.extend(reversed(cur.next_agg_states(b, client)))
+                stack.extend(reversed(cur.next_agg_states(b)))
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
