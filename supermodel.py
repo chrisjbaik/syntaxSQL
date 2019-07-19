@@ -679,7 +679,7 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 # cannot have HAVING without aggs
-                num_agg_cands = list(filter(lambda x: x == 0, num_agg_cands))
+                num_agg_cands = list(filter(lambda x: x != 0, num_agg_cands))
 
                 cur.next[-1] = 'having_agg_num'
                 stack.extend(reversed(cur.next_num_agg_states('having',
