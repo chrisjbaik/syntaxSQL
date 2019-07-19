@@ -752,24 +752,15 @@ class SuperModel(nn.Module):
                 cur.history[0].append('root')
                 cur.history[0].append('none')
 
-                # subquery_idx = len(cur_pq.having.predicates)
-                # cur_pq.having.append(subquery)
-
-                # pred = Predicate()
-                # pred.col_id = cur.next_col
-                # pred.op = to_proto_op(NEW_WHERE_OPS[op])
                 pred.has_subquery = to_proto_tribool(True)
                 pred.subquery.set_op = to_proto_set_op('none')
-                # pred.has_agg = to_proto_tribool(True)
-                # pred.agg = to_proto_agg(AGG_OPS[cur.next_agg])
-                # cur_pq.having.predicates.append(pred)
 
                 cur.next_op_idx += 1
                 cur.next[-1] = 'having_op'
 
                 substate = cur.copy()
                 substate.set_parent(cur)
-                substate.next.append(subquery_idx)
+                substate.next.append(pred_idx)
                 substate.next.append('keyword')
                 stack.append(substate)
             elif cur.next[-1] == 'having_op_terminal':
