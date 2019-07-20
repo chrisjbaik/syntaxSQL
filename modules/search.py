@@ -471,10 +471,10 @@ class SearchState(object):
             raise Exception('Unknown next: {}'.format(next))
 
         cand_iter = permutations(op_cands, num_ops)
-        
+
         # HACK, because SyntaxSQLNet can't do two = ops
         if or_op:
-            cand_iter = chain([0] * num_ops, cand_iter)
+            cand_iter = chain([[0] * num_ops], cand_iter)
 
         for ops in cand_iter:
             if b and len(states) >= b:
