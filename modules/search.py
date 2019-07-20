@@ -1,8 +1,9 @@
 import traceback
-from itertools import permutations
+from itertools import chain, permutations
 from query import Query, join_path_needs_update, with_updated_join_paths, \
     to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg, to_proto_dir
-from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate, OrderedColumn
+from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate, \
+    OrderedColumn, AND, OR
 
 AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')
 NEW_WHERE_OPS = ('=','>','<','>=','<=','!=','like','not in','in','between')
@@ -458,15 +459,24 @@ class SearchState(object):
         self.next[-1] = next
         self.next_op_idx = 0
 
+        or_op = False
         cur_pq = self.find_protoquery(self.query.pq, self.next)
         if next.startswith('where'):
             self.next_op_offset = len(cur_pq.where.predicates)
+            or_op = (cur_pq.where.logical_op == OR)
         elif next.startswith('having'):
             self.next_op_offset = len(cur_pq.having.predicates)
+            or_op = (cur_pq.having.logical_op == OR)
         else:
             raise Exception('Unknown next: {}'.format(next))
 
-        for ops in permutations(op_cands, num_ops):
+        cand_iter = permutations(op_cands, num_ops)
+        
+        # HACK, because SyntaxSQLNet can't do two = ops
+        if or_op:
+            cand_iter = chain([0] * num_ops, cand_iter)
+
+        for ops in cand_iter:
             if b and len(states) >= b:
                 break
             new = self.copy()
