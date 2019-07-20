@@ -473,7 +473,7 @@ class SearchState(object):
         cand_iter = permutations(op_cands, num_ops)
 
         # HACK, because SyntaxSQLNet can't do two = ops
-        if or_op:
+        if or_op and num_ops > 1:
             cand_iter = chain([[0] * num_ops], cand_iter)
 
         for ops in cand_iter:
