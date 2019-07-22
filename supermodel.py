@@ -797,7 +797,7 @@ class SuperModel(nn.Module):
 
                 cur.used_aggs.add(cur.next_agg)
 
-                op_scores, op_num_scores = \
+                cur.op_scores, op_num_scores = \
                     self.get_op_scores(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
