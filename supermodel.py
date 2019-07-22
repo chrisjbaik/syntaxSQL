@@ -538,7 +538,7 @@ class SuperModel(nn.Module):
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
                     cur.clear_op_info()
-                    self.heappush_many(cur.next_col_states(client))
+                    self.heappush_many(heapq, cur.next_col_states(client))
                     # stack.extend(reversed(cur.next_col_states(b, client)))
                     continue
 
