@@ -465,7 +465,7 @@ class SearchState(object):
         elif len(self.used_cols) < self.num_cols:
             states = []
 
-            for col, score in self.col_scores:
+            for col, score in enumerate(self.col_scores):
                 # if not client and b and len(states) >= b:
                 #     break
                 if col in self.used_cols:
