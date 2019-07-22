@@ -779,7 +779,7 @@ class SuperModel(nn.Module):
                 #     num_agg_cands, b, client)))
             elif cur.next[-1] == 'having_agg_num':
                 cur.next[-1] = 'having_agg'
-                self.heappush_many(heapq, cur.next_agg_states(client)
+                self.heappush_many(heapq, cur.next_agg_states(client))
                 # stack.extend(reversed(cur.next_agg_states(b, client)))
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None:
