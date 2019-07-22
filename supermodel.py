@@ -157,7 +157,7 @@ class SuperModel(nn.Module):
         col_len, col_name_len):
         score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
             col_emb_var, col_len, col_name_len)
-        col_num_score, col_score =
+        col_num_score, col_score = \
             [F.softmax(x).data.cpu().numpy()[0] for x in score]
         # num_cols = np.argmax(col_num_score[0]) + 1
         # num_col_cands = list(np.argsort(-col_num_score[0]) + 1)
