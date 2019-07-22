@@ -255,7 +255,7 @@ class SuperModel(nn.Module):
                 print('Timed out. Returned {} results.'.format(len(results)))
                 break
 
-            cur = heappop(heapq)[1]
+            cur = heappop(heapq)[2]
 
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
