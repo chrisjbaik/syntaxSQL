@@ -686,7 +686,7 @@ class SuperModel(nn.Module):
                     num_agg_cands, b, client)))
             elif cur.next[-1] == 'having_agg_num':
                 cur.next[-1] = 'having_agg'
-                stack.extend(reversed(cur.next_agg_states(b)))
+                stack.extend(reversed(cur.next_agg_states(b, client)))
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
@@ -715,7 +715,7 @@ class SuperModel(nn.Module):
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'having_agg'
                     cur.clear_op_info()
-                    stack.extend(reversed(cur.next_agg_states(b)))
+                    stack.extend(reversed(cur.next_agg_states(b, client)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -870,7 +870,7 @@ class SuperModel(nn.Module):
                     cur.agg_cands = ['none_agg']
                     cur.num_aggs = 1
                 cur.next[-1] = 'order_by_agg'
-                stack.extend(reversed(cur.next_agg_states(b)))
+                stack.extend(reversed(cur.next_agg_states(b, client)))
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'
@@ -911,7 +911,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'order_by_dir':
                 cur.dir_limit_cands = None
                 cur.next[-1] = 'order_by_agg'
-                stack.extend(reversed(cur.next_agg_states(b)))
+                stack.extend(reversed(cur.next_agg_states(b, client)))
             elif cur.next[-1] == 'finish':
                 cur_pq.done_query = True
 

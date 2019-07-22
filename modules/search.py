@@ -310,14 +310,14 @@ class SearchState(object):
 
         return states
 
-    def next_agg_states(self, b):
+    def next_agg_states(self, b, client):
         if len(self.used_aggs) == self.num_aggs:
             self.next_agg = None
             return [self]
         elif len(self.used_aggs) < self.num_aggs:
             states = []
             for agg in self.agg_cands:
-                if b and len(states) >= b:
+                if not client and b and len(states) >= b:
                     break
                 if agg in self.used_aggs:
                     continue
