@@ -158,7 +158,7 @@ class SuperModel(nn.Module):
         score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
             col_emb_var, col_len, col_name_len)
         col_num_score, col_score = \
-            [F.softmax(x).data.cpu().numpy()[0] for x in score]
+            [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
         # num_cols = np.argmax(col_num_score[0]) + 1
         # num_col_cands = list(np.argsort(-col_num_score[0]) + 1)
         # return list(np.argsort(-col_score[0])), num_col_cands
@@ -171,7 +171,7 @@ class SuperModel(nn.Module):
             col_emb_var, col_len, col_name_len,
             np.full(B, col, dtype=np.int64))
         agg_num_score, agg_score = \
-            [F.softmax(x).data.cpu().numpy()[0] for x in score]
+            [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
         # agg_num = np.argmax(agg_num_score[0])
         # agg_num_cands = list(np.argsort(-agg_num_score[0]))
 
@@ -184,7 +184,7 @@ class SuperModel(nn.Module):
             col_emb_var, col_len, col_name_len,
             np.full(B, col, dtype=np.int64))
         op_num_score, op_score = \
-            [F.softmax(x).data.cpu().numpy()[0] for x in score]
+            [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
         # op_num = np.argmax(op_num_score[0]) + 1
         # op_num_cands = list(np.argsort(-op_num_score[0]) + 1)
         #
@@ -327,7 +327,7 @@ class SuperModel(nn.Module):
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, kw_emb_var, kw_len)
                 num_kw_scores, cur.kw_scores = \
-                    [F.softmax(x).data.cpu().numpy()[0] for x in score]
+                    [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
                 # num_kw_cands = list(np.argsort(-kw_num_score[0]))
                 # cur.kw_cands = list(np.argsort(-kw_score[0]))
 
@@ -470,7 +470,7 @@ class SuperModel(nn.Module):
 
                 score = self.andor.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len)
-                cur.and_or_scores = F.softmax(score)[0].data.cpu().numpy()
+                cur.and_or_scores = list(F.softmax(score)[0].data.cpu().numpy())
 
                 # label = np.argmax(score[0].data.cpu().numpy())
                 # andor_cond = COND_OPS[label]
@@ -548,7 +548,7 @@ class SuperModel(nn.Module):
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
                     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
-                root_term_scores = F.softmax(score)[0].data.cpu().numpy()
+                root_term_scores = list(F.softmax(score)[0].data.cpu().numpy())
 
                 # label = np.argmax(score[0].data.cpu().numpy())
                 # label = ROOT_TERM_OPS[label]
@@ -708,7 +708,7 @@ class SuperModel(nn.Module):
                         hs_len, col_emb_var, col_len, col_name_len,
                         np.full(B, cur.next_col, dtype=np.int64))
 
-                    having_scores = F.softmax(score)[0].data.cpu().numpy()
+                    having_scores = list(F.softmax(score)[0].data.cpu().numpy())
                     # label = np.argmax(score[0].data.cpu().numpy())
                     # cur_pq.has_having = to_proto_tribool(label == 1)
                     for has_having, score in enumerate(having_scores):
@@ -828,7 +828,7 @@ class SuperModel(nn.Module):
                 score = self.root_teminal.forward(q_emb_var, q_len,
                     hs_emb_var, hs_len, col_emb_var, col_len,
                     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
-                root_term_scores = F.softmax(score)[0].data.cpu().numpy()
+                root_term_scores = list(F.softmax(score)[0].data.cpu().numpy())
 
                 for root_term, score in enumerate(root_term_scores):
                     label = ROOT_TERM_OPS[root_term]
@@ -1032,7 +1032,8 @@ class SuperModel(nn.Module):
                 score = self.des_asc.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, col_emb_var, col_len, col_name_len,
                     np.full(B, cur.next_col, dtype=np.int64))
-                cur.dir_limit_scores = F.softmax(score)[0].data.cpu().numpy()
+                cur.dir_limit_scores = \
+                    list(F.softmax(score)[0].data.cpu().numpy())
                 # cur.dir_limit_cands = np.argsort(-score[0].data.cpu().numpy())
 
                 cur.next[-1] = 'order_by_dir'
