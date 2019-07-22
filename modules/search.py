@@ -188,6 +188,7 @@ class SearchState(object):
 
         copied.next_op_idx = self.next_op_idx
         copied.next_op_offset = self.next_op_offset
+        copied.op_scores = self.op_scores       # will not be modified
         copied.iter_ops = self.iter_ops         # will not be modified
         copied.num_ops = self.num_ops
 
