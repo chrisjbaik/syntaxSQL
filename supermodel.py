@@ -438,7 +438,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'where_col_num':
                 cur.next[-1] = 'where_col'
                 cur.used_cols = set()
-                stack.extend(reversed(cur.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b, client)))
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
@@ -468,7 +468,7 @@ class SuperModel(nn.Module):
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
                     cur.clear_op_info()
-                    stack.extend(reversed(cur.next_col_states(b)))
+                    stack.extend(reversed(cur.next_col_states(b, client)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -611,7 +611,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'group_by_col_num':
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
-                stack.extend(reversed(cur.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b, client)))
             elif cur.next[-1] == 'group_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'having'
@@ -635,7 +635,7 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                stack.extend(reversed(cur.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b, client)))
             elif cur.next[-1] == 'having':
                 if cur_pq.has_having != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
@@ -658,7 +658,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'having_col_num':
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
-                stack.extend(reversed(cur.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b, client)))
             elif cur.next[-1] == 'having_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'order_by'
@@ -691,7 +691,7 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
                     cur.clear_agg_info()
-                    stack.extend(reversed(cur.next_col_states(b)))
+                    stack.extend(reversed(cur.next_col_states(b, client)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -828,13 +828,16 @@ class SuperModel(nn.Module):
                     self.get_col_cands(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
+                # Only permit 1 order by max
+                num_col_cands = list(filter(lambda x: x in (0, 1),
+                    num_col_cands))
                 cur.next[-1] = 'order_by_col_num'
                 stack.extend(reversed(cur.next_num_col_states('order_by',
                     num_col_cands, b, client)))
             elif cur.next[-1] == 'order_by_col_num':
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()
-                stack.extend(reversed(cur.next_col_states(b)))
+                stack.extend(reversed(cur.next_col_states(b, client)))
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'finish'
@@ -855,6 +858,10 @@ class SuperModel(nn.Module):
                     self.get_agg_cands(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
+                # Only permit 1 order by max
+                num_agg_cands = list(filter(lambda x: x in (0, 1),
+                    num_agg_cands))
+
                 cur.next[-1] = 'order_by_agg_num'
                 stack.extend(reversed(cur.next_num_agg_states('order_by',
                     num_agg_cands, b, client)))
@@ -868,7 +875,7 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'
                     cur.clear_agg_info()
-                    stack.extend(reversed(cur.next_col_states(b)))
+                    stack.extend(reversed(cur.next_col_states(b, client)))
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)

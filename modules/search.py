@@ -409,7 +409,7 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_col_states(self, b):
+    def next_col_states(self, b, client):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
@@ -417,7 +417,7 @@ class SearchState(object):
             states = []
 
             for col in self.col_cands:
-                if b and len(states) >= b:
+                if not client and b and len(states) >= b:
                     break
                 if col in self.used_cols:
                     continue
