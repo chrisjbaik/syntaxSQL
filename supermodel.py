@@ -621,7 +621,7 @@ class SuperModel(nn.Module):
                         cands = ['terminal']
                 else:
                     cands = find_literal_candidates(q_seq[0], db, schema,
-                        cur.next_col, lit_cache, b,
+                        cur.next_col, lit_cache,
                         like=NEW_WHERE_OPS[op] == 'like')
 
                 if not cands:
@@ -903,7 +903,7 @@ class SuperModel(nn.Module):
                         cands = ['terminal']
                 else:
                     cands = find_literal_candidates(q_seq[0], db, schema,
-                        cur.next_col, lit_cache, b, agg=literal_agg,
+                        cur.next_col, lit_cache, agg=literal_agg,
                         like=NEW_WHERE_OPS[op] == 'like')
 
                 if not cands:

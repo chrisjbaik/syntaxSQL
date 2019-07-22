@@ -20,7 +20,7 @@ def to_number(tok):
         except Exception:
             return None
 
-def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
+def find_literal_candidates(nlq_toks, db, schema, col_id, cache, agg=None,
     like=False):
     col = schema.get_col(col_id)
 
@@ -47,7 +47,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
             return cached
         else:
             lits = find_string_literals(nlq_toks, db, schema.db_id,
-                col.table.syn_name, col.syn_name, b, like=like)
+                col.table.syn_name, col.syn_name, like=like)
             cache.set(col_id, lits)
 
     if not lits:
@@ -57,7 +57,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, b, agg=None,
 
     return lits
 
-def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
+def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, like):
     d = TreebankWordDetokenizer()
     ngrams = list(everygrams(nlq_toks, min_len=1, max_len=6))
 
@@ -71,7 +71,7 @@ def find_string_literals(nlq_toks, db, db_name, tbl_name, col_name, b, like):
         if token_str in stopwords_bank:
             continue
 
-        lit = db.find_literals(db_name, tbl_name, col_name, token_str, b)
+        lit = db.find_literals(db_name, tbl_name, col_name, token_str)
         if lit:
             if like:
                 lits.append(u'%{}%'.format(token_str))

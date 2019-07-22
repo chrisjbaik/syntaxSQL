@@ -29,7 +29,7 @@ class Database(object):
             conn = self.conn
         return conn
 
-    def find_literals(self, db_name, tbl_name, col_name, str, b):
+    def find_literals(self, db_name, tbl_name, col_name, str):
         if col_name == '*':
             return []
 
@@ -42,7 +42,7 @@ class Database(object):
         cur.execute(q, (u'%{}%'.format(str.replace('%', '\%')),))
 
         results = []
-        rows = cur.fetchmany(size=b)
+        rows = cur.fetchmany()
         for row in rows:
             results.append(row[0])
 
