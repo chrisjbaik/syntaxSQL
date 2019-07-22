@@ -560,7 +560,7 @@ class SuperModel(nn.Module):
                     new.prob = new.prob * score
                     if label == 'root':
                         # only allow subquery of depth 1
-                        if self.parent is not None:
+                        if cur.parent is not None:
                             continue
                         new.next[-1] = 'where_op_subquery'
                         self.heappush_state(heapq, new)
