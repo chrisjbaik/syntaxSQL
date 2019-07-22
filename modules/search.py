@@ -325,6 +325,8 @@ class SearchState(object):
             # if not can_prune_order and b and len(states) >= b:
             #     break
             new = self.copy()
+            new.prob = new.prob * score
+            
             new_oc = OrderedColumn()
             new_oc.CopyFrom(ordered_col)
 
