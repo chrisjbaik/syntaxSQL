@@ -785,7 +785,7 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
                     cur.clear_agg_info()
-                    self.heappush_many(heapq, cur.next_col_states(client)
+                    self.heappush_many(heapq, cur.next_col_states(client))
                     # stack.extend(reversed(cur.next_col_states(b, client)))
                     continue
 
