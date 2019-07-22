@@ -399,7 +399,8 @@ class SuperModel(nn.Module):
                     cur_pq.done_select = True
                     cur.history = cur.get_select_history(tables)
                     cur.clear_col_info()
-                    stack.append(cur)
+                    self.heappush_state(heapq, cur)
+                    # stack.append(cur)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
