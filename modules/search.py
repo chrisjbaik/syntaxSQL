@@ -23,31 +23,37 @@ class SearchState(object):
         #   having_op, 5, select: first subquery at index 5 of having clause
         self.next = next
 
+        # stores the cumulative probability of the current state
+        self.prob = 1
+
+        # join path ranking if multiple join paths generated
+        self.join_path_ranking = 0
+
         # store parent to return to it after subquery
         self.parent = None
 
         # Next keyword to use
         self.next_kw = None
-        # candidate keywords, in order
-        self.kw_cands = None
+        # scores for candidate keywords
+        self.kw_scores = None
         # used kws for current query
         self.used_kws = None
         # number of keywords for current query
         self.num_kws = None
 
-        # next column to use (from col_cands)
+        # next column id to use
         self.next_col = None
-        # candidate columns for current clause, in order
-        self.col_cands = None
+        # scores for candidate columns
+        self.col_scores = None
         # used candidates for current clause
         self.used_cols = None
         # number of column slots for current clause
         self.num_cols = None
 
-        # next agg to use (from agg_cands)
+        # next agg to use
         self.next_agg = None
-        # candidate aggs for current clause
-        self.agg_cands = None
+        # scores for candidate aggs
+        self.agg_scores = None
         # used candidates for current clause
         self.used_aggs = None
         # number of agg slots for current clause
@@ -57,13 +63,18 @@ class SearchState(object):
         self.next_op_idx = None
         # offset of next_op_idx in complete list of predicates
         self.next_op_offset = None
+        # scores for each op
+        self.op_scores = None
         # ops to use for current clause
         self.iter_ops = None
         # number of op slots for current col
         self.num_ops = None
 
-        # candidates for order by dir and limit presence
-        self.dir_limit_cands = None
+        # scores for order by dir and limit presence
+        self.dir_limit_scores = None
+
+        # scores for and_or for predicates
+        self.and_or_scores = None
 
         self.query = query
 
@@ -129,9 +140,10 @@ class SearchState(object):
                 print(traceback.format_exc())
                 return None, False
 
-            for new_pq in new_pqs:
+            for rank, new_pq in enumerate(new_pqs):
                 new = self.copy()
                 new.set_subquery(new.query.pq, self.next, new_pq)
+                new.join_path_ranking = rank
                 states.append(new)
             return states, True
         else:
@@ -153,20 +165,23 @@ class SearchState(object):
         if self.parent:
             copied.set_parent(self.parent)
 
+        copied.prob = self.prob
+        copied.join_path_ranking = self.join_path_ranking
+
         copied.next_kw = self.next_kw
-        copied.kw_cands = self.kw_cands         # will not be modified
+        copied.kw_scores = self.kw_scores         # will not be modified
         if self.used_kws is not None:
             copied.used_kws = set(self.used_kws)
         copied.num_kws = self.num_kws
 
         copied.next_col = self.next_col
-        copied.col_cands = self.col_cands       # will not be modified
+        copied.col_scores = self.col_scores       # will not be modified
         if self.used_cols is not None:
             copied.used_cols = set(self.used_cols)
         copied.num_cols = self.num_cols
 
         copied.next_agg = self.next_agg
-        copied.agg_cands = self.agg_cands       # will not be modified
+        copied.agg_scores = self.agg_scores       # will not be modified
         if self.used_aggs is not None:
             copied.used_aggs = set(self.used_aggs)
         copied.num_aggs = self.num_aggs
@@ -176,33 +191,36 @@ class SearchState(object):
         copied.iter_ops = self.iter_ops         # will not be modified
         copied.num_ops = self.num_ops
 
-        copied.dir_limit_cands = self.dir_limit_cands  # will not be modified
+        copied.dir_limit_scores = self.dir_limit_scores  # will not be modified
 
         return copied
 
-    def next_num_kw_states(self, num_kw_cands, b, client):
+    def next_num_kw_states(self, num_kw_scores):
         states = []
-        for num_kws in num_kw_cands:
-            if not client and b and len(states) >= b:
-                break
+        for num_kws, score in enumerate(num_kw_scores):
+            # if not client and b and len(states) >= b:
+            #     break
             new = self.copy()
             new.num_kws = num_kws
+            new.prob = new.prob * score
             states.append(new)
 
         return states
 
-    def next_kw_states(self, b, client):
+    def next_kw_states(self, client):
         states = []
         if len(self.used_kws) < self.num_kws:
-            for kw in self.kw_cands:
-                if not client and b and len(states) >= b:
-                    break
+            for kw, score in enumerate(self.kw_scores):
+                # if not client and b and len(states) >= b:
+                #     break
                 if kw in self.used_kws:
                     continue
                 new = self.copy()
                 new.next_kw = kw
 
-                new_pq = self.find_protoquery(new.query.pq, new.next)
+                new.prob = new.prob * score
+
+                new_pq = new.find_protoquery(new.query.pq, new.next)
                 if client and client.should_prune(new.query):
                     continue
 
@@ -215,17 +233,32 @@ class SearchState(object):
         else:
             return states
 
-    def next_num_agg_states(self, clause, num_agg_cands, b, client):
+    def next_num_agg_states(self, clause, num_agg_scores, client):
         states = []
-        for num_aggs in num_agg_cands:
-            if not client and b and len(states) >= b:
-                break
+
+        # subqueries can only have one projected column (i.e. 0 or 1 agg)
+        if clause == 'select' and self.parent:
+            num_agg_scores = num_agg_scores[0:2]
+
+        # ORDER BY can only have one column
+        if clause == 'order_by':
+            num_agg_scores = num_agg_scores[0:2]
+
+        for num_aggs, score in enumerate(num_agg_scores):
+            # cannot have HAVING without aggs
+            if clause == 'having' and num_aggs == 0:
+                continue
+
+            # if not client and b and len(states) >= b:
+            #     break
             new = self.copy()
             new.num_aggs = num_aggs
             new.used_aggs = set()
 
+            new.prob = new.prob * score
+
             if clause == 'select':
-                new_pq = self.find_protoquery(new.query.pq, new.next)
+                new_pq = new.find_protoquery(new.query.pq, new.next)
                 new_pq.min_select_cols = len(new_pq.select) + \
                     (max(num_aggs, 1) - 1) + (new.num_cols - len(new.used_cols))
                 if new.num_aggs == 0:
@@ -238,7 +271,7 @@ class SearchState(object):
 
         return states
 
-    def next_select_agg_states(self, b, client):
+    def next_select_agg_states(self, client):
         states = []
 
         if len(self.used_aggs) == self.num_aggs:
@@ -249,9 +282,9 @@ class SearchState(object):
             return [self]
         elif len(self.used_aggs) < self.num_aggs:
             states = []
-            for agg in self.agg_cands:
-                if not client and b and len(states) >= b:
-                    break
+            for agg, score in enumerate(self.agg_scores):
+                # if not client and b and len(states) >= b:
+                #     break
                 if agg in self.used_aggs:
                     continue
 
@@ -259,6 +292,7 @@ class SearchState(object):
                 new_pq = new.find_protoquery(new.query.pq, new.next)
 
                 new.next_agg = agg
+                new.prob = new.prob * score
 
                 if len(new.used_aggs) > 0:
                     agg_col = AggregatedColumn()
@@ -280,19 +314,19 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of aggs.')
 
-    def next_dir_limit_states(self, tsq_level, ordered_col, b, client):
+    def next_dir_limit_states(self, tsq_level, ordered_col, client):
         states = []
 
         can_prune_order = (client and tsq_level in ('default', 'no_range'))
 
-        for dir_limit in self.dir_limit_cands:
-            if not can_prune_order and b and len(states) >= b:
-                break
+        for dir_limit, score in enumerate(self.dir_limit_scores):
+            # if not can_prune_order and b and len(states) >= b:
+            #     break
             new = self.copy()
             new_oc = OrderedColumn()
             new_oc.CopyFrom(ordered_col)
 
-            new_pq = self.find_protoquery(new.query.pq, new.next)
+            new_pq = new.find_protoquery(new.query.pq, new.next)
 
             dir, has_limit = DIR_LIMIT_OPS[dir_limit]
             new.history[0].append(dir)
@@ -310,15 +344,15 @@ class SearchState(object):
 
         return states
 
-    def next_agg_states(self, b, client):
+    def next_agg_states(self, client):
         if len(self.used_aggs) == self.num_aggs:
             self.next_agg = None
             return [self]
         elif len(self.used_aggs) < self.num_aggs:
             states = []
-            for agg in self.agg_cands:
-                if not client and b and len(states) >= b:
-                    break
+            for agg, score in enumerate(self.agg_scores):
+                # if not client and b and len(states) >= b:
+                #     break
                 if agg in self.used_aggs:
                     continue
                 new = self.copy()
@@ -328,15 +362,29 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of aggs.')
 
-    def next_num_col_states(self, clause, num_col_cands, b, client):
+    def next_num_col_states(self, clause, num_col_scores, client):
         states = []
-        for num_cols in num_col_cands:
-            if not client and b and len(states) >= b:
-                break
+
+        # Subqueries can only have one projection
+        if clause == 'select' and self.parent:
+            num_col_scores = [1]
+
+        # ORDER BY can only have 1 column max
+        if clause == 'order_by':
+            num_col_scores = [1]
+
+        for num_cols, score in enumerate(num_col_scores):
+            # 0 is not a feasible option for num_cols
+            num_cols = num_cols + 1
+
+            # if not client and b and len(states) >= b:
+            #     break
             new = self.copy()
             new.num_cols = num_cols
 
-            new_pq = self.find_protoquery(new.query.pq, new.next)
+            new.prob = new.prob * score
+
+            new_pq = new.find_protoquery(new.query.pq, new.next)
 
             if clause == 'select':
                 new_pq.min_select_cols = num_cols
@@ -366,7 +414,7 @@ class SearchState(object):
 
         # order by position in col_cands, then original order in select
         sorted_select = sorted(enumerate(cur_pq.select),
-            key=lambda (i, x): (self.col_cands.index(x.col_id), i))
+            key=lambda (i, x): (-self.col_scores[x.col_id], i))
 
         for i, agg_col in sorted_select:
             col_name = index_to_column_name(agg_col.col_id, tables)
@@ -377,16 +425,16 @@ class SearchState(object):
 
         return history
 
-    def next_select_col_states(self, b, client):
+    def next_select_col_states(self, client):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
         elif len(self.used_cols) < self.num_cols:
             states = []
 
-            for col in self.col_cands:
-                if not client and b and len(states) >= b:
-                    break
+            for col, score in enumerate(self.col_scores):
+                # if not client and b and len(states) >= b:
+                #     break
                 if col in self.used_cols:
                     continue
 
@@ -395,6 +443,7 @@ class SearchState(object):
 
                 new.next_col = col
                 new.used_cols.add(col)
+                new.prob = new.prob * score
 
                 agg_col = AggregatedColumn()
                 agg_col.col_id = new.next_col
@@ -409,34 +458,39 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_col_states(self, b, client):
+    def next_col_states(self, client):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
         elif len(self.used_cols) < self.num_cols:
             states = []
 
-            for col in self.col_cands:
-                if not client and b and len(states) >= b:
-                    break
+            for col, score in self.col_scores:
+                # if not client and b and len(states) >= b:
+                #     break
                 if col in self.used_cols:
                     continue
                 new = self.copy()
                 new.next_col = col
+                new.prob = new.prob * score
                 states.append(new)
             return states
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_num_op_states(self, clause, num_op_cands, b, client):
+    def next_num_op_states(self, clause, num_op_scores, client):
         states = []
-        for num_ops in num_op_cands:
-            if not client and b and len(states) >= b:
-                break
+        for num_ops, score in enumerate(num_op_scores):
+            # Cannot have 0 ops
+            num_ops = num_ops + 1
+
+            # if not client and b and len(states) >= b:
+            #     break
             new = self.copy()
             new.num_ops = num_ops
+            new.prob = new.prob * score
 
-            new_pq = self.find_protoquery(new.query.pq, new.next)
+            new_pq = new.find_protoquery(new.query.pq, new.next)
 
             if clause == 'where':
                 new_pq.min_where_preds = len(new_pq.where.predicates) + \
@@ -454,48 +508,58 @@ class SearchState(object):
 
         return states
 
-    def next_op_states(self, next, num_ops, op_cands, col_name, b, client):
+    def next_op_states(self, clause, col_name, client):
         states = []
-        self.next[-1] = next
+        # self.next[-1] = next
         self.next_op_idx = 0
 
         or_op = False
         cur_pq = self.find_protoquery(self.query.pq, self.next)
-        if next.startswith('where'):
+        if clause == 'where':
             self.next_op_offset = len(cur_pq.where.predicates)
             or_op = (cur_pq.where.logical_op == OR)
-        elif next.startswith('having'):
+        elif clause == 'having':
             self.next_op_offset = len(cur_pq.having.predicates)
             or_op = (cur_pq.having.logical_op == OR)
         else:
-            raise Exception('Unknown next: {}'.format(next))
+            raise Exception('Unknown clause: {}'.format(clause))
 
-        cand_iter = permutations(op_cands, num_ops)
+        op_score_list = enumerate(self.op_scores)
 
-        # HACK, because SyntaxSQLNet can't do two = ops
-        if or_op and num_ops > 1:
-            cand_iter = chain([[0] * num_ops], cand_iter)
+        # Disallow invalid OP 10
+        op_score_list = filter(lambda x: x[0] != 10, op_score_list)
 
-        for ops in cand_iter:
-            if b and len(states) >= b:
-                break
+        cand_iter = permutations(op_score_list, self.num_ops)
+
+        # HACK: because SyntaxSQLNet can't do multiple = ops
+        if or_op and self.num_ops > 1:
+            cand_iter = chain([[(0, self.op_scores[0])] * self.num_ops],
+                cand_iter)
+
+        for op_scores in cand_iter:
+            # if b and len(states) >= b:
+            #     break
             new = self.copy()
 
             new_pq = new.find_protoquery(new.query.pq, new.next)
 
-            for i, op in enumerate(ops):
+            for i, op_score in enumerate(op_scores):
+                op, score = op_score
+
                 if i != 0:
                     new.history[0].append(col_name)
                 new.history[0].append(NEW_WHERE_OPS[op])
+
+                new.prob = new.prob * score
 
                 pred = Predicate()
                 pred.col_id = new.next_col
                 pred.op = to_proto_op(NEW_WHERE_OPS[op])
 
-                if next.startswith('where'):
+                if clause == 'where':
                     pred.has_agg = to_proto_tribool(False)
                     new_pq.where.predicates.append(pred)
-                elif next.startswith('having'):
+                elif clause == 'having':
                     pred.has_agg = to_proto_tribool(True)
                     pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
                     new_pq.having.predicates.append(pred)
@@ -503,31 +567,35 @@ class SearchState(object):
             if client and client.should_prune(new.query):
                 continue
 
-            new.iter_ops = ops
+            new.iter_ops = op_scores
             states.append(new)
 
         return states
 
     def clear_kw_info(self):
         self.next_kw = None
-        self.kw_cands = None
+        self.kw_scores = None
         self.used_kws = None
         self.num_kws = None
 
     def clear_agg_info(self):
         self.next_agg = None
-        self.agg_cands = None
+        self.agg_scores = None
         self.used_aggs = None
         self.num_aggs = None
 
     def clear_col_info(self):
         self.next_col = None
-        self.col_cands = None
+        self.col_scores = None
         self.used_cols = None
         self.num_cols = None
 
     def clear_op_info(self):
         self.next_op_idx = None
         self.next_op_offset = None
+        self.op_scores = None
         self.iter_ops = None
         self.num_ops = None
+
+    def clear_and_or_info(self):
+        self.and_or_scores = None

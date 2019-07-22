@@ -56,7 +56,7 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(id, model, db, schemas, client, db_name, nlq, n, b, tsq_level,
+def translate(id, model, db, schemas, client, db_name, nlq, n, tsq_level,
     timeout=None, _old=False, debug=False, fake_literals=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
@@ -74,7 +74,7 @@ def translate(id, model, db, schemas, client, db_name, nlq, n, b, tsq_level,
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
         cqs = model.enumerate(id, db, [tokens] * 2, [], schema, client, n,
-            b, tsq_level, timeout=timeout, debug=debug,
+            tsq_level, timeout=timeout, debug=debug,
             fake_literals=fake_literals)
 
         for cq in cqs:
@@ -166,7 +166,7 @@ def main():
                 dqc = client if task.tsq_level != 'no_duoquest' else None
 
                 sqls = translate(task.id, model, db, schemas, dqc, task.db_name,
-                    nlq, task.n, task.b, task.tsq_level, timeout=task.timeout,
+                    nlq, task.n, task.tsq_level, timeout=task.timeout,
                     debug=args.debug)
 
                 proto_cands = ProtoCandidates()
@@ -188,9 +188,9 @@ def test_old_and_new(data, model, db, schemas, n, b, debug=False):
             task['question_toks']))
         dqc = None
         old = translate(i+1, model, db, schemas, dqc, task['db_id'],
-            task['question_toks'], n, b, _old=True)
+            task['question_toks'], n, _old=True)
         new = translate(i+1, model, db, schemas, dqc, task['db_id'],
-            task['question_toks'], n, b, debug=debug, fake_literals=True)
+            task['question_toks'], n, debug=debug, fake_literals=True)
 
         if new and old and new_to_old(new[0]).lower() == old[0].lower():
             correct += 1
