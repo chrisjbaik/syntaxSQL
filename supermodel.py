@@ -468,8 +468,7 @@ class SuperModel(nn.Module):
                     self.get_col_scores(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
-                score = self.andor.forward(q_emb_var, q_len, hs_emb_var,
-                    hs_len)
+                score = self.andor.forward(q_emb_var, q_len, hs_emb_var, hs_len)
                 cur.and_or_scores = list(F.softmax(score)[0].data.cpu().numpy())
 
                 # label = np.argmax(score[0].data.cpu().numpy())
@@ -483,9 +482,9 @@ class SuperModel(nn.Module):
                 # stack.extend(reversed(cur.next_num_col_states('where',
                 #     num_col_cands, b, client)))
             elif cur.next[-1] == 'where_col_num':
-                cur.next[-1] = 'where_col'
                 cur.used_cols = set()
                 if cur.num_cols == 1:
+                    cur.next[-1] = 'where_col'
                     self.heappush_many(heapq, cur.next_col_states(client))
                 else:
                     cur.next[-1] = 'where_and_or'
@@ -501,6 +500,7 @@ class SuperModel(nn.Module):
 
                     new.clear_and_or_info()
 
+                    cur.next[-1] = 'where_col'
                     self.heappush_many(heapq, new.next_col_states(client))
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
