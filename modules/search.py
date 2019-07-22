@@ -192,6 +192,7 @@ class SearchState(object):
         copied.iter_ops = self.iter_ops         # will not be modified
         copied.num_ops = self.num_ops
 
+        copied.and_or_scores = self.and_or_scores  # will not be modified
         copied.dir_limit_scores = self.dir_limit_scores  # will not be modified
 
         return copied
