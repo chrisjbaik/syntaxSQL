@@ -500,7 +500,7 @@ class SuperModel(nn.Module):
 
                     new.clear_and_or_info()
 
-                    cur.next[-1] = 'where_col'
+                    new.next[-1] = 'where_col'
                     self.heappush_many(heapq, new.next_col_states(client))
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
