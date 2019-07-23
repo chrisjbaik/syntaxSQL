@@ -326,7 +326,7 @@ class SearchState(object):
             #     break
             new = self.copy()
             new.prob = new.prob * score
-            
+
             new_oc = OrderedColumn()
             new_oc.CopyFrom(ordered_col)
 
@@ -361,6 +361,7 @@ class SearchState(object):
                     continue
                 new = self.copy()
                 new.next_agg = agg
+                new.prob = new.prob * score
                 states.append(new)
             return states
         else:

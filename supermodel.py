@@ -997,11 +997,13 @@ class SuperModel(nn.Module):
                 # stack.extend(reversed(cur.next_num_agg_states('order_by',
                 #     num_agg_cands, b, client)))
             elif cur.next[-1] == 'order_by_agg_num':
-                if cur.num_aggs == 0:
-                    cur.agg_cands = ['none_agg']
-                    cur.num_aggs = 1
                 cur.next[-1] = 'order_by_agg'
-                self.heappush_many(heapq, cur.next_agg_states(client))
+                if cur.num_aggs == 0:
+                    cur.next_agg = 'none_agg'
+                    cur.num_aggs = 1
+                    self.heappush_state(heapq, cur)
+                else:
+                    self.heappush_many(heapq, cur.next_agg_states(client))
                 # stack.extend(reversed(cur.next_agg_states(b, client)))
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None:
