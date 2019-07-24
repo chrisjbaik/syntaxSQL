@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\ntask.proto\"\x8a\x01\n\tProtoTask\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12\x0c\n\x04mode\x18\x03 \x01(\t\x12\x0f\n\x07\x64\x62_name\x18\x04 \x01(\t\x12\x12\n\nnlq_tokens\x18\x05 \x03(\t\x12\t\n\x01n\x18\x06 \x01(\x05\x12\x11\n\ttsq_level\x18\x08 \x01(\t\x12\x0f\n\x07timeout\x18\t \x01(\x05\"\x1d\n\x0fProtoCandidates\x12\n\n\x02\x63q\x18\x01 \x03(\tb\x06proto3')
+  serialized_pb=_b('\n\ntask.proto\"\x8a\x01\n\tProtoTask\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12\x0c\n\x04mode\x18\x03 \x01(\t\x12\x0f\n\x07\x64\x62_name\x18\x04 \x01(\t\x12\x12\n\nnlq_tokens\x18\x05 \x03(\t\x12\t\n\x01n\x18\x06 \x01(\x05\x12\x11\n\ttsq_level\x18\x08 \x01(\t\x12\x0f\n\x07timeout\x18\t \x01(\x05\"*\n\x0fProtoCandidates\x12\x17\n\x03\x63qs\x18\x01 \x03(\x0b\x32\n.ProtoTaskb\x06proto3')
 )
 
 
@@ -114,8 +114,8 @@ _PROTOCANDIDATES = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='cq', full_name='ProtoCandidates.cq', index=0,
-      number=1, type=9, cpp_type=9, label=3,
+      name='cqs', full_name='ProtoCandidates.cqs', index=0,
+      number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -133,9 +133,10 @@ _PROTOCANDIDATES = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=155,
-  serialized_end=184,
+  serialized_end=197,
 )
 
+_PROTOCANDIDATES.fields_by_name['cqs'].message_type = _PROTOTASK
 DESCRIPTOR.message_types_by_name['ProtoTask'] = _PROTOTASK
 DESCRIPTOR.message_types_by_name['ProtoCandidates'] = _PROTOCANDIDATES
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

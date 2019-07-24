@@ -78,7 +78,7 @@ def translate(id, model, db, schemas, client, db_name, nlq, n, tsq_level,
             fake_literals=fake_literals)
 
         for cq in cqs:
-            results.append(generate_sql_str(cq.pq, cq.schema))
+            results.append(cq.pq)
 
     return results
 
