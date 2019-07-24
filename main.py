@@ -171,7 +171,7 @@ def main():
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:
-                    proto_cands.cq.append(sql)
+                    proto_cands.cqs.append(sql)
                 conn.send_bytes(proto_cands.SerializeToString())
         except Exception as e:
             traceback.print_exc()
