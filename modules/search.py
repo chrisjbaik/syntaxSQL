@@ -2,7 +2,7 @@ import traceback
 from itertools import chain, permutations
 from query import Query, join_path_needs_update, with_updated_join_paths, \
     to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg, to_proto_dir
-from query_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate, \
+from duoquest_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate, \
     OrderedColumn, AND, OR
 
 AGG_OPS = ('max', 'min', 'count', 'sum', 'avg')

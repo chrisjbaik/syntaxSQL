@@ -1,6 +1,6 @@
 from multiprocessing.connection import Client
 
-from query_pb2 import ProtoQueryList, ProtoResult, FALSE, UNKNOWN, TRUE
+from duoquest_pb2 import ProtoQueryList, ProtoResult, FALSE, UNKNOWN, TRUE
 
 class DuoquestClient(object):
     def __init__(self, port, authkey):

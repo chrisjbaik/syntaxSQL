@@ -13,7 +13,7 @@ from utils import load_word_emb
 from modules.client import DuoquestClient
 from modules.database import Database
 from modules.query import generate_sql_str
-from modules.task_pb2 import ProtoTask, ProtoCandidates
+from modules.duoquest_pb2 import ProtoTask, ProtoCandidates
 
 def load_schemas(schemas_path):
     data = json.load(open(schemas_path))
