@@ -125,29 +125,32 @@ class SearchState(object):
             return pq
 
     def update_join_paths(self, cur_pq):
+        if not cur_pq.done_select:
+            return [self]
+
         states = []
 
         try:
             needs_update = join_path_needs_update(self.query.schema, cur_pq)
         except Exception as e:
             # print(traceback.format_exc())
-            return None, False
+            return []
 
         if needs_update:
             try:
                 new_pqs = with_updated_join_paths(self.query.schema, cur_pq)
             except Exception as e:
                 print(traceback.format_exc())
-                return None, False
+                return []
 
             for rank, new_pq in enumerate(new_pqs):
                 new = self.copy()
                 new.set_subquery(new.query.pq, self.next, new_pq)
                 new.join_path_ranking = rank
                 states.append(new)
-            return states, True
+            return states
         else:
-            return self, False
+            return [self]
 
     def set_parent(self, parent):
         # link parent history, query with current values
@@ -200,8 +203,6 @@ class SearchState(object):
     def next_num_kw_states(self, num_kw_scores):
         states = []
         for num_kws, score in enumerate(num_kw_scores):
-            # if not client and b and len(states) >= b:
-            #     break
             new = self.copy()
             new.num_kws = num_kws
             new.prob = new.prob * score
@@ -213,8 +214,6 @@ class SearchState(object):
         states = []
         if len(self.used_kws) < self.num_kws:
             for kw, score in enumerate(self.kw_scores):
-                # if not client and b and len(states) >= b:
-                #     break
                 if kw in self.used_kws:
                     continue
                 new = self.copy()
@@ -223,10 +222,11 @@ class SearchState(object):
                 new.prob = new.prob * score
 
                 new_pq = new.find_protoquery(new.query.pq, new.next)
+
                 if client and client.should_prune(new.query):
                     continue
 
-                states.append(new)
+                states.extend(new.update_join_paths(new_pq))
 
         # if no candidate states, next_kw to None
         if not states:
@@ -251,16 +251,14 @@ class SearchState(object):
             if clause == 'having' and num_aggs == 0:
                 continue
 
-            # if not client and b and len(states) >= b:
-            #     break
             new = self.copy()
+            new_pq = new.find_protoquery(new.query.pq, new.next)
             new.num_aggs = num_aggs
             new.used_aggs = set()
 
             new.prob = new.prob * score
 
             if clause == 'select':
-                new_pq = new.find_protoquery(new.query.pq, new.next)
                 new_pq.min_select_cols = len(new_pq.select) + \
                     (max(num_aggs, 1) - 1) + (new.num_cols - len(new.used_cols))
                 if new.num_aggs == 0:
@@ -269,7 +267,7 @@ class SearchState(object):
             if client and client.should_prune(new.query):
                 continue
 
-            states.append(new)
+            states.extend(new.update_join_paths(new_pq))
 
         return states
 
@@ -285,8 +283,6 @@ class SearchState(object):
         elif len(self.used_aggs) < self.num_aggs:
             states = []
             for agg, score in enumerate(self.agg_scores):
-                # if not client and b and len(states) >= b:
-                #     break
                 if agg in self.used_aggs:
                     continue
 
@@ -311,7 +307,7 @@ class SearchState(object):
                 if client and client.should_prune(new.query):
                     continue
 
-                states.append(new)
+                states.extend(new.update_join_paths(new_pq))
             return states
         else:
             raise Exception('Exceeded number of aggs.')
@@ -322,8 +318,6 @@ class SearchState(object):
         can_prune_order = (client and tsq_level in ('default', 'no_range'))
 
         for dir_limit, score in enumerate(self.dir_limit_scores):
-            # if not can_prune_order and b and len(states) >= b:
-            #     break
             new = self.copy()
             new.prob = new.prob * score
 
@@ -344,7 +338,7 @@ class SearchState(object):
             if can_prune_order and client.should_prune(new.query):
                 continue
 
-            states.append(new)
+            states.extend(new.update_join_paths(new_pq))
 
         return states
 
@@ -355,14 +349,13 @@ class SearchState(object):
         elif len(self.used_aggs) < self.num_aggs:
             states = []
             for agg, score in enumerate(self.agg_scores):
-                # if not client and b and len(states) >= b:
-                #     break
                 if agg in self.used_aggs:
                     continue
                 new = self.copy()
+                new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_agg = agg
                 new.prob = new.prob * score
-                states.append(new)
+                states.extend(new.update_join_paths(new_pq))
             return states
         else:
             raise Exception('Exceeded number of aggs.')
@@ -382,8 +375,6 @@ class SearchState(object):
             # 0 is not a feasible option for num_cols
             num_cols = num_cols + 1
 
-            # if not client and b and len(states) >= b:
-            #     break
             new = self.copy()
             new.num_cols = num_cols
 
@@ -407,7 +398,7 @@ class SearchState(object):
             if client and client.should_prune(new.query):
                 continue
 
-            states.append(new)
+            states.extend(new.update_join_paths(new_pq))
 
         return states
 
@@ -438,8 +429,6 @@ class SearchState(object):
             states = []
 
             for col, score in enumerate(self.col_scores):
-                # if not client and b and len(states) >= b:
-                #     break
                 if col in self.used_cols:
                     continue
 
@@ -457,7 +446,7 @@ class SearchState(object):
                 if client and client.should_prune(new.query):
                     continue
 
-                states.append(new)
+                states.extend(new.update_join_paths(new_pq))
 
             return states
         else:
@@ -471,14 +460,13 @@ class SearchState(object):
             states = []
 
             for col, score in enumerate(self.col_scores):
-                # if not client and b and len(states) >= b:
-                #     break
                 if col in self.used_cols:
                     continue
                 new = self.copy()
+                new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_col = col
                 new.prob = new.prob * score
-                states.append(new)
+                states.extend(new.update_join_paths(new_pq))
             return states
         else:
             raise Exception('Exceeded number of columns.')
@@ -489,8 +477,6 @@ class SearchState(object):
             # Cannot have 0 ops
             num_ops = num_ops + 1
 
-            # if not client and b and len(states) >= b:
-            #     break
             new = self.copy()
             new.num_ops = num_ops
             new.prob = new.prob * score
@@ -509,7 +495,7 @@ class SearchState(object):
             if client and client.should_prune(new.query):
                 continue
 
-            states.append(new)
+            states.extend(new.update_join_paths(new_pq))
 
         return states
 
@@ -542,8 +528,6 @@ class SearchState(object):
                 cand_iter)
 
         for op_scores in cand_iter:
-            # if b and len(states) >= b:
-            #     break
             new = self.copy()
 
             new_pq = new.find_protoquery(new.query.pq, new.next)
@@ -573,7 +557,7 @@ class SearchState(object):
                 continue
 
             new.iter_ops = op_scores
-            states.append(new)
+            states.extend(new.update_join_paths(new_pq))
 
         return states
 

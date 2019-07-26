@@ -260,23 +260,23 @@ class SuperModel(nn.Module):
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             # update join path if needed, but only after we've finished select
-            if cur_pq.done_select:
-                states, updated = cur.update_join_paths(cur_pq)
+            # if cur_pq.done_select:
+                # states, updated = cur.update_join_paths(cur_pq)
 
-                if states is None:      # if error)
-                    continue
+                # if states is None:      # if error
+                    # continue
 
-                if updated:             # if join paths updated
+                # if updated:             # if join paths updated
                     # push all but first state
-                    self.heappush_many(heapq, states[1:])
+                    # self.heappush_many(heapq, states[1:])
                     # stack.extend(reversed(states[1:]))
 
                     # execute the first state now
-                    cur = states[0]
-                    cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
+                    # cur = states[0]
+                    # cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
-                if debug:
-                    print('Updated join paths: {}'.format(updated))
+                # if debug:
+                #     print('Updated join paths: {}'.format(updated))
 
             # check if Duoquest says to prune it
             # if client and client.should_prune(cur.query):
