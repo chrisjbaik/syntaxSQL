@@ -223,10 +223,10 @@ class SearchState(object):
 
                 new_pq = new.find_protoquery(new.query.pq, new.next)
 
-                if client and client.should_prune(new.query):
-                    continue
-
-                states.extend(new.update_join_paths(new_pq))
+                for new_jp in new.update_join_paths(new_pq):
+                    if client and client.should_prune(new_jp.query):
+                        continue
+                    states.append(new_jp)
 
         # if no candidate states, next_kw to None
         if not states:
@@ -264,10 +264,10 @@ class SearchState(object):
                 if new.num_aggs == 0:
                     new_pq.select[-1].has_agg = to_proto_tribool(False)
 
-            if client and client.should_prune(new.query):
-                continue
-
-            states.extend(new.update_join_paths(new_pq))
+            for new_jp in new.update_join_paths(new_pq):
+                if client and client.should_prune(new_jp.query):
+                    continue
+                states.append(new_jp)
 
         return states
 
@@ -304,10 +304,10 @@ class SearchState(object):
 
                 new.used_aggs.add(new.next_agg)
 
-                if client and client.should_prune(new.query):
-                    continue
-
-                states.extend(new.update_join_paths(new_pq))
+                for new_jp in new.update_join_paths(new_pq):
+                    if client and client.should_prune(new_jp.query):
+                        continue
+                    states.append(new_jp)
             return states
         else:
             raise Exception('Exceeded number of aggs.')
@@ -335,10 +335,10 @@ class SearchState(object):
             if new_pq.has_limit == UNKNOWN:
                 new_pq.has_limit = to_proto_tribool(has_limit)
 
-            if can_prune_order and client.should_prune(new.query):
-                continue
-
-            states.extend(new.update_join_paths(new_pq))
+            for new_jp in new.update_join_paths(new_pq):
+                if can_prune_order and client.should_prune(new_jp.query):
+                    continue
+                states.append(new_jp)
 
         return states
 
@@ -395,10 +395,10 @@ class SearchState(object):
             else:
                 raise Exception('Unknown clause: {}'.format(clause))
 
-            if client and client.should_prune(new.query):
-                continue
-
-            states.extend(new.update_join_paths(new_pq))
+            for new_jp in new.update_join_paths(new_pq):
+                if client and client.should_prune(new_jp.query):
+                    continue
+                states.append(new_jp)
 
         return states
 
@@ -443,10 +443,10 @@ class SearchState(object):
                 agg_col.col_id = new.next_col
                 new_pq.select.append(agg_col)
 
-                if client and client.should_prune(new.query):
-                    continue
-
-                states.extend(new.update_join_paths(new_pq))
+                for new_jp in new.update_join_paths(new_pq):
+                    if client and client.should_prune(new_jp.query):
+                        continue
+                    states.append(new_jp)
 
             return states
         else:
@@ -492,10 +492,10 @@ class SearchState(object):
             else:
                 raise Exception('Unknown clause: {}'.format(clause))
 
-            if client and client.should_prune(new.query):
-                continue
-
-            states.extend(new.update_join_paths(new_pq))
+            for new_jp in new.update_join_paths(new_pq):
+                if client and client.should_prune(new_jp.query):
+                    continue
+                states.append(new_jp)
 
         return states
 
@@ -553,11 +553,11 @@ class SearchState(object):
                     pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
                     new_pq.having.predicates.append(pred)
 
-            if client and client.should_prune(new.query):
-                continue
-
             new.iter_ops = op_scores
-            states.extend(new.update_join_paths(new_pq))
+            for new_jp in new.update_join_paths(new_pq):
+                if client and client.should_prune(new_jp.query):
+                    continue
+                states.append(new_jp)
 
         return states
 
