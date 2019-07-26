@@ -512,7 +512,7 @@ class SuperModel(nn.Module):
                 substate.next.append('keyword')
                 self.heappush_state(heapq, substate, client)
             elif cur.next[-1] == 'where_op_terminal':
-                self.heappush_many(heapq, self.handle_terminal(q_seq[0], db,
+                self.heappush_many(heapq, cur.handle_terminal(q_seq[0], db,
                     schema, lit_cache, 'where', fake_literals=fake_literals),
                     client)
             elif cur.next[-1] == 'group_by':
@@ -693,7 +693,7 @@ class SuperModel(nn.Module):
                 substate.next.append('keyword')
                 self.heappush_state(heapq, substate, client)
             elif cur.next[-1] == 'having_op_terminal':
-                self.heappush_many(heapq, self.handle_terminal(q_seq[0], db,
+                self.heappush_many(heapq, cur.handle_terminal(q_seq[0], db,
                     schema, lit_cache, 'having', fake_literals=fake_literals),
                     client)
             elif cur.next[-1] == 'order_by':
