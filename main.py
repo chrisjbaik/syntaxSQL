@@ -56,8 +56,8 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(id, model, db, schemas, client, db_name, nlq, n, tsq_level,
-    timeout=None, _old=False, debug=False, fake_literals=False):
+def translate(id, model, db, schemas, client, db_name, nlq, timeout=None,
+    _old=False, debug=False, fake_literals=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -73,9 +73,8 @@ def translate(id, model, db, schemas, client, db_name, nlq, n, tsq_level,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.enumerate(id, db, [tokens] * 2, [], schema, client, n,
-            tsq_level, timeout=timeout, debug=debug,
-            fake_literals=fake_literals)
+        cqs = model.enumerate(id, db, [tokens] * 2, [], schema, client,
+            timeout=timeout, debug=debug, fake_literals=fake_literals)
 
         for cq in cqs:
             results.append(cq.pq)
@@ -163,11 +162,10 @@ def main():
                 else:
                     nlq = tokens_list
 
-                dqc = client if task.tsq_level != 'no_duoquest' else None
+                dqc = client if task.tsq_level != 'nlq_only' else None
 
                 sqls = translate(task.id, model, db, schemas, dqc, task.db_name,
-                    nlq, task.n, task.tsq_level, timeout=task.timeout,
-                    debug=args.debug)
+                    nlq, timeout=task.timeout, debug=args.debug)
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:

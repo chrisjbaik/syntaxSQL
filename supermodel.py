@@ -212,8 +212,8 @@ class SuperModel(nn.Module):
         for state in states:
             self.heappush_state(heapq, state, client)
 
-    def enumerate(self, task_id, db, q_seq, history, tables, client, n,
-        tsq_level, timeout=None, debug=False, fake_literals=False):
+    def enumerate(self, task_id, db, q_seq, history, tables, client,
+        timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
 
@@ -253,8 +253,6 @@ class SuperModel(nn.Module):
         print('Running task {}...'.format(task_id))
 
         while heapq:
-            if len(results) >= n:
-                break
             if timeout and time.time() > end_time:
                 print('Timed out. Returned {} results.'.format(len(results)))
                 break
