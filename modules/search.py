@@ -16,6 +16,12 @@ def index_to_column_name(index, table):
     table_name = table["table_names"][table_index]
     return table_name, column_name, index
 
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
 class SearchState(object):
     def __init__(self, next, query, history=None):
         # a chain of keys storing next item to infer, e.g.:
