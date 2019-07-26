@@ -1,5 +1,6 @@
 import traceback
 from itertools import chain, permutations
+from literals import find_literal_candidates
 from query import Query, join_path_needs_update, with_updated_join_paths, \
     to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg, to_proto_dir
 from duoquest_pb2 import TRUE, UNKNOWN, AggregatedColumn, Predicate, \
@@ -210,7 +211,7 @@ class SearchState(object):
 
         return states
 
-    def next_kw_states(self, client):
+    def next_kw_states(self):
         states = []
         if len(self.used_kws) < self.num_kws:
             for kw, score in enumerate(self.kw_scores):
@@ -220,14 +221,7 @@ class SearchState(object):
                 new.next_kw = kw
 
                 new.prob = new.prob * score
-
-                new_pq = new.find_protoquery(new.query.pq, new.next)
-
-                for new_jp in new.update_join_paths(new_pq):
-                    if client and client.should_prune(new_jp.query):
-                        continue
-                    states.append(new_jp)
-
+                states.append(new)
         # if no candidate states, next_kw to None
         if not states:
             self.next_kw = None
@@ -235,7 +229,7 @@ class SearchState(object):
         else:
             return states
 
-    def next_num_agg_states(self, clause, num_agg_scores, client):
+    def next_num_agg_states(self, clause, num_agg_scores):
         states = []
 
         # subqueries can only have one projected column (i.e. 0 or 1 agg)
@@ -264,14 +258,11 @@ class SearchState(object):
                 if new.num_aggs == 0:
                     new_pq.select[-1].has_agg = to_proto_tribool(False)
 
-            for new_jp in new.update_join_paths(new_pq):
-                if client and client.should_prune(new_jp.query):
-                    continue
-                states.append(new_jp)
+            states.append(new)
 
         return states
 
-    def next_select_agg_states(self, client):
+    def next_select_agg_states(self):
         states = []
 
         if len(self.used_aggs) == self.num_aggs:
@@ -304,18 +295,13 @@ class SearchState(object):
 
                 new.used_aggs.add(new.next_agg)
 
-                for new_jp in new.update_join_paths(new_pq):
-                    if client and client.should_prune(new_jp.query):
-                        continue
-                    states.append(new_jp)
+                states.append(new)
             return states
         else:
             raise Exception('Exceeded number of aggs.')
 
-    def next_dir_limit_states(self, tsq_level, ordered_col, client):
+    def next_dir_limit_states(self, ordered_col):
         states = []
-
-        can_prune_order = (client and tsq_level in ('default', 'no_range'))
 
         for dir_limit, score in enumerate(self.dir_limit_scores):
             new = self.copy()
@@ -335,14 +321,11 @@ class SearchState(object):
             if new_pq.has_limit == UNKNOWN:
                 new_pq.has_limit = to_proto_tribool(has_limit)
 
-            for new_jp in new.update_join_paths(new_pq):
-                if can_prune_order and client.should_prune(new_jp.query):
-                    continue
-                states.append(new_jp)
+            states.append(new)
 
         return states
 
-    def next_agg_states(self, client):
+    def next_agg_states(self):
         if len(self.used_aggs) == self.num_aggs:
             self.next_agg = None
             return [self]
@@ -360,7 +343,7 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of aggs.')
 
-    def next_num_col_states(self, clause, num_col_scores, client):
+    def next_num_col_states(self, clause, num_col_scores):
         states = []
 
         # Subqueries can only have one projection
@@ -395,11 +378,7 @@ class SearchState(object):
             else:
                 raise Exception('Unknown clause: {}'.format(clause))
 
-            for new_jp in new.update_join_paths(new_pq):
-                if client and client.should_prune(new_jp.query):
-                    continue
-                states.append(new_jp)
-
+            states.append(new)
         return states
 
     # get history while inferring select (updated all at once at the end)
@@ -421,7 +400,7 @@ class SearchState(object):
 
         return history
 
-    def next_select_col_states(self, client):
+    def next_select_col_states(self):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
@@ -443,16 +422,13 @@ class SearchState(object):
                 agg_col.col_id = new.next_col
                 new_pq.select.append(agg_col)
 
-                for new_jp in new.update_join_paths(new_pq):
-                    if client and client.should_prune(new_jp.query):
-                        continue
-                    states.append(new_jp)
+                states.append(new)
 
             return states
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_col_states(self, client):
+    def next_col_states(self):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
@@ -471,7 +447,7 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_num_op_states(self, clause, num_op_scores, client):
+    def next_num_op_states(self, clause, num_op_scores):
         states = []
         for num_ops, score in enumerate(num_op_scores):
             # Cannot have 0 ops
@@ -492,14 +468,11 @@ class SearchState(object):
             else:
                 raise Exception('Unknown clause: {}'.format(clause))
 
-            for new_jp in new.update_join_paths(new_pq):
-                if client and client.should_prune(new_jp.query):
-                    continue
-                states.append(new_jp)
+            states.append(new)
 
         return states
 
-    def next_op_states(self, clause, col_name, client):
+    def next_op_states(self, clause, col_name):
         states = []
         # self.next[-1] = next
         self.next_op_idx = 0
@@ -554,10 +527,85 @@ class SearchState(object):
                     new_pq.having.predicates.append(pred)
 
             new.iter_ops = op_scores
-            for new_jp in new.update_join_paths(new_pq):
-                if client and client.should_prune(new_jp.query):
-                    continue
-                states.append(new_jp)
+            states.append(new)
+
+        return states
+
+    def handle_terminal(self, nlq_toks, db, schema, lit_cache, clause,
+        fake_literals=False):
+        pq = self.find_protoquery(self.query.pq, self.next)
+        if clause == 'where':
+            pq_clause = pq.where
+        elif clause == 'having':
+            pq_clause = pq.having
+        else:
+            raise Exception('Unknown clause: {}'.format(clause))
+
+        op, score = self.iter_ops[self.next_op_idx]
+        pred_idx = self.next_op_offset + self.next_op_idx
+        pred = pq_clause.predicates[pred_idx]
+        pred.has_subquery = to_proto_tribool(False)
+
+        self.next_op_idx += 1
+        self.next[-1] = '{}_op'.format(clause)
+
+        if fake_literals:
+            # fake literals is to compare with old impl
+            if NEW_WHERE_OPS[op] == 'between':
+                cands = ['terminal', 'terminal']
+            else:
+                cands = ['terminal']
+        else:
+            cands = find_literal_candidates(nlq_toks, db, schema, self.next_col,
+                lit_cache, like=NEW_WHERE_OPS[op] == 'like')
+
+        if not cands:
+            return []
+
+        states = []
+
+        if NEW_WHERE_OPS[op] == 'between':
+            for x, y in pairwise(cands):
+                new = self.copy()
+                new_pq = new.find_protoquery(new.query.pq, self.next)
+
+                if clause == 'where':
+                    new_pq_clause = new_pq.where
+                elif clause == 'having':
+                    new_pq_clause = new_pq.having
+
+                pred = new_pq_clause.predicates[pred_idx]
+                pred.value.append(x)
+                pred.value.append(y)
+
+                states.append(new)
+        elif NEW_WHERE_OPS[op] in ('in', 'not in'):
+            new = self.copy()
+            new_pq = new.find_protoquery(new.query.pq, self.next)
+
+            if clause == 'where':
+                new_pq_clause = new_pq.where
+            elif clause == 'having':
+                new_pq_clause = new_pq.having
+
+            pred = new_pq_clause.predicates[pred_idx]
+            pred.value.extend(cands)
+
+            states.append(new)
+        else:
+            for literal in cands:
+                new = self.copy()
+                new_pq = new.find_protoquery(new.query.pq, self.next)
+
+                if clause == 'where':
+                    new_pq_clause = new_pq.where
+                elif clause == 'having':
+                    new_pq_clause = new_pq.having
+
+                pred = new_pq_clause.predicates[pred_idx]
+                pred.value.append(literal)
+
+                states.append(new)
 
         return states
 
