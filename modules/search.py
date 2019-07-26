@@ -338,7 +338,7 @@ class SearchState(object):
                 new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_agg = agg
                 new.prob = new.prob * score
-                states.extend(new.update_join_paths(new_pq))
+                states.append(new)
             return states
         else:
             raise Exception('Exceeded number of aggs.')
@@ -442,7 +442,7 @@ class SearchState(object):
                 new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_col = col
                 new.prob = new.prob * score
-                states.extend(new.update_join_paths(new_pq))
+                states.append(new)
             return states
         else:
             raise Exception('Exceeded number of columns.')
