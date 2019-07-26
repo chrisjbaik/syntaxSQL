@@ -1,5 +1,5 @@
 import traceback
-from itertools import chain, permutations
+from itertools import chain, izip, permutations, tee
 from literals import find_literal_candidates
 from query import Query, join_path_needs_update, with_updated_join_paths, \
     to_proto_op, to_proto_tribool, to_proto_agg, to_str_agg, to_proto_dir

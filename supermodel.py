@@ -9,7 +9,6 @@ import torch.nn.functional as F
 import traceback
 from collections import defaultdict
 from heapq import heappop, heappush
-from itertools import izip, tee
 
 from utils import *
 from word_embedding import WordEmbedding
