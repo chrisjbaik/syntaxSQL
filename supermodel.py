@@ -206,7 +206,7 @@ class SuperModel(nn.Module):
         for new in state.update_join_paths(pq):
             if client and client.should_prune(new.query):
                 continue
-            heappush(heapq, (-state.prob, state.join_path_ranking, state))
+            heappush(heapq, (-new.prob, new.join_path_ranking, new))
 
     def heappush_many(self, heapq, states, client):
         for state in states:
