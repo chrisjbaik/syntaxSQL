@@ -162,10 +162,8 @@ def main():
                 else:
                     nlq = tokens_list
 
-                dqc = client if task.tsq_level != 'nlq_only' else None
-
-                sqls = translate(task.id, model, db, schemas, dqc, task.db_name,
-                    nlq, timeout=task.timeout, debug=args.debug)
+                sqls = translate(task.id, model, db, schemas, client,
+                    task.db_name, nlq, timeout=task.timeout, debug=args.debug)
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:
