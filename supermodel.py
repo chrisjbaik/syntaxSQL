@@ -797,8 +797,6 @@ class SuperModel(nn.Module):
                         results.append(cur.query)
                     if answer_found:
                         break
-                else:
-                    results.append(cur.query)
 
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
