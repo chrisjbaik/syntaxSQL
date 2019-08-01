@@ -189,21 +189,25 @@ class SuperModel(nn.Module):
 
         return op_score, op_num_score
 
-    def print_heapq(self, heapq):
-        print('HEAP_Q:')
-        for item in heapq:
+    def print_queue(self, queue):
+        print('QUEUE:')
+        for item in queue:
             print('  - {}'.format(item.next))
 
-    def heappush_state(self, heapq, state, client):
+    def push_one(self, queue, state, client):
         pq = state.find_protoquery(state.query.pq, state.next)
         for new in state.update_join_paths(pq):
             if client and client.should_prune(new.query):
                 continue
-            heappush(heapq, (-new.prob, new.join_path_ranking, new))
+            if client.tsq_level == 'qbe_only':
+                # for QBE only, breadth first search instead
+                queue.append(new)
+            else:
+                heappush(queue, (-new.prob, new.join_path_ranking, new))
 
-    def heappush_many(self, heapq, states, client):
+    def push_many(self, queue, states, client):
         for state in states:
-            self.heappush_state(heapq, state, client)
+            self.push_one(queue, state, client)
 
     def enumerate(self, task_id, db, q_seq, history, tables, client,
         timeout=None, debug=False, fake_literals=False):
@@ -229,9 +233,9 @@ class SuperModel(nn.Module):
         # initial state
         init_state = SearchState(['root'], Query(schema))
 
-        # heapq to store search states
-        heapq = []
-        self.heappush_state(heapq, init_state, client)
+        # queue to store search states
+        queue = []
+        self.push_one(queue, init_state, client)
 
         # completed queries
         results = []
@@ -245,17 +249,20 @@ class SuperModel(nn.Module):
 
         print('Running task {}...'.format(task_id))
 
-        while heapq:
+        while queue:
             if timeout and time.time() > end_time:
                 print('Timed out. Returned {} results.'.format(len(results)))
                 break
 
-            cur = heappop(heapq)[2]
+            if client.tsq_level == 'qbe_only':
+                cur = queue.pop(0)
+            else:
+                cur = heappop(queue)[2]
 
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
 
             if debug:
-                self.print_heapq(heapq)
+                self.print_queue(queue)
                 print('* - {}'.format(cur.next))
                 print('\nPROTO:\n{}\n'.format(cur_pq.__str__()))
 
@@ -291,7 +298,7 @@ class SuperModel(nn.Module):
                         new_pq.left.set_op = to_proto_set_op('none')
                         new_pq.right.set_op = to_proto_set_op('none')
                         new.next = ['left', 'root']
-                    self.heappush_state(heapq, new, client)
+                    self.push_one(queue, new, client)
             elif cur.next[-1] == 'keyword':
                 score = self.key_word.forward(q_emb_var, q_len, hs_emb_var,
                     hs_len, kw_emb_var, kw_len)
@@ -300,12 +307,12 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'keyword_num'
 
-                self.heappush_many(heapq, cur.next_num_kw_states(num_kw_scores),
+                self.push_many(queue, cur.next_num_kw_states(num_kw_scores),
                     client)
             elif cur.next[-1] == 'keyword_num':
                 cur.next[-1] = 'keyword_each'
                 cur.used_kws = set()
-                self.heappush_many(heapq, cur.next_kw_states(), client)
+                self.push_many(queue, cur.next_kw_states(), client)
             elif cur.next[-1] == 'keyword_each':
                 if cur.next_kw is None:
                     cur.next[-1] = 'select'
@@ -316,7 +323,7 @@ class SuperModel(nn.Module):
                     if not to_str_tribool(cur_pq.has_order_by):
                         cur_pq.has_order_by = to_proto_tribool(False)
                     cur.clear_kw_info()
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     # stack.append(cur)
                     continue
 
@@ -332,7 +339,7 @@ class SuperModel(nn.Module):
                         cur_kw))
                 cur.used_kws.add(cur.next_kw)
 
-                self.heappush_many(heapq, cur.next_kw_states(), client)
+                self.push_many(queue, cur.next_kw_states(), client)
             elif cur.next[-1] == 'select':
                 cur.history[0].append('select')
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
@@ -343,19 +350,19 @@ class SuperModel(nn.Module):
                         col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'select_col_num'
-                self.heappush_many(heapq, cur.next_num_col_states('select',
+                self.push_many(queue, cur.next_num_col_states('select',
                     num_col_scores), client)
             elif cur.next[-1] == 'select_col_num':
                 cur.next[-1] = 'select_col'
                 cur.used_cols = set()
-                self.heappush_many(heapq, cur.next_select_col_states(), client)
+                self.push_many(queue, cur.next_select_col_states(), client)
             elif cur.next[-1] == 'select_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'where'
                     cur_pq.done_select = True
                     cur.history = cur.get_select_history(tables)
                     cur.clear_col_info()
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -367,32 +374,32 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'select_agg_num'
-                self.heappush_many(heapq, cur.next_num_agg_states('select',
+                self.push_many(queue, cur.next_num_agg_states('select',
                     num_agg_scores), client)
             elif cur.next[-1] == 'select_agg_num':
                 if cur.num_aggs == 0:
                     cur.next[-1] = 'select_col'
                     cur.clear_agg_info()
-                    self.heappush_many(heapq, cur.next_select_col_states(),
+                    self.push_many(queue, cur.next_select_col_states(),
                         client)
                 else:
                     cur.next[-1] = 'select_agg'
-                    self.heappush_many(heapq, cur.next_select_agg_states(),
+                    self.push_many(queue, cur.next_select_agg_states(),
                         client)
             elif cur.next[-1] == 'select_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'select_col'
                     cur.clear_agg_info()
-                    self.heappush_many(heapq, cur.next_select_col_states(),
+                    self.push_many(queue, cur.next_select_col_states(),
                         client)
                     continue
 
-                self.heappush_many(heapq, cur.next_select_agg_states(), client)
+                self.push_many(queue, cur.next_select_agg_states(), client)
             elif cur.next[-1] == 'where':
                 if cur_pq.has_where != to_proto_tribool(True):
                     cur.next[-1] = 'group_by'
                     cur_pq.done_where = True
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
                 cur.history[0].append('where')
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
@@ -406,16 +413,16 @@ class SuperModel(nn.Module):
                 cur.and_or_scores = list(F.softmax(score)[0].data.cpu().numpy())
 
                 cur.next[-1] = 'where_col_num'
-                self.heappush_many(heapq, cur.next_num_col_states('where',
+                self.push_many(queue, cur.next_num_col_states('where',
                     num_col_scores), client)
             elif cur.next[-1] == 'where_col_num':
                 cur.used_cols = set()
                 if cur.num_cols == 1:
                     cur.next[-1] = 'where_col'
-                    self.heappush_many(heapq, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states(), client)
                 else:
                     cur.next[-1] = 'where_and_or'
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
             elif cur.next[-1] == 'where_and_or':
                 for op, score in enumerate(cur.and_or_scores):
                     new = cur.copy()
@@ -427,13 +434,13 @@ class SuperModel(nn.Module):
                     new.clear_and_or_info()
 
                     new.next[-1] = 'where_col'
-                    self.heappush_many(heapq, new.next_col_states(), client)
+                    self.push_many(queue, new.next_col_states(), client)
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
                     cur_pq.done_where = True
                     cur.clear_col_info()
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -448,18 +455,18 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'where_op_num'
-                self.heappush_many(heapq, cur.next_num_op_states('where',
+                self.push_many(queue, cur.next_num_op_states('where',
                     op_num_scores), client)
             elif cur.next[-1] == 'where_op_num':
                 cur.next[-1] = 'where_op'
                 col_name = index_to_column_name(cur.next_col, tables)
-                self.heappush_many(heapq, cur.next_op_states('where',
+                self.push_many(queue, cur.next_op_states('where',
                     col_name), client)
             elif cur.next[-1] == 'where_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
                     cur.clear_op_info()
-                    self.heappush_many(heapq, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states(), client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -480,10 +487,10 @@ class SuperModel(nn.Module):
                         if cur.parent is not None:
                             continue
                         new.next[-1] = 'where_op_subquery'
-                        self.heappush_state(heapq, new, client)
+                        self.push_one(queue, new, client)
                     else:
                         new.next[-1] = 'where_op_terminal'
-                        self.heappush_state(heapq, new, client)
+                        self.push_one(queue, new, client)
             elif cur.next[-1] == 'where_op_subquery':
                 pred_idx = cur.next_op_offset + cur.next_op_idx
                 pred = cur_pq.where.predicates[pred_idx]
@@ -501,9 +508,9 @@ class SuperModel(nn.Module):
                 substate.set_parent(cur)
                 substate.next.append(pred_idx)
                 substate.next.append('keyword')
-                self.heappush_state(heapq, substate, client)
+                self.push_one(queue, substate, client)
             elif cur.next[-1] == 'where_op_terminal':
-                self.heappush_many(heapq, cur.handle_terminal(q_seq[0], db,
+                self.push_many(queue, cur.handle_terminal(q_seq[0], db,
                     schema, lit_cache, 'where', fake_literals=fake_literals),
                     client)
             elif cur.next[-1] == 'group_by':
@@ -511,7 +518,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'order_by'
                     cur_pq.done_group_by = True
                     cur_pq.done_having = True
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 cur.history[0].append('groupBy')
@@ -524,18 +531,18 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'group_by_col_num'
 
-                self.heappush_many(heapq, cur.next_num_col_states('group_by',
+                self.push_many(queue, cur.next_num_col_states('group_by',
                     num_col_scores), client)
             elif cur.next[-1] == 'group_by_col_num':
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
-                self.heappush_many(heapq, cur.next_col_states(), client)
+                self.push_many(queue, cur.next_col_states(), client)
             elif cur.next[-1] == 'group_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'having'
                     cur_pq.done_group_by = True
                     cur.clear_col_info()
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -558,15 +565,15 @@ class SuperModel(nn.Module):
                             new_pq.has_having = to_proto_tribool(True)
                         else:
                             new_pq.has_having = to_proto_tribool(False)
-                        self.heappush_many(heapq, new.next_col_states(), client)
+                        self.push_many(queue, new.next_col_states(), client)
                 else:
                     cur.used_cols.add(cur.next_col)
-                    self.heappush_many(heapq, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states(), client)
             elif cur.next[-1] == 'having':
                 if cur_pq.has_having != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
                     cur_pq.done_having = True
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
                 cur.history[0].append('having')
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
@@ -578,18 +585,18 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'having_col_num'
 
-                self.heappush_many(heapq, cur.next_num_col_states('having',
+                self.push_many(queue, cur.next_num_col_states('having',
                     num_col_scores), client)
             elif cur.next[-1] == 'having_col_num':
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
-                self.heappush_many(heapq, cur.next_col_states(), client)
+                self.push_many(queue, cur.next_col_states(), client)
             elif cur.next[-1] == 'having_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'order_by'
                     cur_pq.done_having = True
                     cur.clear_col_info()
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -604,16 +611,16 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'having_agg_num'
-                self.heappush_many(heapq, cur.next_num_agg_states('having',
+                self.push_many(queue, cur.next_num_agg_states('having',
                     num_agg_scores), client)
             elif cur.next[-1] == 'having_agg_num':
                 cur.next[-1] = 'having_agg'
-                self.heappush_many(heapq, cur.next_agg_states(), client)
+                self.push_many(queue, cur.next_agg_states(), client)
             elif cur.next[-1] == 'having_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
                     cur.clear_agg_info()
-                    self.heappush_many(heapq, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states(), client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -629,18 +636,18 @@ class SuperModel(nn.Module):
 
                 cur.next[-1] = 'having_op_num'
 
-                self.heappush_many(heapq, cur.next_num_op_states('having',
+                self.push_many(queue, cur.next_num_op_states('having',
                     op_num_scores), client)
             elif cur.next[-1] == 'having_op_num':
                 cur.next[-1] = 'having_op'
                 col_name = index_to_column_name(cur.next_col, tables)
-                self.heappush_many(heapq, cur.next_op_states('having',
+                self.push_many(queue, cur.next_op_states('having',
                     col_name), client)
             elif cur.next[-1] == 'having_op':
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'having_agg'
                     cur.clear_op_info()
-                    self.heappush_many(heapq, cur.next_agg_states(), client)
+                    self.push_many(queue, cur.next_agg_states(), client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -661,10 +668,10 @@ class SuperModel(nn.Module):
                         if cur.parent is not None:
                             continue
                         new.next[-1] = 'having_op_subquery'
-                        self.heappush_state(heapq, new, client)
+                        self.push_one(queue, new, client)
                     else:
                         new.next[-1] = 'having_op_terminal'
-                        self.heappush_state(heapq, new, client)
+                        self.push_one(queue, new, client)
             elif cur.next[-1] == 'having_op_subquery':
                 pred_idx = cur.next_op_offset + cur.next_op_idx
                 pred = cur_pq.having.predicates[pred_idx]
@@ -682,9 +689,9 @@ class SuperModel(nn.Module):
                 substate.set_parent(cur)
                 substate.next.append(pred_idx)
                 substate.next.append('keyword')
-                self.heappush_state(heapq, substate, client)
+                self.push_one(queue, substate, client)
             elif cur.next[-1] == 'having_op_terminal':
-                self.heappush_many(heapq, cur.handle_terminal(q_seq[0], db,
+                self.push_many(queue, cur.handle_terminal(q_seq[0], db,
                     schema, lit_cache, 'having', fake_literals=fake_literals),
                     client)
             elif cur.next[-1] == 'order_by':
@@ -692,7 +699,7 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'finish'
                     cur_pq.done_order_by = True
                     cur_pq.done_limit = True
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
                 cur.history[0].append('orderBy')
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
@@ -703,19 +710,19 @@ class SuperModel(nn.Module):
                         col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'order_by_col_num'
-                self.heappush_many(heapq, cur.next_num_col_states('order_by',
+                self.push_many(queue, cur.next_num_col_states('order_by',
                     num_col_scores), client)
             elif cur.next[-1] == 'order_by_col_num':
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()
-                self.heappush_many(heapq, cur.next_col_states(), client)
+                self.push_many(queue, cur.next_col_states(), client)
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'finish'
                     cur_pq.done_order_by = True
                     cur_pq.done_limit = True
                     cur.clear_col_info()
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -730,21 +737,21 @@ class SuperModel(nn.Module):
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
                 cur.next[-1] = 'order_by_agg_num'
-                self.heappush_many(heapq, cur.next_num_agg_states('order_by',
+                self.push_many(queue, cur.next_num_agg_states('order_by',
                     num_agg_scores), client)
             elif cur.next[-1] == 'order_by_agg_num':
                 cur.next[-1] = 'order_by_agg'
                 if cur.num_aggs == 0:
                     cur.next_agg = 'none_agg'
                     cur.num_aggs = 1
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                 else:
-                    self.heappush_many(heapq, cur.next_agg_states(), client)
+                    self.push_many(queue, cur.next_agg_states(), client)
             elif cur.next[-1] == 'order_by_agg':
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'
                     cur.clear_agg_info()
-                    self.heappush_many(heapq, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states(), client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -772,23 +779,23 @@ class SuperModel(nn.Module):
                     list(F.softmax(score)[0].data.cpu().numpy())
 
                 cur.next[-1] = 'order_by_dir'
-                self.heappush_many(heapq, cur.next_dir_limit_states(
+                self.push_many(queue, cur.next_dir_limit_states(
                     ordered_col), client)
             elif cur.next[-1] == 'order_by_dir':
                 cur.dir_limit_cands = None
                 cur.next[-1] = 'order_by_agg'
-                self.heappush_many(heapq, cur.next_agg_states(), client)
+                self.push_many(queue, cur.next_agg_states(), client)
             elif cur.next[-1] == 'finish':
                 cur_pq.done_query = True
 
                 # redirect to parent if subquery
                 if cur.parent:
-                    self.heappush_state(heapq, cur.parent, client)
+                    self.push_one(queue, cur.parent, client)
                     continue
                 elif cur.next[0] == 'left':
                     # redirect to other child if set op
                     cur.next = ['right', 'root']
-                    self.heappush_state(heapq, cur, client)
+                    self.push_one(queue, cur, client)
                     continue
 
                 if client:

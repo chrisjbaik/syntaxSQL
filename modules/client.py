@@ -6,6 +6,7 @@ class DuoquestClient(object):
     def __init__(self, port, authkey):
         self.port = port
         self.authkey = authkey
+        self.tsq_level = None
 
     def connect(self):
         address = ('localhost', self.port)

@@ -162,6 +162,8 @@ def main():
                 else:
                     nlq = tokens_list
 
+                client.tsq_level = task.tsq_level
+
                 sqls = translate(task.id, model, db, schemas, client,
                     task.db_name, nlq, timeout=task.timeout, debug=args.debug)
 
