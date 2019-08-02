@@ -199,7 +199,7 @@ class SuperModel(nn.Module):
         for new in state.update_join_paths(pq):
             if client and client.should_prune(new.query):
                 continue
-            if client.tsq_level == 'qbe_only':
+            if client.tsq_level == 'tsq_only':
                 # for QBE only, breadth first search instead
                 queue.append(new)
             else:
@@ -254,7 +254,7 @@ class SuperModel(nn.Module):
                 print('Timed out. Returned {} results.'.format(len(results)))
                 break
 
-            if client.tsq_level == 'qbe_only':
+            if client.tsq_level == 'tsq_only':
                 cur = queue.pop(0)
             else:
                 cur = heappop(queue)[2]
