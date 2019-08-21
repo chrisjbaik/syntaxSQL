@@ -73,7 +73,7 @@ def translate(id, model, db, schemas, client, db_name, nlq, timeout=None,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.enumerate(id, db, [tokens] * 2, [], schema, client,
+        cqs = model.search(id, db, [tokens] * 2, [], schema, client,
             timeout=timeout, debug=debug, fake_literals=fake_literals)
 
         for cq in cqs:
