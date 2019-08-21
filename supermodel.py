@@ -209,7 +209,7 @@ class SuperModel(nn.Module):
         for state in states:
             self.push_one(queue, state, client)
 
-    def gpqe(self, task_id, db, q_seq, history, tables, client,
+    def search(self, task_id, db, q_seq, history, tables, client,
         timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
