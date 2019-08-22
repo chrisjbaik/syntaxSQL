@@ -192,7 +192,10 @@ class SuperModel(nn.Module):
     def print_queue(self, queue):
         print('QUEUE:')
         for item in queue:
-            print('  - {}'.format(item.next))
+            if isinstance(item, tuple):
+                print('  - {}'.format(item[2].next))
+            else:
+                print('  - {}'.format(item.next))
 
     def push_one(self, queue, state, client):
         pq = state.find_protoquery(state.query.pq, state.next)
