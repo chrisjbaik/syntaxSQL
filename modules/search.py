@@ -89,6 +89,8 @@ class SearchState(object):
             history = [['root']] * 2
         self.history = history
 
+        self.used_terminals = set()
+
     def set_subquery(self, pq, next, set_pq):
         if next[0] == 'left':
             self.set_subquery(pq.left, next[1:], set_pq)
@@ -204,6 +206,8 @@ class SearchState(object):
 
         copied.and_or_scores = self.and_or_scores  # will not be modified
         copied.dir_limit_scores = self.dir_limit_scores  # will not be modified
+
+        copied.used_terminals = set(self.used_terminals)
 
         return copied
 
@@ -572,6 +576,8 @@ class SearchState(object):
 
         if NEW_WHERE_OPS[op] == 'between':
             for x, y in pairwise(cands):
+                if x in self.used_terminals or y in self.used_terminals:
+                    continue
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, self.next)
 
@@ -583,6 +589,9 @@ class SearchState(object):
                 pred = new_pq_clause.predicates[pred_idx]
                 pred.value.append(x)
                 pred.value.append(y)
+
+                new.used_terminals.add(x)
+                new.used_terminals.add(y)
 
                 states.append(new)
         elif NEW_WHERE_OPS[op] in ('in', 'not in'):
@@ -597,9 +606,13 @@ class SearchState(object):
             pred = new_pq_clause.predicates[pred_idx]
             pred.value.extend(cands)
 
+            new.used_terminals.update(cands)
+
             states.append(new)
         else:
             for literal in cands:
+                if literal in self.used_terminals:
+                    continue
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, self.next)
 
@@ -610,6 +623,8 @@ class SearchState(object):
 
                 pred = new_pq_clause.predicates[pred_idx]
                 pred.value.append(literal)
+
+                new.used_terminals.add(literal)
 
                 states.append(new)
 
