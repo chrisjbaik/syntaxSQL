@@ -193,8 +193,8 @@ class SuperModel(nn.Module):
         print('QUEUE:')
         for item in queue:
             if isinstance(item, tuple):
-                print('  - {}, PRIORITY: {}'.format(item[2].next, item[0],
-                    item[1]))
+                print('  - {}, PRIORITY: ({}, {})'.format(item[2].next,
+                    item[0], item[1]))
             else:
                 print('  - {}'.format(item.next))
 
