@@ -193,7 +193,8 @@ class SuperModel(nn.Module):
         print('QUEUE:')
         for item in queue:
             if isinstance(item, tuple):
-                print('  - {}'.format(item[2].next))
+                print('  - {}, PRIORITY: {}'.format(item[2].next, item[0],
+                    item[1]))
             else:
                 print('  - {}'.format(item.next))
 
@@ -257,17 +258,16 @@ class SuperModel(nn.Module):
                 print('Timed out. Returned {} results.'.format(len(results)))
                 break
 
+            if debug:
+                self.print_queue(queue)
+                print('\nPROTO:\n{}\n'.format(cur_pq.__str__()))
+
             if client.tsq_level == 'tsq_only':
                 cur = queue.pop(0)
             else:
                 cur = heappop(queue)[2]
 
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
-
-            if debug:
-                self.print_queue(queue)
-                print('* - {}'.format(cur.next))
-                print('\nPROTO:\n{}\n'.format(cur_pq.__str__()))
 
             hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                 cur.history)
