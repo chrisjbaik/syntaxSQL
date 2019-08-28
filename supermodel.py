@@ -260,7 +260,6 @@ class SuperModel(nn.Module):
 
             if debug:
                 self.print_queue(queue)
-                print('\nPROTO:\n{}\n'.format(cur_pq.__str__()))
 
             if client.tsq_level == 'tsq_only':
                 cur = queue.pop(0)
@@ -268,6 +267,9 @@ class SuperModel(nn.Module):
                 cur = heappop(queue)[2]
 
             cur_pq = cur.find_protoquery(cur.query.pq, cur.next)
+
+            if debug:
+                print('\nPROTO:\n{}\n'.format(cur_pq.__str__()))
 
             hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                 cur.history)
