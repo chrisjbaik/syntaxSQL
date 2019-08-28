@@ -311,10 +311,8 @@ class Schema(object):
     def zero_table_join_paths(self):
         jps = []
         for tbl in self.tables:
-            jp = JoinPath()
-            jp.add_single_table(tbl)
-            jps.append(jp)
-        return jps
+            jps.extend(self.single_table_join_paths(tbl))
+        return sorted(jps, key=lambda jp: len(jp.edge_map))
 
     def single_table_join_paths(self, table):
         join_paths = []
