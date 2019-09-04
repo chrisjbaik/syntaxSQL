@@ -161,15 +161,6 @@ def main():
     client = DuoquestClient(int(config.get('duoquest', 'port')),
         config.get('duoquest', 'authkey'))
 
-    if args.test_path:
-        schemas_path, db_path = \
-            get_dataset_paths(config, 'spider', 'dev')
-        schemas = load_schemas(schemas_path)
-        db = Database(db_path, 'spider')
-        data = json.load(open(args.test_path))
-        test_old_and_new(data, model, db, schemas, 10, 1, debug=args.debug)
-        exit()
-
     while True:
         try:
             address = ('localhost', int(config.get('nlq', 'port')))
@@ -231,57 +222,6 @@ def main():
             traceback.print_exc()
         finally:
             listener.close()
-
-def new_to_old(new):
-    return re.sub('(w[0-9]+|I|E|U)(t[0-9]+)', '\g<2>', new)
-
-def test_old_and_new(data, model, db, schemas, n, b, debug=False):
-    correct = 0
-    for i, task in enumerate(data):
-        print('{}/{} || {}, {}'.format(i+1, len(data), task['db_id'],
-            task['question_toks']))
-        dqc = None
-        old = translate(i+1, model, db, schemas, dqc, task['db_id'],
-            task['question_toks'], n, _old=True)
-        new = translate(i+1, model, db, schemas, dqc, task['db_id'],
-            task['question_toks'], n, debug=debug, fake_literals=True)
-
-        if new and old and new_to_old(new[0]).lower() == old[0].lower():
-            correct += 1
-            print('Correct!\n')
-        else:
-            print(old)
-            print(new)
-            print('Incorrect!\n')
-    print('Correct: {}/{}'.format(correct, len(data)))
-
-# def test(model, db, schemas, client, n, b, debug, timeout=None):
-#     while True:
-#         db_name = raw_input('Database (hit enter for default) > ')
-#         if not db_name:
-#             db_name = 'course_teach'
-#         print('Database: {}'.format(db_name))
-#
-#         nlq = raw_input('NLQ (hit enter for default) > ')
-#         if not nlq:
-#             nlq = [u'Show', u'the', u'hometowns', u'shared', u'by', u'at',
-#                 u'least', u'two', u'teachers', u'.']
-#         print('NLQ: {}'.format(nlq))
-#
-#         old = translate(model, db, schemas, client, db_name, nlq, n, b,
-#             _old=True, debug=debug)
-#         print('--- OLD ---')
-#         for cq in old:
-#             print(u' - {}'.format(cq))
-#         print
-#
-#         new = translate(model, db, schemas, client, db_name, nlq, n, b,
-#             timeout=timeout, debug=debug)
-#         print('--- NEW ---')
-#
-#         for cq in new:
-#             print(u' - {}'.format(cq))
-#         print
 
 if __name__ == '__main__':
     main()
