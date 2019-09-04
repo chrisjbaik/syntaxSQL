@@ -189,14 +189,14 @@ def main():
 
                     conn = sqlite3.connect(task_db_path)
                     cur = conn.cursor()
-                    cur.execute('''SELECT tid, schema_proto, path FROM databases
+                    cur.execute('''SELECT schema_proto, path FROM databases
                                    WHERE name = ?''', (task.db_name,))
                     row = cur.fetchone()
                     if row is None:
                         raise Exception('Database <{}> not found!'.format(
                             task.db_name))
 
-                    tid, schema_proto, db_path = row
+                    schema_proto, db_path = row
                     conn.close()
 
                     schemas = load_schemas_from_proto(schema_proto)
