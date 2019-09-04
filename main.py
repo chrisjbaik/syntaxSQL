@@ -3,6 +3,7 @@ import ConfigParser
 import json
 from multiprocessing.connection import Listener
 import re
+import sqlite3
 import torch
 import traceback
 
@@ -13,13 +14,63 @@ from utils import load_word_emb
 from modules.client import DuoquestClient
 from modules.database import Database
 from modules.query import generate_sql_str
-from modules.duoquest_pb2 import ProtoTask, ProtoCandidates
+from modules.duoquest_pb2 import ProtoTask, ProtoCandidates, COL_TEXT, \
+    COL_NUMBER, COL_TIME, COL_BOOLEAN
+
+def proto_col_type_to_text(proto_col_type):
+    if proto_col_type == COL_TEXT:
+        return 'text'
+    elif proto_col_type == COL_NUMBER:
+        return 'number'
+    elif proto_col_type == COL_TIME:
+        return 'time'
+    elif proto_col_type == COL_BOOLEAN:
+        return 'boolean'
+    else:
+        raise Exception('Unrecognized type: {}'.format(proto_col_type))
 
 def load_schemas(schemas_path):
     data = json.load(open(schemas_path))
     schemas = {}
     for item in data:
         schemas[item['db_id']] = item
+    return schemas
+
+def load_schemas_from_proto(schema_proto):
+    schema = {}
+
+    schema['db_id'] = schema_proto.name
+    schema['table_names'] = []
+    schema['table_names_original'] = []
+    schema['primary_keys'] = []
+
+    column_names = []
+    column_names_original = []
+    column_types = []
+    for table_id, table in enumerate(schema_proto.tables):
+        schema['table_names'].append(table.sem_name)
+        schema['table_names_original'].append(table.syn_name)
+
+        for col in table.columns:
+            if col.is_pk:
+                schema['primary_keys'].append(col.id)
+            column_names.append((col.id, [table_id, col.sem_name]))
+            column_names_original.append((col.id, [table_id, col.syn_name]))
+            column_types.append((col.id, proto_col_type_to_text(col.type)))
+
+    schema['column_names'] = map(lambda x: x[1],
+        sorted(column_names, key=lambda x: x[0]))
+    schema['column_names_original'] = map(lambda x: x[1],
+        sorted(column_names_original, key=lambda x: x[0]))
+    schema['column_types'] = map(lambda x: x[1],
+        sorted(column_names, key=lambda x: x[0]))
+
+        schema['foreign_keys'] = []
+    for fkpk in schema_proto.fkpks:
+        schema['foreign_keys'].append([fkpk.fk_col_id, fkpk.pk_col_id])
+
+    schemas = {}
+    schemas[schema_proto.name] = schema
     return schemas
 
 def load_model(models_path, glove_path, toy=False):
@@ -85,27 +136,20 @@ def get_dataset_paths(config, dataset, mode):
     schemas_path = None
     db_path = None
     if dataset == 'spider':
-        schemas_path = config.get('spider',
-            '{}_tables_path'.format(mode))
-        db_path = config.get('spider',
-            '{}_db_path'.format(mode))
+        schemas_path = config.get('spider', '{}_tables_path'.format(mode))
+        db_path = config.get('spider', '{}_db_path'.format(mode))
     elif dataset == 'wikisql':
         pass  # TODO
     return schemas_path, db_path
 
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('dataset', choices=['spider', 'wikisql'])
-    # parser.add_argument('mode', choices=['dev', 'test'])
 
     parser.add_argument('--config_path', default='../../src/config.ini')
     parser.add_argument('--toy', action='store_true',
         help='Use toy word embedding set to save load time')
     parser.add_argument('--debug', action='store_true',
         help='Enable debug output')
-    # parser.add_argument('--test_manual', action='store_true',
-    #     help='For manual command line testing')
-    parser.add_argument('--test_path', help='Path for dataset to test')
 
     args = parser.parse_args()
 
@@ -116,12 +160,6 @@ def main():
         config.get('syntaxsql', 'glove_path'), args.toy)
     client = DuoquestClient(int(config.get('duoquest', 'port')),
         config.get('duoquest', 'authkey'))
-
-    # if args.test_manual:
-    #     n = 1
-    #     b = 1
-    #     test(model, db, schemas, client, n, b, args.debug, timeout=args.timeout)
-    #     exit()
 
     if args.test_path:
         schemas_path, db_path = \
@@ -149,11 +187,29 @@ def main():
                 task = ProtoTask()
                 task.ParseFromString(msg)
 
-                schemas_path, db_path = \
-                    get_dataset_paths(config, task.dataset, task.mode)
+                if task.dataset and task.mode:
+                    schemas_path, db_path = \
+                        get_dataset_paths(config, task.dataset, task.mode)
 
-                schemas = load_schemas(schemas_path)
-                db = Database(db_path, task.dataset)
+                    schemas = load_schemas(schemas_path)
+                    db = Database(db_path, task.dataset)
+                else:
+                    task_db_path = config.get('db', 'path')
+
+                    conn = sqlite3.connect(task_db_path)
+                    cur = conn.cursor()
+                    cur.execute('''SELECT tid, schema_proto, path FROM databases
+                                   WHERE name = ?''', (task.db_name,))
+                    row = cur.fetchone()
+                    if row is None:
+                        raise Exception('Database <{}> not found!'.format(
+                            task.db_name))
+
+                    tid, schema_proto, db_path = row
+                    conn.close()
+
+                    schemas = load_schemas_from_proto(schema_proto)
+                    db = Database(db_path, None, db_name=task.db_name)
 
                 tokens_list = list(task.nlq_tokens)
                 nlq = None

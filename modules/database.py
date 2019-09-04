@@ -2,19 +2,21 @@ import os
 import sqlite3
 
 class Database(object):
-    def __init__(self, db_path, dataset):
+    def __init__(self, db_path, dataset, db_name=None):
         self.db_path = db_path
         self.dataset = dataset
 
         if dataset == 'spider':
             self.db_names = os.listdir(self.db_path)
             self.conn = None
-        else:
+        elif dataset == 'wikisql':
             self.conn = sqlite3.connect(self.db_path)
             cur = self.conn.cursor()
             cur.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
             self.db_names = [row[0] for row in cur.fetchall()]
             cur.close()
+        else:
+            self.db_names = [db_name]
 
     def has_db(self, db_name):
         return db_name in self.db_names
@@ -24,9 +26,11 @@ class Database(object):
             db_path = os.path.join(self.db_path, db_name,
                 '{}.sqlite'.format(db_name))
             conn = sqlite3.connect(db_path)
+        elif self.dataset == 'wikisql':
+            conn = self.conn
         else:
             db_path = self.db_path
-            conn = self.conn
+            conn = sqlite3.connect(db_path)
         return conn
 
     def find_literals(self, db_name, tbl_name, col_name, str):
