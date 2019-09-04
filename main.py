@@ -65,7 +65,7 @@ def load_schemas_from_proto(schema_proto_str):
     schema['column_names_original'] = map(lambda x: x[1],
         sorted(column_names_original, key=lambda x: x[0]))
     schema['column_types'] = map(lambda x: x[1],
-        sorted(column_names, key=lambda x: x[0]))
+        sorted(column_types, key=lambda x: x[0]))
 
     schema['foreign_keys'] = []
     for fkpk in schema_proto.fkpks:
