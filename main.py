@@ -46,8 +46,8 @@ def load_schemas_from_proto(schema_proto_str):
     schema['table_names_original'] = []
     schema['primary_keys'] = []
 
-    column_names = []
-    column_names_original = []
+    column_names = [(0, [-1, '*'])]
+    column_names_original = [(0, [-1, '*'])]
     column_types = []
     for table_id, table in enumerate(schema_proto.tables):
         schema['table_names'].append(table.sem_name)
