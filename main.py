@@ -189,8 +189,8 @@ def main():
                 else:
                     task_db_path = config.get('db', 'path')
 
-                    conn = sqlite3.connect(task_db_path)
-                    cur = conn.cursor()
+                    task_conn = sqlite3.connect(task_db_path)
+                    cur = task_conn.cursor()
                     cur.execute('''SELECT schema_proto, path FROM databases
                                    WHERE name = ?''', (task.db_name,))
                     row = cur.fetchone()
@@ -199,7 +199,7 @@ def main():
                             task.db_name))
 
                     schema_proto, db_path = row
-                    conn.close()
+                    task_conn.close()
 
                     schemas = load_schemas_from_proto(schema_proto)
                     db = Database(db_path, None, db_name=task.db_name)
