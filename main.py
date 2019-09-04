@@ -14,8 +14,8 @@ from utils import load_word_emb
 from modules.client import DuoquestClient
 from modules.database import Database
 from modules.query import generate_sql_str
-from modules.duoquest_pb2 import ProtoTask, ProtoCandidates, COL_TEXT, \
-    COL_NUMBER, COL_TIME, COL_BOOLEAN
+from modules.duoquest_pb2 import ProtoSchema, ProtoTask, ProtoCandidates, \
+    COL_TEXT, COL_NUMBER, COL_TIME, COL_BOOLEAN
 
 def proto_col_type_to_text(proto_col_type):
     if proto_col_type == COL_TEXT:
@@ -36,7 +36,9 @@ def load_schemas(schemas_path):
         schemas[item['db_id']] = item
     return schemas
 
-def load_schemas_from_proto(schema_proto):
+def load_schemas_from_proto(schema_proto_str):
+    schema_proto = ProtoSchema()
+    schema_proto.ParseFromString(schema_proto_str)
     schema = {}
 
     schema['db_id'] = schema_proto.name
