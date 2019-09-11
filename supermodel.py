@@ -495,8 +495,8 @@ class SuperModel(nn.Module):
                 self.push_one(queue, substate, client)
             elif cur.next[-1] == 'where_op_terminal':
                 self.push_many(queue, cur.handle_terminal(q_seq[0], db,
-                    schema, lit_cache, 'where', fake_literals=fake_literals),
-                    client)
+                    schema, lit_cache, 'where', literals,
+                    fake_literals=fake_literals), client)
             elif cur.next[-1] == 'group_by':
                 if cur_pq.has_group_by != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
@@ -676,8 +676,8 @@ class SuperModel(nn.Module):
                 self.push_one(queue, substate, client)
             elif cur.next[-1] == 'having_op_terminal':
                 self.push_many(queue, cur.handle_terminal(q_seq[0], db,
-                    schema, lit_cache, 'having', fake_literals=fake_literals),
-                    client)
+                    schema, lit_cache, 'having', literals,
+                    fake_literals=fake_literals), client)
             elif cur.next[-1] == 'order_by':
                 if cur_pq.has_order_by != to_proto_tribool(True):
                     cur.next[-1] = 'finish'
