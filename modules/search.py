@@ -567,7 +567,7 @@ class SearchState(object):
                 cands = ['terminal']
         else:
             cands = list(map(lambda x: x.value,
-                filter(lambda x: x.col_id == self.next_col, literals)))
+                filter(lambda x: x.col_id == self.next_col, literals.lits)))
             cands.extend(find_literal_candidates(nlq_toks, db, schema,
                 self.next_col, lit_cache, like=NEW_WHERE_OPS[op] == 'like'))
 

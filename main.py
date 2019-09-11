@@ -126,6 +126,10 @@ def translate(id, model, db, schemas, client, db_name, nlq, literals,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
+        if debug:
+            print('Database: {} || NLQ: {}'.format(db_name, nlq))
+            print('LITERALS')
+            print(literals)
         cqs = model.search(id, db, [tokens] * 2, literals, [], schema, client,
             timeout=timeout, debug=debug, fake_literals=fake_literals)
 
