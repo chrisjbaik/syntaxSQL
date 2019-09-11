@@ -190,9 +190,6 @@ class SuperModel(nn.Module):
         for state in states:
             self.push_one(queue, state, client)
 
-    def check_where_literals(self, pq):
-
-
     def search(self, task_id, db, q_seq, literals, history, tables, client,
         timeout=None, debug=False, fake_literals=False):
         if client:

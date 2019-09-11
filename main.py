@@ -109,8 +109,8 @@ def load_model(models_path, glove_path, toy=False):
         torch.load("{}/having_models.dump".format(models_path)))
     return model
 
-def translate(id, model, db, schemas, client, db_name, nlq, timeout=None,
-    _old=False, debug=False, fake_literals=False):
+def translate(id, model, db, schemas, client, db_name, nlq, literals,
+    timeout=None, _old=False, debug=False, fake_literals=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -126,7 +126,7 @@ def translate(id, model, db, schemas, client, db_name, nlq, timeout=None,
         cq = model.full_forward([tokens] * 2, [], schema)
         results.append(model.gen_sql(cq, schemas[db_name]))
     else:
-        cqs = model.search(id, db, [tokens] * 2, [], schema, client,
+        cqs = model.search(id, db, [tokens] * 2, literals, [], schema, client,
             timeout=timeout, debug=debug, fake_literals=fake_literals)
 
         for cq in cqs:
@@ -214,7 +214,8 @@ def main():
                 client.tsq_level = task.tsq_level
 
                 sqls = translate(task.id, model, db, schemas, client,
-                    task.db_name, nlq, timeout=task.timeout, debug=args.debug)
+                    task.db_name, nlq, task.literals, timeout=task.timeout,
+                    debug=args.debug)
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:
