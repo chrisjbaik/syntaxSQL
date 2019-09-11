@@ -541,7 +541,7 @@ class SearchState(object):
 
         return states
 
-    def handle_terminal(self, nlq_toks, db, schema, lit_cache, clause,
+    def handle_terminal(self, nlq_toks, db, schema, lit_cache, clause, literals,
         fake_literals=False):
         pq = self.find_protoquery(self.query.pq, self.next)
         if clause == 'where':
@@ -566,8 +566,10 @@ class SearchState(object):
             else:
                 cands = ['terminal']
         else:
-            cands = find_literal_candidates(nlq_toks, db, schema, self.next_col,
-                lit_cache, like=NEW_WHERE_OPS[op] == 'like')
+            cands = list(map(lambda x: x.value,
+                filter(lambda x: x.col_id == self.next_col, literals)))
+            cands.extend(find_literal_candidates(nlq_toks, db, schema,
+                self.next_col, lit_cache, like=NEW_WHERE_OPS[op] == 'like'))
 
         if not cands:
             return []

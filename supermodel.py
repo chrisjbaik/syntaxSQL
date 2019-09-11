@@ -190,7 +190,10 @@ class SuperModel(nn.Module):
         for state in states:
             self.push_one(queue, state, client)
 
-    def search(self, task_id, db, q_seq, history, tables, client,
+    def check_where_literals(self, pq):
+
+
+    def search(self, task_id, db, q_seq, literals, history, tables, client,
         timeout=None, debug=False, fake_literals=False):
         if client:
             client.connect()
@@ -306,7 +309,6 @@ class SuperModel(nn.Module):
                         cur_pq.has_order_by = to_proto_tribool(False)
                     cur.clear_kw_info()
                     self.push_one(queue, cur, client)
-                    # stack.append(cur)
                     continue
 
                 cur_kw = KW_OPS[cur.next_kw]
