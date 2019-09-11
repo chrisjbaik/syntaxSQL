@@ -138,24 +138,12 @@ class SuperModel(nn.Module):
             self.cuda()
         self.path_not_found = 0
 
-    # def forward(self,q_seq,history,tables, n, b):
-        # if self.part:
-        #     return self.part_forward(q_seq,history,tables)
-        # else:
-
-        # old = self.full_forward(q_seq, history, tables)
-        # return self.dfs_beam_search(q_seq, history, tables, n, b)
-
     def get_col_scores(self, q_emb_var, q_len, hs_emb_var, hs_len, col_emb_var,
         col_len, col_name_len):
         score = self.col.forward(q_emb_var, q_len, hs_emb_var, hs_len,
             col_emb_var, col_len, col_name_len)
         col_num_score, col_score = \
             [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
-        # num_cols = np.argmax(col_num_score[0]) + 1
-        # num_col_cands = list(np.argsort(-col_num_score[0]) + 1)
-        # return list(np.argsort(-col_score[0])), num_col_cands
-
         return col_score, col_num_score
 
     def get_agg_scores(self, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
@@ -165,11 +153,8 @@ class SuperModel(nn.Module):
             np.full(B, col, dtype=np.int64))
         agg_num_score, agg_score = \
             [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
-        # agg_num = np.argmax(agg_num_score[0])
-        # agg_num_cands = list(np.argsort(-agg_num_score[0]))
 
         return agg_score, agg_num_score
-        # return list(np.argsort(-agg_score[0])), agg_num_cands
 
     def get_op_scores(self, B, col, q_emb_var, q_len, hs_emb_var, hs_len,
         col_emb_var, col_len, col_name_len):
@@ -178,14 +163,6 @@ class SuperModel(nn.Module):
             np.full(B, col, dtype=np.int64))
         op_num_score, op_score = \
             [list(F.softmax(x).data.cpu().numpy()[0]) for x in score]
-        # op_num = np.argmax(op_num_score[0]) + 1
-        # op_num_cands = list(np.argsort(-op_num_score[0]) + 1)
-        #
-        # op_cands = list(np.argsort(-op_score[0]))
-
-        # Addresses glitch of nonexistent op
-        # if 10 in op_cands:
-        #     op_cands.remove(10)
 
         return op_score, op_num_score
 
