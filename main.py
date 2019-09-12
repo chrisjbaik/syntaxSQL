@@ -217,6 +217,8 @@ def main():
 
                 client.tsq_level = task.tsq_level
 
+                client.init_cache()
+                
                 sqls = translate(task.id, model, db, schemas, client,
                     task.db_name, nlq, task.literals, timeout=task.timeout,
                     debug=args.debug)

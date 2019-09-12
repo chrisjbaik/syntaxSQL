@@ -8,19 +8,29 @@ class DuoquestClient(object):
         self.authkey = authkey
         self.tsq_level = None
 
+    def init_cache(self):
+        self.cache = {}
+
     def connect(self):
         address = ('localhost', self.port)
         self.conn = Client(address, authkey=self.authkey)
 
     def should_prune(self, query):
-        protolist = ProtoQueryList()
-        protolist.queries.append(query.pq)
+        cache_key = query.pq.SerializeToString()
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        else:
+            protolist = ProtoQueryList()
+            protolist.queries.append(query.pq)
 
-        self.conn.send_bytes(protolist.SerializeToString())
-        msg = self.conn.recv_bytes()
-        response = ProtoResult()
-        response.ParseFromString(msg)
-        return (response.results[0] == FALSE)
+            self.conn.send_bytes(protolist.SerializeToString())
+            msg = self.conn.recv_bytes()
+            response = ProtoResult()
+            response.ParseFromString(msg)
+
+            result = (response.results[0] == FALSE)
+            self.cache[cache_key] = result
+        return result
 
     def is_verified(self, query):
         protolist = ProtoQueryList()
