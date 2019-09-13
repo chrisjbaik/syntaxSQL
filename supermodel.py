@@ -560,7 +560,7 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                cur.col_scores, _ = num_col_scores
+                cur.col_scores, num_col_scores = \
                     self.get_col_scores(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
 
@@ -611,7 +611,7 @@ class SuperModel(nn.Module):
 
                 cur.used_aggs.add(cur.next_agg)
 
-                cur.op_scores, _ = \
+                cur.op_scores, op_num_scores = \
                     self.get_op_scores(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
 
