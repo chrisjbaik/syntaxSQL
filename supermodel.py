@@ -560,9 +560,12 @@ class SuperModel(nn.Module):
                 hs_emb_var, hs_len = self.embed_layer.gen_x_history_batch(
                     cur.history)
 
-                cur.col_scores, num_col_scores = \
+                cur.col_scores, _ = \
                     self.get_col_scores(q_emb_var, q_len, hs_emb_var, hs_len,
                         col_emb_var, col_len, col_name_len)
+
+                # fix maximum HAVING col as 1
+                num_col_scores = [1]
 
                 cur.next[-1] = 'having_col_num'
 
@@ -587,9 +590,12 @@ class SuperModel(nn.Module):
 
                 cur.used_cols.add(cur.next_col)
 
-                cur.agg_scores, num_agg_scores = \
+                cur.agg_scores, _ = \
                     self.get_agg_scores(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
+
+                # fix maximum HAVING aggs at 1
+                num_agg_scores = [1]
 
                 cur.next[-1] = 'having_agg_num'
                 self.push_many(queue, cur.next_num_agg_states('having',
@@ -611,9 +617,12 @@ class SuperModel(nn.Module):
 
                 cur.used_aggs.add(cur.next_agg)
 
-                cur.op_scores, op_num_scores = \
+                cur.op_scores, _ = \
                     self.get_op_scores(B, cur.next_col, q_emb_var, q_len,
                         hs_emb_var, hs_len, col_emb_var, col_len, col_name_len)
+
+                # fix maximum HAVING ops at 1
+                op_num_scores = [1]
 
                 cur.next[-1] = 'having_op_num'
 
