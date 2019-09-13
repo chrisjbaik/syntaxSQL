@@ -178,11 +178,12 @@ class SuperModel(nn.Module):
     def push_one(self, queue, state, client, seen_queries):
         pq = state.find_protoquery(state.query.pq, state.next)
         for new in state.update_join_paths(pq):
-            seen_key = new.query.pq.SerializeToString() + "||" + new.next
+            seen_key = new.query.pq.SerializeToString() + "||" + \
+                '.'.join(new.next)
             if seen_key in seen_queries:
                 continue
             seen_queries.add(seen_key)
-            
+
             if client and client.should_prune(new.query):
                 continue
             if client.tsq_level == 'tsq_only':
