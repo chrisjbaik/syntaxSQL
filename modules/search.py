@@ -250,11 +250,11 @@ class SearchState(object):
         if clause == 'order_by':
             num_agg_scores = num_agg_scores[0:2]
 
-        for num_aggs, score in enumerate(num_agg_scores):
-            # cannot have HAVING without aggs
-            if clause == 'having' and num_aggs == 0:
-                continue
+        # HAVING can only have exactly one aggregate
+        if clause == 'having':
+            num_agg_scores = [0, 1]
 
+        for num_aggs, score in enumerate(num_agg_scores):
             new = self.copy()
             new_pq = new.find_protoquery(new.query.pq, new.next)
             new.num_aggs = num_aggs
@@ -360,8 +360,8 @@ class SearchState(object):
         if clause == 'select' and self.parent:
             num_col_scores = [1]
 
-        # ORDER BY can only have 1 column max
-        if clause == 'order_by':
+        # ORDER BY/HAVING can only have one column max
+        if clause == 'order_by' or clause == 'having':
             num_col_scores = [1]
 
         for num_cols, score in enumerate(num_col_scores):
@@ -459,6 +459,11 @@ class SearchState(object):
 
     def next_num_op_states(self, clause, num_op_scores):
         states = []
+
+        # force number of ops to be 1 for HAVING
+        if clause == 'having':
+            num_op_scores = [1]
+
         for num_ops, score in enumerate(num_op_scores):
             # Cannot have 0 ops
             num_ops = num_ops + 1
