@@ -11,7 +11,7 @@ from process_sql import tokenize
 from supermodel import SuperModel
 from utils import load_word_emb
 
-from modules.client import DuoquestClient
+from modules.client import DuoquestClient, StopException
 from modules.database import Database
 from modules.query import generate_sql_str
 from modules.duoquest_pb2 import ProtoSchema, ProtoTask, ProtoCandidates, \
@@ -218,10 +218,13 @@ def main():
                 client.tsq_level = task.tsq_level
 
                 client.init_cache()
-                
-                sqls = translate(task.id, model, db, schemas, client,
-                    task.db_name, nlq, task.literals, timeout=task.timeout,
-                    debug=args.debug)
+
+                try:
+                    sqls = translate(task.id, model, db, schemas, client,
+                        task.db_name, nlq, task.literals, timeout=task.timeout,
+                        debug=args.debug)
+                except StopException as e:
+                    sqls = []
 
                 proto_cands = ProtoCandidates()
                 for sql in sqls:

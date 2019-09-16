@@ -2,6 +2,9 @@ from multiprocessing.connection import Client
 
 from duoquest_pb2 import ProtoQueryList, ProtoResult, FALSE, UNKNOWN, TRUE
 
+class StopException(Exception):
+    pass
+
 class DuoquestClient(object):
     def __init__(self, port, authkey):
         self.port = port
@@ -33,7 +36,7 @@ class DuoquestClient(object):
 
             if response.answer_found:
                 self.close()
-                raise Exception('Early termination triggered.')
+                raise StopException('Early termination triggered.')
         return result
 
     def is_verified(self, query):
