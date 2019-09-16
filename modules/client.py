@@ -30,6 +30,9 @@ class DuoquestClient(object):
 
             result = (response.results[0] == FALSE)
             self.cache[cache_key] = result
+
+            if response.answer_found:
+                raise Exception('Early termination triggered.')
         return result
 
     def is_verified(self, query):
