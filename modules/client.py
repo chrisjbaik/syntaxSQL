@@ -35,7 +35,6 @@ class DuoquestClient(object):
             self.cache[cache_key] = result
 
             if response.answer_found:
-                self.close()
                 raise StopException('Early termination triggered.')
         return result
 

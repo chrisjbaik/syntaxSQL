@@ -791,9 +791,7 @@ class SuperModel(nn.Module):
 
         # if client:
         #     client.close()
-
-        print
-
+        
         return results
 
 
