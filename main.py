@@ -224,18 +224,18 @@ def main():
                     sqls = translate(task.id, model, db, schemas, client,
                         task.db_name, nlq, task.literals, timeout=task.timeout,
                         debug=args.debug)
+                    proto_cands = ProtoCandidates()
+                    for sql in sqls:
+                        proto_cands.cqs.append(sql)
+                    conn.send_bytes(proto_cands.SerializeToString())
                 except StopException as e:
-                    sqls = []
-
-                proto_cands = ProtoCandidates()
-                for sql in sqls:
-                    proto_cands.cqs.append(sql)
-                conn.send_bytes(proto_cands.SerializeToString())
+                    pass
+                finally:
+                    client.close()
         except Exception as e:
             traceback.print_exc()
         finally:
             listener.close()
-            client.close()
 
 if __name__ == '__main__':
     main()
