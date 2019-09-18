@@ -192,8 +192,8 @@ class SuperModel(nn.Module):
 
     def search(self, task_id, db, q_seq, literals, history, tables, client,
         timeout=None, debug=False, fake_literals=False):
-        if client:
-            client.connect()
+        # if client:
+        #     client.connect()
 
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
@@ -789,8 +789,8 @@ class SuperModel(nn.Module):
             else:
                 raise Exception('Undefined `next`: {}'.format(cur.next))
 
-        if client:
-            client.close()
+        # if client:
+        #     client.close()
 
         print
 

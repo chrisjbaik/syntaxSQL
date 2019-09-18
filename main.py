@@ -218,6 +218,7 @@ def main():
                 client.tsq_level = task.tsq_level
 
                 client.init_cache()
+                client.connect()
 
                 try:
                     sqls = translate(task.id, model, db, schemas, client,
@@ -234,6 +235,7 @@ def main():
             traceback.print_exc()
         finally:
             listener.close()
+            client.close()
 
 if __name__ == '__main__':
     main()
