@@ -224,13 +224,13 @@ def main():
                     sqls = translate(task.id, model, db, schemas, client,
                         task.db_name, nlq, task.literals, timeout=task.timeout,
                         debug=args.debug)
+                except StopException as e:
+                    sqls = []
+                finally:
                     proto_cands = ProtoCandidates()
                     for sql in sqls:
                         proto_cands.cqs.append(sql)
                     conn.send_bytes(proto_cands.SerializeToString())
-                except StopException as e:
-                    pass
-                finally:
                     client.close()
         except Exception as e:
             traceback.print_exc()
