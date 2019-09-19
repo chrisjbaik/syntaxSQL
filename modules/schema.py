@@ -309,7 +309,7 @@ class Schema(object):
             # first, get the default shortest join path
             if len(tables) == 1:
                 jp = JoinPath()
-                jp.add_single_table(table)
+                jp.add_single_table(next(iter(tables)))
                 jps.append(jp)
             else:
                 jp = self.steiner(tables)
