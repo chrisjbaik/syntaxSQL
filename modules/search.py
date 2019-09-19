@@ -438,7 +438,7 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_col_states(self):
+    def next_col_states(self, literals=None, schema=None):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
@@ -448,6 +448,12 @@ class SearchState(object):
             for col, score in enumerate(self.col_scores):
                 if col in self.used_cols:
                     continue
+
+                # for WHERE column, if text column and not in literals, pass
+                if literals and schema.get_col(col).type == 'text':
+                    if col not in [c for l in literals.lits for c in l.col_id]:
+                        continue
+
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_col = col

@@ -400,7 +400,9 @@ class SuperModel(nn.Module):
                 cur.used_cols = set()
                 if cur.num_cols == 1:
                     cur.next[-1] = 'where_col'
-                    self.push_many(queue, cur.next_col_states(), client)
+                    self.push_many(queue,
+                        cur.next_col_states(literals=literals, schema=schema),
+                        client)
                 else:
                     cur.next[-1] = 'where_and_or'
                     self.push_one(queue, cur, client)
@@ -415,7 +417,9 @@ class SuperModel(nn.Module):
                     new.clear_and_or_info()
 
                     new.next[-1] = 'where_col'
-                    self.push_many(queue, new.next_col_states(), client)
+                    self.push_many(queue,
+                        new.next_col_states(literals=literals, schema=schema),
+                        client)
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
@@ -447,7 +451,9 @@ class SuperModel(nn.Module):
                 if cur.next_op_idx >= len(cur.iter_ops):
                     cur.next[-1] = 'where_col'
                     cur.clear_op_info()
-                    self.push_many(queue, cur.next_col_states(), client)
+                    self.push_many(queue,
+                        cur.next_col_states(literals=literals, schema=schema),
+                            client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -791,7 +797,7 @@ class SuperModel(nn.Module):
 
         # if client:
         #     client.close()
-        
+
         return results
 
 
