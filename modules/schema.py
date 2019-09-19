@@ -313,6 +313,7 @@ class Schema(object):
                 jps.append(jp)
             else:
                 jp = self.steiner(tables)
+                jps.append(jp)
 
             # get alternative extensions with FK 2 layers deep
             for table in tables:
