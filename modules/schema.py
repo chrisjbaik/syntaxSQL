@@ -319,8 +319,8 @@ class Schema(object):
             for table in tables:
                 if len(table.pk_edges) > 0:
                     for edge in table.pk_edges:
+                        other_tbl = edge.other(table)
                         if other_tbl not in tables:
-                            other_tbl = edge.other(table)
                             new_tables = list(tables)
                             new_tables.append(other_tbl)
                             jp = self.steiner(new_tables)
