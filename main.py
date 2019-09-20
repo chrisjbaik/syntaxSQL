@@ -229,6 +229,9 @@ def main():
                         debug=args.debug)
                 except StopException as e:
                     sqls = []
+                except Exception as e:
+                    traceback.print_exc()
+                    sqls = []
                 finally:
                     proto_cands = ProtoCandidates()
                     for sql in sqls:
