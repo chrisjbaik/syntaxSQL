@@ -20,7 +20,7 @@ def to_number(tok):
         except Exception:
             return None
 
-def find_literal_candidates(nlq_toks, db, schema, col_id, cache, agg=None,
+def find_literal_candidates(nlq_toks, db, schema, col_id, cache, clause,
     like=False):
     col = schema.get_col(col_id)
 
@@ -28,7 +28,7 @@ def find_literal_candidates(nlq_toks, db, schema, col_id, cache, agg=None,
     if col.syn_name == '*':
         return []
 
-    if agg == 'count' or col.type == 'number':
+    if clause == 'having' or col.type == 'number':
         cached = cache.get('_num')
         if cached is not None:
             return cached
