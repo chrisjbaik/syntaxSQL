@@ -110,7 +110,8 @@ def load_model(models_path, glove_path, toy=False):
     return model
 
 def translate(id, model, db, schemas, client, db_name, nlq, literals,
-    timeout=None, _old=False, debug=False, fake_literals=False):
+    timeout=None, _old=False, debug=False, fake_literals=False,
+    minimal_join_paths=False):
     if db_name not in schemas:
         raise Exception("Error: %s not in schemas" % db_name)
 
@@ -131,7 +132,8 @@ def translate(id, model, db, schemas, client, db_name, nlq, literals,
             print('LITERALS')
             print(literals)
         cqs = model.search(id, db, [tokens] * 2, literals, [], schema, client,
-            timeout=timeout, debug=debug, fake_literals=fake_literals)
+            timeout=timeout, debug=debug, fake_literals=fake_literals,
+            minimal_join_paths=minimal_join_paths)
 
         for cq in cqs:
             results.append(cq.pq)
@@ -223,6 +225,7 @@ def main():
                 try:
                     sqls = translate(task.id, model, db, schemas, client,
                         task.db_name, nlq, task.literals, timeout=task.timeout,
+                        minimal_join_paths=task.minimal_join_paths,
                         debug=args.debug)
                 except StopException as e:
                     sqls = []

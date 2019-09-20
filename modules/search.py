@@ -23,7 +23,7 @@ def pairwise(iterable):
     return izip(a, b)
 
 class SearchState(object):
-    def __init__(self, next, query, history=None):
+    def __init__(self, next, query, history=None, minimal_join_paths=False):
         # a chain of keys storing next item to infer, e.g.:
         #   left, select: select in left subquery
         #   where_op, 2, select: first subquery at index 2 of where clause
@@ -91,6 +91,9 @@ class SearchState(object):
 
         self.used_terminals = set()
 
+        # option for minimal join paths
+        self.minimal_join_paths = minimal_join_paths
+
     def set_subquery(self, pq, next, set_pq):
         if next[0] == 'left':
             self.set_subquery(pq.left, next[1:], set_pq)
@@ -147,7 +150,8 @@ class SearchState(object):
 
         if needs_update:
             try:
-                new_pqs = with_updated_join_paths(self.query.schema, cur_pq)
+                new_pqs = with_updated_join_paths(self.query.schema, cur_pq,
+                    self.minimal_join_paths)
             except Exception as e:
                 print(traceback.format_exc())
                 return []
@@ -208,6 +212,8 @@ class SearchState(object):
         copied.dir_limit_scores = self.dir_limit_scores  # will not be modified
 
         copied.used_terminals = set(self.used_terminals)
+
+        copied.minimal_join_paths = self.minimal_join_paths
 
         return copied
 

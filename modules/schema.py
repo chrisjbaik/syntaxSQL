@@ -298,7 +298,7 @@ class Schema(object):
 
         return mst
 
-    def get_join_paths(self, tables):
+    def get_join_paths(self, tables, minimal_join_paths=False):
         if len(tables) == 0:
             # when there's 0 tables (due to * being the only column),
             #   generate join path for each table in the schema
@@ -309,18 +309,17 @@ class Schema(object):
             # first, get the default shortest join path
             if len(tables) == 1:
                 jp = JoinPath()
-                jp.add_single_table(next(iter(tables)))
+                jp.add_single_table(table)
                 jps.append(jp)
             else:
                 jp = self.steiner(tables)
-                jps.append(jp)
 
             # get alternative extensions with FK 2 layers deep
-            for table in tables:
-                if len(table.pk_edges) > 0:
-                    for edge in table.pk_edges:
-                        other_tbl = edge.other(table)
-                        if other_tbl not in tables:
+            if not minimal_join_paths:
+                for table in tables:
+                    if len(table.pk_edges) > 0:
+                        for edge in table.pk_edges:
+                            other_tbl = edge.other(table)
                             new_tables = list(tables)
                             new_tables.append(other_tbl)
                             jp = self.steiner(new_tables)
@@ -328,8 +327,8 @@ class Schema(object):
                             jps.append(jp)
 
                             if len(other_tbl.pk_edges) > 0:
-                                for edge2 in other_tbl.pk_edges:
-                                    other2_tbl = edge2.other(other_tbl)
+                                for edge in other_tbl.pk_edges:
+                                    other2_tbl = edge.other(other_tbl)
                                     if other2_tbl not in tables:
                                         newer_tables = list(new_tables)
                                         newer_tables.append(other2_tbl)

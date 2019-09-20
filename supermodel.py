@@ -191,9 +191,8 @@ class SuperModel(nn.Module):
             self.push_one(queue, state, client)
 
     def search(self, task_id, db, q_seq, literals, history, tables, client,
-        timeout=None, debug=False, fake_literals=False):
-        # if client:
-        #     client.connect()
+        timeout=None, debug=False, fake_literals=False,
+        minimal_join_paths=False):
 
         B = len(q_seq)
         q_emb_var, q_len = self.embed_layer.gen_x_q_batch(q_seq)
@@ -212,7 +211,8 @@ class SuperModel(nn.Module):
         schema = Schema(tables)
 
         # initial state
-        init_state = SearchState(['root'], Query(schema))
+        init_state = SearchState(['root'], Query(schema),
+            minimal_join_paths=minimal_join_paths)
 
         # queue to store search states
         queue = []

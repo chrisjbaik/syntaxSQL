@@ -387,8 +387,9 @@ def join_path_needs_update(schema, pq):
     else:
         return True
 
-def with_updated_join_paths(schema, pq):
-    jps = schema.get_join_paths(get_tables(schema, pq))
+def with_updated_join_paths(schema, pq, minimal_join_paths=False):
+    jps = schema.get_join_paths(get_tables(schema, pq),
+        minimal_join_paths=minimal_join_paths)
 
     new_pqs = []
     for jp in jps:
