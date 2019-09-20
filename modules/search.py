@@ -586,9 +586,10 @@ class SearchState(object):
             cands = list(map(lambda x: x.value,
                 filter(lambda x: self.next_col in x.col_id,
                 literals.text_lits)))
-            cands.extend(find_literal_candidates(nlq_toks, db, schema,
-                self.next_col, lit_cache, clause,
-                like=NEW_WHERE_OPS[op] == 'like'))
+            if len(literals.text_lits) > 0:
+                cands.extend(find_literal_candidates(nlq_toks, db, schema,
+                    self.next_col, lit_cache, clause,
+                    like=NEW_WHERE_OPS[op] == 'like'))
 
         if not cands:
             return []
