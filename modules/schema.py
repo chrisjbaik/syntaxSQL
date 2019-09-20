@@ -320,21 +320,22 @@ class Schema(object):
                     if len(table.pk_edges) > 0:
                         for edge in table.pk_edges:
                             other_tbl = edge.other(table)
-                            new_tables = list(tables)
-                            new_tables.append(other_tbl)
-                            jp = self.steiner(new_tables)
-                            jp.distinct = True
-                            jps.append(jp)
+                            if other_tbl not in tables:
+                                new_tables = list(tables)
+                                new_tables.append(other_tbl)
+                                jp = self.steiner(new_tables)
+                                jp.distinct = True
+                                jps.append(jp)
 
-                            if len(other_tbl.pk_edges) > 0:
-                                for edge in other_tbl.pk_edges:
-                                    other2_tbl = edge.other(other_tbl)
-                                    if other2_tbl not in tables:
-                                        newer_tables = list(new_tables)
-                                        newer_tables.append(other2_tbl)
-                                        jp = self.steiner(newer_tables)
-                                        jp.distinct = True
-                                        jps.append(jp)
+                                if len(other_tbl.pk_edges) > 0:
+                                    for edge in other_tbl.pk_edges:
+                                        other2_tbl = edge.other(other_tbl)
+                                        if other2_tbl not in tables:
+                                            newer_tables = list(new_tables)
+                                            newer_tables.append(other2_tbl)
+                                            jp = self.steiner(newer_tables)
+                                            jp.distinct = True
+                                            jps.append(jp)
             return jps
 
 

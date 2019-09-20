@@ -457,7 +457,7 @@ class SearchState(object):
 
                 # for WHERE column, if text column and not in literals, pass
                 if literals and schema.get_col(col).type == 'text':
-                    if col not in [c for l in literals.lits for c in l.col_id]:
+                    if col not in [c for l in literals.text_lits for c in l.col_id]:
                         continue
 
                 new = self.copy()
@@ -584,7 +584,8 @@ class SearchState(object):
                 cands = ['terminal']
         else:
             cands = list(map(lambda x: x.value,
-                filter(lambda x: self.next_col in x.col_id, literals.lits)))
+                filter(lambda x: self.next_col in x.col_id,
+                literals.text_lits)))
             cands.extend(find_literal_candidates(nlq_toks, db, schema,
                 self.next_col, lit_cache, like=NEW_WHERE_OPS[op] == 'like'))
 
