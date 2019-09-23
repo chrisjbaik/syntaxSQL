@@ -455,13 +455,6 @@ class SearchState(object):
                 if col in self.used_cols:
                     continue
 
-                # TODO: hopefully this is handled in verifier now
-                # if clause == 'where' and schema.get_col(col).type == 'text':
-                #     # if text column added and not in literals, pass
-                #     if col not in \
-                #         [c for l in literals.text_lits for c in l.col_id]:
-                #         continue
-
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_col = col
@@ -521,10 +514,10 @@ class SearchState(object):
         or_op = False
         cur_pq = self.find_protoquery(self.query.pq, self.next)
         if clause == 'where':
-            self.next_op_offset = len(cur_pq.where.predicates)
+            self.next_op_offset = len(cur_pq.where.predicates) - 1
             or_op = (cur_pq.where.logical_op == OR)
         elif clause == 'having':
-            self.next_op_offset = len(cur_pq.having.predicates)
+            self.next_op_offset = len(cur_pq.having.predicates) - 1
             or_op = (cur_pq.having.logical_op == OR)
         else:
             raise Exception('Unknown clause: {}'.format(clause))
