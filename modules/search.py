@@ -444,7 +444,7 @@ class SearchState(object):
         else:
             raise Exception('Exceeded number of columns.')
 
-    def next_col_states(self, literals=None, schema=None):
+    def next_col_states(self, clause, literals=None, schema=None):
         if len(self.used_cols) == self.num_cols:
             self.next_col = None
             return [self]
@@ -455,15 +455,29 @@ class SearchState(object):
                 if col in self.used_cols:
                     continue
 
-                # for WHERE column, if text column and not in literals, pass
-                if literals and schema.get_col(col).type == 'text':
-                    if col not in [c for l in literals.text_lits for c in l.col_id]:
-                        continue
+                # TODO: hopefully this is handled in verifier now
+                # if clause == 'where' and schema.get_col(col).type == 'text':
+                #     # if text column added and not in literals, pass
+                #     if col not in \
+                #         [c for l in literals.text_lits for c in l.col_id]:
+                #         continue
 
                 new = self.copy()
                 new_pq = new.find_protoquery(new.query.pq, new.next)
                 new.next_col = col
                 new.prob = new.prob * score
+
+                pred = Predicate()
+                pred.col_id = new.next_col
+
+                if clause == 'where':
+                    pred.has_agg = to_proto_tribool(False)
+                    new_pq.where.predicates.append(pred)
+                elif clause == 'having':
+                    pred.has_agg = to_proto_tribool(True)
+                    pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
+                    new_pq.having.predicates.append(pred)
+
                 states.append(new)
             return states
         else:
@@ -501,7 +515,7 @@ class SearchState(object):
 
     def next_op_states(self, clause, col_name):
         states = []
-        # self.next[-1] = next
+
         self.next_op_idx = 0
 
         or_op = False
@@ -535,23 +549,30 @@ class SearchState(object):
             for i, op_score in enumerate(op_scores):
                 op, score = op_score
 
-                if i != 0:
+                if i == 0:
+                    # the predicate already exists for the first case
+                    if clause == 'where':
+                        pred = new_pq.where.predicates[-1]
+                    elif clause == 'having':
+                        pred = new_pq.having.predicates[-1]
+                else:
+                    # otherwise, a new predicate needs to be generated
                     new.history[0].append(col_name)
+
+                    pred = Predicate()
+                    pred.col_id = new.next_col
+
+                    if clause == 'where':
+                        pred.has_agg = to_proto_tribool(False)
+                        new_pq.where.predicates.append(pred)
+                    elif clause == 'having':
+                        pred.has_agg = to_proto_tribool(True)
+                        pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
+                        new_pq.having.predicates.append(pred)
                 new.history[0].append(NEW_WHERE_OPS[op])
 
                 new.prob = new.prob * score
-
-                pred = Predicate()
-                pred.col_id = new.next_col
                 pred.op = to_proto_op(NEW_WHERE_OPS[op])
-
-                if clause == 'where':
-                    pred.has_agg = to_proto_tribool(False)
-                    new_pq.where.predicates.append(pred)
-                elif clause == 'having':
-                    pred.has_agg = to_proto_tribool(True)
-                    pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
-                    new_pq.having.predicates.append(pred)
 
             new.iter_ops = op_scores
             states.append(new)

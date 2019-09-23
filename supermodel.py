@@ -401,8 +401,8 @@ class SuperModel(nn.Module):
                 if cur.num_cols == 1:
                     cur.next[-1] = 'where_col'
                     self.push_many(queue,
-                        cur.next_col_states(literals=literals, schema=schema),
-                        client)
+                        cur.next_col_states('where', literals=literals,
+                        schema=schema), client)
                 else:
                     cur.next[-1] = 'where_and_or'
                     self.push_one(queue, cur, client)
@@ -418,8 +418,8 @@ class SuperModel(nn.Module):
 
                     new.next[-1] = 'where_col'
                     self.push_many(queue,
-                        new.next_col_states(literals=literals, schema=schema),
-                        client)
+                        new.next_col_states('where', literals=literals,
+                            schema=schema), client)
             elif cur.next[-1] == 'where_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'group_by'
@@ -452,8 +452,8 @@ class SuperModel(nn.Module):
                     cur.next[-1] = 'where_col'
                     cur.clear_op_info()
                     self.push_many(queue,
-                        cur.next_col_states(literals=literals, schema=schema),
-                            client)
+                        cur.next_col_states('where', literals=literals,
+                            schema=schema), client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -523,7 +523,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'group_by_col_num':
                 cur.next[-1] = 'group_by_col'
                 cur.used_cols = set()
-                self.push_many(queue, cur.next_col_states(), client)
+                self.push_many(queue, cur.next_col_states('group_by'), client)
             elif cur.next[-1] == 'group_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'having'
@@ -552,10 +552,12 @@ class SuperModel(nn.Module):
                             new_pq.has_having = to_proto_tribool(True)
                         else:
                             new_pq.has_having = to_proto_tribool(False)
-                        self.push_many(queue, new.next_col_states(), client)
+                        self.push_many(queue, new.next_col_states('group_by'),
+                            client)
                 else:
                     cur.used_cols.add(cur.next_col)
-                    self.push_many(queue, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states('group_by'),
+                        client)
             elif cur.next[-1] == 'having':
                 if cur_pq.has_having != to_proto_tribool(True):
                     cur.next[-1] = 'order_by'
@@ -577,7 +579,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'having_col_num':
                 cur.next[-1] = 'having_col'
                 cur.used_cols = set()
-                self.push_many(queue, cur.next_col_states(), client)
+                self.push_many(queue, cur.next_col_states('having'), client)
             elif cur.next[-1] == 'having_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'order_by'
@@ -607,7 +609,7 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'having_col'
                     cur.clear_agg_info()
-                    self.push_many(queue, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states('having'), client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
@@ -702,7 +704,7 @@ class SuperModel(nn.Module):
             elif cur.next[-1] == 'order_by_col_num':
                 cur.next[-1] = 'order_by_col'
                 cur.used_cols = set()
-                self.push_many(queue, cur.next_col_states(), client)
+                self.push_many(queue, cur.next_col_states('order_by'), client)
             elif cur.next[-1] == 'order_by_col':
                 if cur.next_col is None:
                     cur.next[-1] = 'finish'
@@ -738,7 +740,8 @@ class SuperModel(nn.Module):
                 if cur.next_agg is None:
                     cur.next[-1] = 'order_by_col'
                     cur.clear_agg_info()
-                    self.push_many(queue, cur.next_col_states(), client)
+                    self.push_many(queue, cur.next_col_states('order_by'),
+                        client)
                     continue
 
                 col_name = index_to_column_name(cur.next_col, tables)
