@@ -564,7 +564,9 @@ class SearchState(object):
 
                 new.prob = new.prob * score
                 pred.op = to_proto_op(NEW_WHERE_OPS[op])
-                pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
+
+                if clause == 'having':
+                    pred.agg = to_proto_agg(AGG_OPS[new.next_agg])
 
             new.iter_ops = op_scores
             states.append(new)
