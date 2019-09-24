@@ -498,7 +498,8 @@ class SearchState(object):
             elif clause == 'having':
                 new_pq.min_having_preds = len(new_pq.having.predicates) + \
                     num_ops + (new.num_cols - len(new.used_cols)) - 1
-                new_pq.having.predicates[-1].agg = AGG_OPS[new.next_agg]
+                new_pq.having.predicates[-1].agg = \
+                    to_proto_agg(AGG_OPS[new.next_agg])
             else:
                 raise Exception('Unknown clause: {}'.format(clause))
 
