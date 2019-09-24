@@ -600,11 +600,11 @@ class SearchState(object):
             col_type = schema.get_col(self.next_col).type
 
             cands = []
-            if col_type == 'text':
+            if clause == 'where' and col_type == 'text':
                 cands.extend(map(lambda x: x.value,
                     filter(lambda x: self.next_col in x.col_id,
                     literals.text_lits)))
-            elif col_type == 'number':
+            elif col_type == 'number' or clause == 'having':
                 cands.extend(map(lambda x: str(x), literals.num_lits))
 
             if not literals.text_lits and not literals.num_lits:
