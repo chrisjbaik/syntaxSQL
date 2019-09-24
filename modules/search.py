@@ -494,10 +494,10 @@ class SearchState(object):
 
             if clause == 'where':
                 new_pq.min_where_preds = len(new_pq.where.predicates) + \
-                    num_ops + (new.num_cols - len(new.used_cols))
+                    num_ops + (new.num_cols - len(new.used_cols)) - 1
             elif clause == 'having':
                 new_pq.min_having_preds = len(new_pq.having.predicates) + \
-                    num_ops + (new.num_cols - len(new.used_cols))
+                    num_ops + (new.num_cols - len(new.used_cols)) - 1
             else:
                 raise Exception('Unknown clause: {}'.format(clause))
 
