@@ -597,11 +597,17 @@ class SearchState(object):
             else:
                 cands = ['terminal']
         else:
-            cands = list(map(lambda x: x.value,
-                filter(lambda x: self.next_col in x.col_id,
-                literals.text_lits)))
-            cands.extend(map(lambda x: str(x), literals.num_lits))
-            if not literals.text_lits or len(literals.text_lits) == 0:
+            col_type = schema.get_col(self.next_col).type
+
+            cands = []
+            if col_type == 'text':
+                cands.extend(map(lambda x: x.value,
+                    filter(lambda x: self.next_col in x.col_id,
+                    literals.text_lits)))
+            elif col_type == 'number':
+                cands.extend(map(lambda x: str(x), literals.num_lits))
+
+            if not literals.text_lits and not literals.num_lits:
                 cands.extend(find_literal_candidates(nlq_toks, db, schema,
                     self.next_col, lit_cache, clause,
                     like=NEW_WHERE_OPS[op] == 'like'))
