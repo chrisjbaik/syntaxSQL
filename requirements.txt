@@ -19,7 +19,6 @@ singledispatch==3.4.0.3
 six==1.11.0
 SQLAlchemy==1.1.14
 tablib==0.12.1
-torch==0.4.0
 unicodecsv==0.14.1
 word2number==1.1
 xlrd==1.1.0
