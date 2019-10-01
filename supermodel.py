@@ -254,16 +254,18 @@ class SuperModel(nn.Module):
             # Only one level of set ops permitted, so 'root' is once only
             if cur.next[-1] == 'root':
                 # only permit set ops on first level
-                if len(cur.next) == 1:
-                    score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
-                        hs_len, mkw_emb_var, mkw_len)
-                    score = F.softmax(score)
-                    cand_scores = score[0].data.cpu().numpy()
-                    set_op_cands = list(range(len(cand_scores)))
-                else:
-                    cur.history[0].append('root')
-                    cand_scores = [1]
-                    set_op_cands = [0]
+                # if len(cur.next) == 1:
+                #     score = self.multi_sql.forward(q_emb_var, q_len, hs_emb_var,
+                #         hs_len, mkw_emb_var, mkw_len)
+                #     score = F.softmax(score)
+                #     cand_scores = score[0].data.cpu().numpy()
+                #     set_op_cands = list(range(len(cand_scores)))
+                # else:
+
+                # DISABLED SET OPS
+                cur.history[0].append('root')
+                cand_scores = [1]
+                set_op_cands = [0]
 
                 for i, set_op_id in enumerate(set_op_cands):
                     label = SQL_OPS[set_op_id]
@@ -459,10 +461,13 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(cur.next_col, tables)
                 op, score = cur.iter_ops[cur.next_op_idx]
 
-                score = self.root_teminal.forward(q_emb_var, q_len,
-                    hs_emb_var, hs_len, col_emb_var, col_len,
-                    col_name_len, np.full(B, cur.next_col, dtype=np.int64))
-                root_term_scores = list(F.softmax(score)[0].data.cpu().numpy())
+                # score = self.root_teminal.forward(q_emb_var, q_len,
+                #     hs_emb_var, hs_len, col_emb_var, col_len,
+                #     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
+                # root_term_scores = list(F.softmax(score)[0].data.cpu().numpy())
+
+                # DISABLE SUBQUERY
+                root_term_scores = [0, 1]
 
                 for root_term, score in enumerate(root_term_scores):
                     label = ROOT_TERM_OPS[root_term]
@@ -642,10 +647,13 @@ class SuperModel(nn.Module):
                 col_name = index_to_column_name(cur.next_col, tables)
                 op, score = cur.iter_ops[cur.next_op_idx]
 
-                score = self.root_teminal.forward(q_emb_var, q_len,
-                    hs_emb_var, hs_len, col_emb_var, col_len,
-                    col_name_len, np.full(B, cur.next_col, dtype=np.int64))
-                root_term_scores = list(F.softmax(score)[0].data.cpu().numpy())
+                # score = self.root_teminal.forward(q_emb_var, q_len,
+                #     hs_emb_var, hs_len, col_emb_var, col_len,
+                #     col_name_len, np.full(B, cur.next_col, dtype=np.int64))
+                # root_term_scores = list(F.softmax(score)[0].data.cpu().numpy())
+
+                # DISABLE SUBQUERY
+                root_term_scores = [0, 1]
 
                 for root_term, score in enumerate(root_term_scores):
                     label = ROOT_TERM_OPS[root_term]
