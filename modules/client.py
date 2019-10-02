@@ -19,7 +19,7 @@ class DuoquestClient(object):
         self.conn = Client(address, authkey=self.authkey)
 
     def should_prune(self, query):
-        cache_key = query.pq.SerializeToString()
+        cache_key = str(query.pq)
         if cache_key in self.cache:
             return self.cache[cache_key]
         else:
