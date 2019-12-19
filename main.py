@@ -3,6 +3,7 @@ import ConfigParser
 import json
 from multiprocessing.connection import Listener
 import re
+import psycopg2
 import sqlite3
 import torch
 import traceback
@@ -166,7 +167,8 @@ def main():
 
     model = load_model(config.get('syntaxsql', 'models_path'),
         config.get('syntaxsql', 'glove_path'), args.toy)
-    client = DuoquestClient(int(config.get('duoquest', 'port')),
+    client = DuoquestClient(config.get('duoquest', 'host'),
+        int(config.get('duoquest', 'port')),
         config.get('duoquest', 'authkey'))
 
     while True:
@@ -193,9 +195,15 @@ def main():
                     schemas = load_schemas(schemas_path)
                     db = Database(db_path, task.dataset)
                 else:
-                    task_db_path = config.get('db', 'path')
+                    if config.get('db', 'type') == 'sqlite':
+                        task_db_path = config.get('db', 'path')
+                        task_conn = sqlite3.connect(task_db_path)
+                    else:
+                        task_conn = psycopg2.connect(host=config.get('db', 'host'),
+                            port=config.get('db', 'port'), user=config.get('db', 'user'),
+                            password=config.get('db', 'password'),
+                            database=config.get('db', 'name'))
 
-                    task_conn = sqlite3.connect(task_db_path)
                     cur = task_conn.cursor()
                     cur.execute('''SELECT schema_proto, path FROM databases
                                    WHERE name = ?''', (task.db_name,))

@@ -607,10 +607,10 @@ class SearchState(object):
             elif col_type == 'number' or clause == 'having':
                 cands.extend(map(lambda x: str(x), literals.num_lits))
 
-            if not literals.text_lits and not literals.num_lits:
-                cands.extend(find_literal_candidates(nlq_toks, db, schema,
-                    self.next_col, lit_cache, clause,
-                    like=NEW_WHERE_OPS[op] == 'like'))
+            #if not literals.text_lits and not literals.num_lits:
+            #    cands.extend(find_literal_candidates(nlq_toks, db, schema,
+            #       self.next_col, lit_cache, clause,
+            #       like=NEW_WHERE_OPS[op] == 'like'))
 
         if not cands:
             return []

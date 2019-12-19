@@ -1,1 +1,7 @@
 *.pyc
+
+# saved trained models
+saved_models/
+
+# glove models
+glove/

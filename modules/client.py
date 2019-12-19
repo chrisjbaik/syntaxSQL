@@ -6,7 +6,8 @@ class StopException(Exception):
     pass
 
 class DuoquestClient(object):
-    def __init__(self, port, authkey):
+    def __init__(self, host, port, authkey):
+        self.host = host
         self.port = port
         self.authkey = authkey
         self.tsq_level = None
@@ -15,7 +16,7 @@ class DuoquestClient(object):
         self.cache = {}
 
     def connect(self):
-        address = ('localhost', self.port)
+        address = (self.host, self.port)
         self.conn = Client(address, authkey=self.authkey)
 
     def should_prune(self, query):
