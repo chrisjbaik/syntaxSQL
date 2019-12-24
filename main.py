@@ -173,7 +173,7 @@ def main():
 
     while True:
         try:
-            address = ('localhost', int(config.get('nlq', 'port')))
+            address = ('', int(config.get('nlq', 'port')))
             listener = Listener(address, authkey=config.get('nlq', 'authkey'))
             print('Listening on port {}...'.format(config.get('nlq', 'port')))
             conn = listener.accept()
@@ -198,15 +198,18 @@ def main():
                     if config.get('db', 'type') == 'sqlite':
                         task_db_path = config.get('db', 'path')
                         task_conn = sqlite3.connect(task_db_path)
+                        cur = task_conn.cursor()
+                        cur.execute('''SELECT schema_proto, path FROM databases
+                                       WHERE name = ?''', (task.db_name,))
                     else:
                         task_conn = psycopg2.connect(host=config.get('db', 'host'),
                             port=config.get('db', 'port'), user=config.get('db', 'user'),
                             password=config.get('db', 'password'),
                             database=config.get('db', 'name'))
+                        cur = task_conn.cursor()
+                        cur.execute('''SELECT schema_proto, path FROM databases
+                                       WHERE name = %s''', (task.db_name,))
 
-                    cur = task_conn.cursor()
-                    cur.execute('''SELECT schema_proto, path FROM databases
-                                   WHERE name = ?''', (task.db_name,))
                     row = cur.fetchone()
                     if row is None:
                         raise Exception('Database <{}> not found!'.format(
